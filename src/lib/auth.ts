@@ -32,7 +32,7 @@ export async function createAccessToken(input: {
 }
 
 export async function decodeAccessToken(token: string) {
-  const payload = await verify(token, env.JWT_SECRET);
+  const payload = await verify(token, env.JWT_SECRET, "HS256");
 
   return payload as JwtPayload;
 }

@@ -5,14 +5,21 @@ import { forbidden, unauthorized } from "../lib/http.js";
 import type { AppBindings, UserRole } from "../types.js";
 
 export const requireAuth: MiddlewareHandler<AppBindings> = async (c, next) => {
-  const authorization = c.req.header("authorization");
-
-  if (!authorization?.startsWith("Bearer ")) {
+  const authHeader = c.req.header("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     unauthorized();
+    return;
   }
 
-  const token = authorization.slice("Bearer ".length);
-  const payload = await decodeAccessToken(token);
+  const token = authHeader.slice("Bearer ".length);
+
+  let payload;
+  try {
+    payload = await decodeAccessToken(token);
+  } catch {
+    unauthorized("Token inválido ou expirado.");
+    return;
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: payload.sub },
@@ -21,6 +28,7 @@ export const requireAuth: MiddlewareHandler<AppBindings> = async (c, next) => {
 
   if (!user || !user.isActive) {
     unauthorized("Usuário inválido ou inativo.");
+    return;
   }
 
   c.set("user", {

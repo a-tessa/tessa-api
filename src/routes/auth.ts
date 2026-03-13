@@ -8,6 +8,9 @@ import { conflict, unauthorized } from "../lib/http.js";
 import { prisma } from "../lib/prisma.js";
 import type { AppBindings } from "../types.js";
 import { requireAuth } from "../middlewares/auth.js";
+import { rateLimiter } from "../middlewares/rate-limit.js";
+
+const authRateLimit = rateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 
 const bootstrapSchema = z.object({
   name: z.string().min(2),
@@ -23,7 +26,7 @@ const loginSchema = z.object({
 
 export const authRouter = new Hono<AppBindings>();
 
-authRouter.post("/bootstrap", zValidator("json", bootstrapSchema), async (c) => {
+authRouter.post("/bootstrap", authRateLimit, zValidator("json", bootstrapSchema), async (c) => {
   const input = c.req.valid("json");
 
   if (input.setupKey !== env.MASTER_SETUP_KEY) {
@@ -76,7 +79,7 @@ authRouter.post("/bootstrap", zValidator("json", bootstrapSchema), async (c) => 
   );
 });
 
-authRouter.post("/login", zValidator("json", loginSchema), async (c) => {
+authRouter.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) => {
   const input = c.req.valid("json");
 
   const user = await prisma.user.findUnique({
@@ -85,12 +88,14 @@ authRouter.post("/login", zValidator("json", loginSchema), async (c) => {
 
   if (!user || !user.isActive) {
     unauthorized("Credenciais inválidas.");
+    return;
   }
 
   const passwordMatches = await verifyPassword(input.password, user.passwordHash);
 
   if (!passwordMatches) {
     unauthorized("Credenciais inválidas.");
+    return;
   }
 
   const accessToken = await createAccessToken({
