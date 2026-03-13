@@ -5,15 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/dev.ts",
-    "build": "tsc --noEmit",
+    "build": "prisma generate && tsc --noEmit",
     "lint": "tsc --noEmit",
+    "db:start": "docker compose up -d postgres",
+    "db:stop": "docker compose stop postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
-    "@hono/zod-validator": "^0.5.1",
+    "@hono/zod-validator": "^0.7.6",
     "@prisma/client": "^6.6.0",
     "bcryptjs": "^3.0.2",
     "hono": "^4.7.4",
