@@ -8,6 +8,7 @@ declare global {
 export const prisma =
   globalThis.prismaGlobal ??
   new PrismaClient({
+    // Reuse the client between invocations during local development.
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"]
   });
 

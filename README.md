@@ -24,6 +24,7 @@ O deploy continua sem Docker na Vercel. O Docker deste projeto existe apenas par
 
 ```env
 DATABASE_URL="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
+DATABASE_URL_UNPOOLED="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
 JWT_SECRET="change-me-min-16-chars"
 MASTER_SETUP_KEY="change-me-min-8"
 ```
@@ -73,6 +74,7 @@ Se você já tinha um `.env` antigo, atualize a `DATABASE_URL` manualmente para:
 
 ```env
 DATABASE_URL="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
+DATABASE_URL_UNPOOLED="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
 ```
 
 ## Publicar na Vercel
@@ -80,27 +82,37 @@ DATABASE_URL="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
 Forma mais simples:
 
 1. Suba este projeto para um repositório Git.
-2. Crie um banco PostgreSQL gerenciado para produção.
-3. Importe o repositório na Vercel.
-4. Configure as variáveis de ambiente de produção.
-5. Faça o deploy.
-6. Rode as migrations no banco de produção.
+2. Na Vercel, adicione uma integração de Postgres pelo Marketplace.
+3. Escolha Neon.
+4. Importe ou conecte este repositório na Vercel.
+5. Confirme as variáveis de ambiente injetadas pela integração.
+6. Faça o deploy.
+7. Rode as migrations no banco de produção.
 
 ### Variáveis de ambiente na Vercel
 
-Cadastre estas variáveis no projeto:
+Com Neon conectado à Vercel, o ideal é ter pelo menos estas variáveis:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/tessa_prod?schema=public"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST-pooler:5432/tessa_prod?sslmode=require"
+DATABASE_URL_UNPOOLED="postgresql://USER:PASSWORD@HOST:5432/tessa_prod?sslmode=require"
 JWT_SECRET="uma-chave-bem-grande-e-segura"
 MASTER_SETUP_KEY="uma-chave-secreta-para-bootstrap"
 ```
 
 Importante:
 
+- `DATABASE_URL` deve ser a conexão poolada usada no runtime
+- `DATABASE_URL_UNPOOLED` deve ser a conexão direta usada pelo Prisma CLI para migrations
 - não use a `DATABASE_URL` local do Docker na Vercel
 - a Vercel não vai hospedar seu Postgres local
 - o Docker deste projeto é apenas para desenvolvimento
+
+### O que já está adequado neste repositório
+
+- [prisma/schema.prisma](/home/luisfaf/tessa/tessa-api/prisma/schema.prisma) agora usa `directUrl = env("DATABASE_URL_UNPOOLED")`
+- [src/lib/prisma.ts](/home/luisfaf/tessa/tessa-api/src/lib/prisma.ts) já usa singleton do Prisma Client
+- [package.json](/home/luisfaf/tessa/tessa-api/package.json) já tem `prisma:migrate:deploy`
 
 ### Build na Vercel
 
@@ -125,6 +137,14 @@ pnpm install
 pnpm prisma:migrate:deploy
 ```
 
+Se você ativar Preview Branching no Neon, uma opção prática é configurar nos previews um build command que aplique migrations antes do build:
+
+```bash
+pnpm prisma:migrate:deploy && pnpm build
+```
+
+Para produção, eu manteria as migrations em uma etapa controlada do deploy e não dentro do handler da API.
+
 ### Fluxo via CLI da Vercel
 
 Se preferir publicar por CLI:
@@ -133,6 +153,7 @@ Se preferir publicar por CLI:
 vercel login
 vercel link
 vercel env add DATABASE_URL production
+vercel env add DATABASE_URL_UNPOOLED production
 vercel env add JWT_SECRET production
 vercel env add MASTER_SETUP_KEY production
 vercel deploy
@@ -140,6 +161,16 @@ vercel --prod
 ```
 
 Depois rode a migration apontando para o banco de produção com a `DATABASE_URL` correta no seu ambiente local.
+
+## Próximo passo recomendado
+
+Para este repositório, o caminho mais direto agora é:
+
+1. Instalar Neon pelo Marketplace da Vercel.
+2. Garantir que `DATABASE_URL` e `DATABASE_URL_UNPOOLED` foram criadas.
+3. Fazer um novo deploy.
+4. Rodar `pnpm prisma:migrate:deploy` contra o banco de produção.
+5. Chamar `POST /api/auth/bootstrap` uma vez para criar o master.
 
 ### Primeiro acesso em produção
 
