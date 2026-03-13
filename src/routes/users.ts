@@ -22,21 +22,35 @@ export const usersRouter = new Hono<AppBindings>();
 
 usersRouter.use("*", requireAuth, requireRole(["MASTER"]));
 
-usersRouter.get("/", async (c) => {
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true
-    }
-  });
+usersRouter.get("/", zValidator("query", z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  perPage: z.coerce.number().int().min(1).max(100).default(20),
+})), async (c) => {
+  const { page, perPage } = c.req.valid("query");
+  const skip = (page - 1) * perPage;
 
-  return c.json({ users });
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      skip,
+      take: perPage,
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    }),
+    prisma.user.count(),
+  ]);
+
+  return c.json({
+    users,
+    pagination: { page, perPage, total, totalPages: Math.ceil(total / perPage) },
+  });
 });
 
 usersRouter.post("/", zValidator("json", createAdminSchema), async (c) => {
