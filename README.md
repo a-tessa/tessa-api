@@ -118,8 +118,7 @@ Importante:
 
 O projeto já está preparado para deploy porque:
 
-- [vercel.json](/home/luisfaf/tessa/tessa-api/vercel.json) define a function `api/[[...route]].ts`
-- [api/[[...route]].ts](/home/luisfaf/tessa/tessa-api/api/[[...route]].ts) exporta os handlers HTTP para a Vercel
+- [src/app.ts](/home/luisfaf/tessa/tessa-api/src/app.ts) exporta o app Hono como `default`
 - [package.json](/home/luisfaf/tessa/tessa-api/package.json) já roda `prisma generate` no `postinstall` e no `build`
 
 Se quiser definir manualmente na dashboard da Vercel:
