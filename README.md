@@ -2,6 +2,8 @@
 
 API de gerenciamento de conteúdo para a landing page SSR da Tessa, preparada para deploy na Vercel.
 
+O deploy continua sem Docker na Vercel. O Docker deste projeto existe apenas para subir o PostgreSQL local durante o desenvolvimento.
+
 ## Stack
 
 - Hono para rotas HTTP leves e compatíveis com Vercel Functions
@@ -12,26 +14,64 @@ API de gerenciamento de conteúdo para a landing page SSR da Tessa, preparada pa
 ## Fluxo inicial
 
 1. Configure as variáveis de ambiente com base no arquivo `.env.example`.
-2. Instale as dependências.
-3. Gere o cliente Prisma.
-4. Rode as migrations.
-5. Faça o bootstrap do usuário master.
+2. Suba o banco local com Docker.
+3. Instale as dependências.
+4. Gere o cliente Prisma.
+5. Rode as migrations.
+6. Faça o bootstrap do usuário master.
 
 ## Variáveis de ambiente
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/tessa?schema=public"
-JWT_SECRET="change-me"
-MASTER_SETUP_KEY="change-me"
+DATABASE_URL="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
+JWT_SECRET="change-me-min-16-chars"
+MASTER_SETUP_KEY="change-me-min-8"
 ```
 
 ## Scripts
 
 ```bash
+pnpm db:start
 pnpm install
 pnpm prisma:generate
 pnpm prisma:migrate
 pnpm dev
+```
+
+## Banco local com Docker
+
+O arquivo [docker-compose.yml](/home/luisfaf/tessa/tessa-api/docker-compose.yml) sobe um PostgreSQL local em `localhost:5434` com estas credenciais de desenvolvimento:
+
+```env
+POSTGRES_DB=tessa_local
+POSTGRES_USER=tessa
+POSTGRES_PASSWORD=tessa
+```
+
+Comandos úteis:
+
+```bash
+pnpm db:start
+pnpm db:logs
+pnpm db:stop
+pnpm db:down
+```
+
+Fluxo sugerido para o primeiro uso:
+
+```bash
+cp .env.example .env
+pnpm db:start
+pnpm install
+pnpm prisma:generate
+pnpm prisma:migrate
+pnpm dev
+```
+
+Se você já tinha um `.env` antigo, atualize a `DATABASE_URL` manualmente para:
+
+```env
+DATABASE_URL="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
 ```
 
 ## Endpoints principais
