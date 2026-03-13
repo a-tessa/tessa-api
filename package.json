@@ -7,12 +7,14 @@
     "dev": "tsx watch src/dev.ts",
     "build": "prisma generate && tsc --noEmit",
     "lint": "tsc --noEmit",
+    "postinstall": "prisma generate",
     "db:start": "docker compose up -d postgres",
     "db:stop": "docker compose stop postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {

@@ -35,6 +35,7 @@ pnpm db:start
 pnpm install
 pnpm prisma:generate
 pnpm prisma:migrate
+pnpm prisma:migrate:deploy
 pnpm dev
 ```
 
@@ -73,6 +74,80 @@ Se você já tinha um `.env` antigo, atualize a `DATABASE_URL` manualmente para:
 ```env
 DATABASE_URL="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
 ```
+
+## Publicar na Vercel
+
+Forma mais simples:
+
+1. Suba este projeto para um repositório Git.
+2. Crie um banco PostgreSQL gerenciado para produção.
+3. Importe o repositório na Vercel.
+4. Configure as variáveis de ambiente de produção.
+5. Faça o deploy.
+6. Rode as migrations no banco de produção.
+
+### Variáveis de ambiente na Vercel
+
+Cadastre estas variáveis no projeto:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/tessa_prod?schema=public"
+JWT_SECRET="uma-chave-bem-grande-e-segura"
+MASTER_SETUP_KEY="uma-chave-secreta-para-bootstrap"
+```
+
+Importante:
+
+- não use a `DATABASE_URL` local do Docker na Vercel
+- a Vercel não vai hospedar seu Postgres local
+- o Docker deste projeto é apenas para desenvolvimento
+
+### Build na Vercel
+
+O projeto já está preparado para deploy porque:
+
+- [vercel.json](/home/luisfaf/tessa/tessa-api/vercel.json) define a function `api/[[...route]].ts`
+- [api/[[...route]].ts](/home/luisfaf/tessa/tessa-api/api/[[...route]].ts) exporta os handlers HTTP para a Vercel
+- [package.json](/home/luisfaf/tessa/tessa-api/package.json) já roda `prisma generate` no `postinstall` e no `build`
+
+Se quiser definir manualmente na dashboard da Vercel:
+
+- Install Command: `pnpm install`
+- Build Command: `pnpm build`
+- Output Directory: deixe vazio
+
+### Migrations em produção
+
+Depois que a Vercel estiver com as env vars corretas, rode as migrations contra o banco de produção:
+
+```bash
+pnpm install
+pnpm prisma:migrate:deploy
+```
+
+### Fluxo via CLI da Vercel
+
+Se preferir publicar por CLI:
+
+```bash
+vercel login
+vercel link
+vercel env add DATABASE_URL production
+vercel env add JWT_SECRET production
+vercel env add MASTER_SETUP_KEY production
+vercel deploy
+vercel --prod
+```
+
+Depois rode a migration apontando para o banco de produção com a `DATABASE_URL` correta no seu ambiente local.
+
+### Primeiro acesso em produção
+
+Após o deploy e as migrations:
+
+1. chame `POST /api/auth/bootstrap`
+2. crie o usuário `MASTER`
+3. use esse usuário para cadastrar os demais admins
 
 ## Endpoints principais
 
