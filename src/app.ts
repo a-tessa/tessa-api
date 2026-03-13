@@ -7,7 +7,7 @@ import { contentRouter } from "./routes/content.js";
 import { healthRouter } from "./routes/health.js";
 import { usersRouter } from "./routes/users.js";
 
-export const app = new Hono();
+const app = new Hono();
 
 app.use("*", structuredLogger());
 
@@ -62,3 +62,6 @@ app.onError((error, c) => {
     500
   );
 });
+
+export { app };
+export default app;
