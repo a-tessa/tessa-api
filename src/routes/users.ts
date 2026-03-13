@@ -96,7 +96,7 @@ usersRouter.patch("/:id/status", zValidator("json", updateStatusSchema), async (
     notFound("Usuário não encontrado.");
   }
 
-  if (user.role === UserRole.MASTER) {
+  if (user?.role === UserRole.MASTER) {
     conflict("O usuário master não pode ser desativado por esta rota.");
   }
 
