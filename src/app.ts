@@ -1,11 +1,26 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
+import { structuredLogger } from "./middlewares/logger.js";
 import { authRouter } from "./routes/auth.js";
 import { contentRouter } from "./routes/content.js";
 import { healthRouter } from "./routes/health.js";
 import { usersRouter } from "./routes/users.js";
 
 export const app = new Hono();
+
+app.use("*", structuredLogger());
+
+app.use(
+  "*",
+  cors({
+    origin: (origin) => origin,
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    maxAge: 86400,
+  })
+);
 
 app.get("/", (c) =>
   c.json({
