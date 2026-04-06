@@ -1,0 +1,72 @@
+{
+  "content": {
+    "heroSection": {
+      "title": "string",
+      "description": "string",
+      "image": "string",
+      "button": {
+        "text": "string",
+        "url": "string"
+      }
+    },
+    "scenerySection": {
+      "title": "string",
+      "image": "string"
+    },
+    "operationSection": {
+      "images": [
+        {
+          "url": "string",
+          "alt": "string"
+        }
+      ]
+    },
+    "nps": [
+      {
+        "question": "string",
+        "answers": [
+          {
+            "text": "string",
+            "value": "number",
+            "imageUrl": "string"
+          }
+        ]
+      }
+    ],
+    "servicesPages": [
+      {
+        "title": "string",
+        "category": "string",
+        "subtitle": "string",
+        "imageUrl": "string",
+        "exampleVideoUrl": "string",
+        "examples": [
+          {
+            "imgUrl": "string"
+          }
+        ]
+      }
+    ],
+    "representantsBase": [
+      {
+        "name": "string",
+        "phone": "string",
+        "email": "string",
+        "city": "string",
+        "state": "string"
+      }
+    ],
+    "companyInformation": {
+      "name": "string",
+      "cnpj": "string",
+      "address": "string",
+      "zipCode": "string",
+      "email": "string",
+      "phoneContacts": [
+        {
+          "phone": "string"
+        }
+      ]
+    }
+  }
+}

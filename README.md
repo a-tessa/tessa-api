@@ -204,6 +204,16 @@ Após o deploy e as migrations:
 - `GET /api/content/admin/pages/:slug`
 - `PUT /api/content/admin/pages/:slug`
 - `POST /api/content/admin/pages/:slug/publish`
+- `GET|POST|PUT|DELETE /api/content/admin/pages/:slug/hero-section`
+- `GET|POST|PUT|DELETE /api/content/admin/pages/:slug/scenery-section`
+- `GET|POST|PUT|DELETE /api/content/admin/pages/:slug/operation-section`
+- `GET|POST|PUT|DELETE /api/content/admin/pages/:slug/company-information`
+- `GET|POST /api/content/admin/pages/:slug/nps`
+- `GET|PUT|DELETE /api/content/admin/pages/:slug/nps/:itemId`
+- `GET|POST /api/content/admin/pages/:slug/services-pages`
+- `GET|PUT|DELETE /api/content/admin/pages/:slug/services-pages/:itemId`
+- `GET|POST /api/content/admin/pages/:slug/representants-base`
+- `GET|PUT|DELETE /api/content/admin/pages/:slug/representants-base/:itemId`
 
 ## Exemplo de bootstrap do master
 
@@ -227,5 +237,7 @@ Cada `LandingPage` possui:
 - `draftContent` em JSON
 - `publishedContent` em JSON
 - status de rascunho/publicado
+
+Os CRUDs granulares acima operam sobre o `draftContent` da página. Para coleções como `nps`, `servicesPages` e `representantsBase`, a API gera um `id` interno por item para permitir atualização e remoção sem alterar o contrato público publicado.
 
 Isso facilita a leitura pública da versão publicada pela landing SSR e a edição segura da versão draft no painel administrativo.
