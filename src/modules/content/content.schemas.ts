@@ -1,21 +1,17 @@
 import { z } from "zod";
 
 const nonEmptyString = z.string().trim().min(1);
+const slugString = z.string().trim().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
-export const slugParamsSchema = z.object({
-  slug: nonEmptyString
-});
-
-export const collectionItemParamsSchema = slugParamsSchema.extend({
+export const collectionItemParamsSchema = z.object({
   itemId: nonEmptyString
 });
 
-export const pageListQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  perPage: z.coerce.number().int().min(1).max(100).default(20)
+export const servicePageSlugParamsSchema = z.object({
+  slug: slugString
 });
 
-export const heroSectionSchema = z.object({
+export const heroTopicSchema = z.object({
   title: nonEmptyString,
   description: nonEmptyString,
   image: nonEmptyString,
@@ -24,6 +20,8 @@ export const heroSectionSchema = z.object({
     url: nonEmptyString
   })
 });
+
+export const heroSectionSchema = z.array(heroTopicSchema).min(1).max(3);
 
 export const scenerySectionSchema = z.object({
   title: nonEmptyString,
@@ -55,6 +53,7 @@ export const servicesPageExampleSchema = z.object({
 });
 
 export const servicesPageItemSchema = z.object({
+  slug: slugString,
   title: nonEmptyString,
   category: nonEmptyString,
   subtitle: nonEmptyString,
@@ -88,9 +87,7 @@ export const draftNpsItemSchema = npsItemSchema.extend({
   id: nonEmptyString.optional()
 });
 
-export const draftServicesPageItemSchema = servicesPageItemSchema.extend({
-  id: nonEmptyString.optional()
-});
+export const draftServicesPageItemSchema = servicesPageItemSchema;
 
 export const draftRepresentantSchema = representantSchema.extend({
   id: nonEmptyString.optional()
@@ -105,10 +102,3 @@ export const draftContentSchema = z.object({
   representantsBase: z.array(draftRepresentantSchema).optional(),
   companyInformation: companyInformationSchema.optional()
 }).passthrough();
-
-export const pageUpsertSchema = z.object({
-  title: z.string().min(2),
-  seoTitle: z.string().min(2).max(80).optional().nullable(),
-  seoDescription: z.string().min(2).max(160).optional().nullable(),
-  draftContent: draftContentSchema
-});

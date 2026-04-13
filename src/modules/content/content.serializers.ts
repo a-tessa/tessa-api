@@ -1,83 +1,39 @@
-import { serializePagination } from "../shared/pagination.serializers.js";
 import type {
-  AdminPageDto,
-  AdminPageRecord,
-  AdminPageResponseDto,
-  AdminPageSummaryDto,
-  AdminPageSummaryRecord,
+  AdminContentRecord,
+  AdminContentResponseDto,
   CollectionItemResponseDto,
   CollectionKey,
   CollectionResponseDto,
-  ContentPagesListResponseDto,
-  ContentPagesListResult,
+  DraftServicesPageItem,
   DraftContent,
-  PublicPageDto,
-  PublicPageRecord,
-  PublicPageResponseDto,
+  PublicContentRecord,
+  PublicContentResponseDto,
   SectionResponseDto,
+  ServicePageResponseDto,
+  ServicePagesResponseDto,
   SingularSectionKey,
   StoredCollectionItem
 } from "./content.types.js";
 
-export function serializePublicPage(page: PublicPageRecord): PublicPageDto {
+export function serializePublicContentResponse(
+  content: PublicContentRecord
+): PublicContentResponseDto {
   return {
-    slug: page.slug,
-    title: page.title,
-    seoTitle: page.seoTitle,
-    seoDescription: page.seoDescription,
-    publishedContent: page.publishedContent,
-    publishedAt: page.publishedAt,
-    updatedAt: page.updatedAt
+    content: content.content,
+    publishedAt: content.publishedAt,
+    updatedAt: content.updatedAt
   };
 }
 
-export function serializePublicPageResponse(page: PublicPageRecord): PublicPageResponseDto {
+export function serializeAdminContentResponse(
+  content: AdminContentRecord
+): AdminContentResponseDto {
   return {
-    page: serializePublicPage(page)
-  };
-}
-
-export function serializeAdminPageSummary(page: AdminPageSummaryRecord): AdminPageSummaryDto {
-  return {
-    id: page.id,
-    slug: page.slug,
-    title: page.title,
-    status: page.status,
-    updatedAt: page.updatedAt,
-    publishedAt: page.publishedAt
-  };
-}
-
-export function serializeAdminPagesResponse(
-  input: ContentPagesListResult
-): ContentPagesListResponseDto {
-  return {
-    pages: input.pages.map(serializeAdminPageSummary),
-    pagination: serializePagination(input.pagination)
-  };
-}
-
-export function serializeAdminPage(page: AdminPageRecord): AdminPageDto {
-  return {
-    id: page.id,
-    slug: page.slug,
-    title: page.title,
-    seoTitle: page.seoTitle,
-    seoDescription: page.seoDescription,
-    status: page.status,
-    draftContent: page.draftContent,
-    publishedContent: page.publishedContent,
-    publishedAt: page.publishedAt,
-    updatedAt: page.updatedAt,
-    createdAt: page.createdAt,
-    updatedById: page.updatedById,
-    publishedById: page.publishedById
-  };
-}
-
-export function serializeAdminPageResponse(page: AdminPageRecord): AdminPageResponseDto {
-  return {
-    page: serializeAdminPage(page)
+    content: content.content,
+    publishedContent: content.publishedContent,
+    status: content.status,
+    publishedAt: content.publishedAt,
+    updatedAt: content.updatedAt
   };
 }
 
@@ -103,4 +59,16 @@ export function serializeCollectionItemResponse(
   item: StoredCollectionItem
 ): CollectionItemResponseDto {
   return { item };
+}
+
+export function serializeServicePageResponse(
+  item: DraftServicesPageItem
+): ServicePageResponseDto {
+  return { item };
+}
+
+export function serializeServicePagesResponse(
+  servicesPages: DraftServicesPageItem[]
+): ServicePagesResponseDto {
+  return { servicesPages };
 }

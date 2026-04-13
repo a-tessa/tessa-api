@@ -1,14 +1,16 @@
 {
   "content": {
-    "heroSection": {
-      "title": "string",
-      "description": "string",
-      "image": "string",
-      "button": {
-        "text": "string",
-        "url": "string"
+    "heroSection": [
+      {
+        "title": "string",
+        "description": "string",
+        "image": "string",
+        "button": {
+          "text": "string",
+          "url": "string"
+        }
       }
-    },
+    ],
     "scenerySection": {
       "title": "string",
       "image": "string"

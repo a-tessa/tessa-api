@@ -2,7 +2,6 @@ import {
   companyInformationSchema,
   draftNpsItemSchema,
   draftRepresentantSchema,
-  draftServicesPageItemSchema,
   heroSectionSchema,
   npsItemSchema,
   operationSectionSchema,
@@ -48,13 +47,6 @@ export const collectionConfigs = [
     storedSchema: draftNpsItemSchema
   },
   {
-    key: "servicesPages",
-    path: "services-pages",
-    label: "Página de serviço",
-    schema: servicesPageItemSchema,
-    storedSchema: draftServicesPageItemSchema
-  },
-  {
     key: "representantsBase",
     path: "representants-base",
     label: "Representante",
@@ -62,3 +54,10 @@ export const collectionConfigs = [
     storedSchema: draftRepresentantSchema
   }
 ] satisfies readonly CollectionConfig[];
+
+export const servicesPagesConfig = {
+  key: "servicesPages",
+  path: "services-pages",
+  label: "Página de serviço",
+  schema: servicesPageItemSchema
+} as const;

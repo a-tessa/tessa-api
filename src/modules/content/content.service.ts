@@ -3,37 +3,37 @@ import type { LandingPage } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { conflict, notFound } from "../../lib/http.js";
-import { ensureAllCollectionIds, ensureCollectionIds, parseDraftContent, sanitizeContentForPublish, toDraftContentInput } from "./content.utils.js";
+import { collectionConfigs } from "./content.config.js";
+import { ensureCollectionIds, parseDraftContent, sanitizeContentForPublish, toDraftContentInput } from "./content.utils.js";
 import type {
-  AdminPageRecord,
-  ContentPagesListResult,
+  AdminContentRecord,
   CollectionConfig,
   DraftContent,
-  PublicPageRecord,
-  PageListQuery,
-  PageState,
-  PageUpsertInput,
+  DraftServicesPageItem,
+  PublicContentRecord,
   SingularSectionConfig
 } from "./content.types.js";
 
-function titleFromSlug(slug: string): string {
-  const words = slug.split("-").filter(Boolean);
-  const titled = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-  return titled.length >= 2 ? titled : `Página ${slug}`;
+const MAIN_CONTENT_SLUG = "home";
+const MAIN_CONTENT_TITLE = "Home";
+
+async function findMainPage(): Promise<LandingPage | null> {
+  return prisma.landingPage.findUnique({
+    where: { slug: MAIN_CONTENT_SLUG }
+  });
 }
 
-/** Garante uma landing page em rascunho para POST de seção/item (primeira criação). */
-async function ensureDraftPageExists(slug: string, userId: string): Promise<void> {
-  const exists = await prisma.landingPage.findUnique({
-    where: { slug },
-    select: { id: true }
-  });
-  if (exists) return;
+async function ensureMainDraftPageExists(userId: string): Promise<LandingPage> {
+  const existingPage = await findMainPage();
 
-  await prisma.landingPage.create({
+  if (existingPage) {
+    return existingPage;
+  }
+
+  return prisma.landingPage.create({
     data: {
-      slug,
-      title: titleFromSlug(slug),
+      slug: MAIN_CONTENT_SLUG,
+      title: MAIN_CONTENT_TITLE,
       draftContent: {} as Prisma.InputJsonValue,
       status: "draft",
       updatedById: userId
@@ -41,44 +41,43 @@ async function ensureDraftPageExists(slug: string, userId: string): Promise<void
   });
 }
 
-async function getPageOrThrow(slug: string): Promise<LandingPage> {
-  const page = await prisma.landingPage.findUnique({
-    where: { slug }
-  });
+async function getMainPageOrThrow(): Promise<LandingPage> {
+  const page = await findMainPage();
 
   if (!page) {
-    notFound("Página não encontrada.");
+    notFound("Conteúdo principal não encontrado.");
   }
 
   return page;
 }
 
-async function getPageState(slug: string): Promise<PageState> {
-  const page = await getPageOrThrow(slug);
-  const normalized = ensureAllCollectionIds(parseDraftContent(page.draftContent));
+async function getMainDraftContent(page: LandingPage): Promise<DraftContent> {
+  const parsedContent = parseDraftContent(page.draftContent);
+  let nextContent = parsedContent;
+  let changed = false;
 
-  if (!normalized.changed) {
-    return {
-      page,
-      content: normalized.content
-    };
+  for (const config of collectionConfigs) {
+    const normalized = ensureCollectionIds(nextContent, config);
+    nextContent = normalized.content;
+    changed = changed || normalized.changed;
   }
 
-  const updatedPage = await prisma.landingPage.update({
+  if (!changed) {
+    return nextContent;
+  }
+
+  await prisma.landingPage.update({
     where: { id: page.id },
     data: {
-      draftContent: toDraftContentInput(normalized.content),
+      draftContent: toDraftContentInput(nextContent),
       updatedById: page.updatedById
     }
   });
 
-  return {
-    page: updatedPage,
-    content: normalized.content
-  };
+  return nextContent;
 }
 
-async function saveDraftContent(pageId: string, content: DraftContent, userId: string) {
+async function saveMainDraftContent(pageId: string, content: DraftContent, userId: string) {
   return prisma.landingPage.update({
     where: { id: pageId },
     data: {
@@ -89,123 +88,64 @@ async function saveDraftContent(pageId: string, content: DraftContent, userId: s
   });
 }
 
-export async function getPublishedPage(slug: string): Promise<PublicPageRecord> {
-  const page = await prisma.landingPage.findUnique({
-    where: { slug },
-    select: {
-      slug: true,
-      title: true,
-      seoTitle: true,
-      seoDescription: true,
-      publishedContent: true,
-      publishedAt: true,
-      updatedAt: true
-    }
-  });
+function getEmptyAdminContent(): AdminContentRecord {
+  return {
+    status: "draft",
+    content: {},
+    publishedContent: null,
+    publishedAt: null,
+    updatedAt: null
+  };
+}
+
+function getServicesPages(content: DraftContent): DraftServicesPageItem[] {
+  return Array.isArray(content.servicesPages) ? content.servicesPages : [];
+}
+
+export async function getPublicContent(): Promise<PublicContentRecord> {
+  const page = await findMainPage();
 
   if (!page || !page.publishedContent) {
-    notFound("Página publicada não encontrada.");
+    notFound("Conteúdo publicado não encontrado.");
   }
 
   return {
-    ...page,
-    publishedContent: sanitizeContentForPublish(page.publishedContent) as Record<string, unknown>
+    content: sanitizeContentForPublish(page.publishedContent) as Record<string, unknown>,
+    publishedAt: page.publishedAt,
+    updatedAt: page.updatedAt
   };
 }
 
-export async function listAdminPages(query: PageListQuery): Promise<ContentPagesListResult> {
-  const skip = (query.page - 1) * query.perPage;
+export async function getAdminContent(): Promise<AdminContentRecord> {
+  const page = await findMainPage();
 
-  const [pages, total] = await Promise.all([
-    prisma.landingPage.findMany({
-      skip,
-      take: query.perPage,
-      orderBy: { updatedAt: "desc" },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        status: true,
-        updatedAt: true,
-        publishedAt: true
-      }
-    }),
-    prisma.landingPage.count()
-  ]);
+  if (!page) {
+    return getEmptyAdminContent();
+  }
+
+  const content = await getMainDraftContent(page);
 
   return {
-    pages,
-    pagination: {
-      page: query.page,
-      perPage: query.perPage,
-      total
-    }
-  };
-}
-
-export async function getAdminPage(slug: string): Promise<AdminPageRecord> {
-  const { page, content } = await getPageState(slug);
-
-  return {
-    ...page,
-    draftContent: content,
+    status: page.status,
+    content,
     publishedContent: page.publishedContent
       ? (sanitizeContentForPublish(page.publishedContent) as Record<string, unknown>)
-      : null
+      : null,
+    publishedAt: page.publishedAt,
+    updatedAt: page.updatedAt
   };
 }
 
-export async function upsertPage(
-  slug: string,
-  input: PageUpsertInput,
-  userId: string
-): Promise<AdminPageRecord> {
-  const normalizedDraftContent = ensureAllCollectionIds(
-    parseDraftContent(input.draftContent)
-  ).content;
-
-  const page = await prisma.landingPage.upsert({
-    where: { slug },
-    create: {
-      slug,
-      title: input.title,
-      seoTitle: input.seoTitle,
-      seoDescription: input.seoDescription,
-      draftContent: toDraftContentInput(normalizedDraftContent),
-      status: "draft",
-      updatedById: userId
-    },
-    update: {
-      title: input.title,
-      seoTitle: input.seoTitle,
-      seoDescription: input.seoDescription,
-      draftContent: toDraftContentInput(normalizedDraftContent),
-      status: "draft",
-      updatedById: userId
-    }
-  });
-
-  return {
-    ...page,
-    draftContent: normalizedDraftContent,
-    publishedContent: page.publishedContent
-      ? (sanitizeContentForPublish(page.publishedContent) as Record<string, unknown>)
-      : null
-  };
-}
-
-export async function publishPage(slug: string, userId: string): Promise<AdminPageRecord> {
-  const existingPage = await getPageOrThrow(slug);
-  const normalizedDraftContent = ensureAllCollectionIds(
-    parseDraftContent(existingPage.draftContent)
-  ).content;
-  const publishedContent = sanitizeContentForPublish(normalizedDraftContent);
+export async function publishMainContent(userId: string): Promise<AdminContentRecord> {
+  const existingPage = await getMainPageOrThrow();
+  const content = await getMainDraftContent(existingPage);
+  const publishedContent = sanitizeContentForPublish(content);
 
   const page = await prisma.landingPage.update({
-    where: { slug },
+    where: { id: existingPage.id },
     data: {
       status: "published",
-      draftContent: toDraftContentInput(normalizedDraftContent),
+      draftContent: toDraftContentInput(content),
       publishedContent,
       publishedAt: new Date(),
       publishedById: userId,
@@ -214,14 +154,17 @@ export async function publishPage(slug: string, userId: string): Promise<AdminPa
   });
 
   return {
-    ...page,
-    draftContent: normalizedDraftContent,
-    publishedContent: publishedContent as Record<string, unknown>
-  } satisfies AdminPageRecord;
+    status: page.status,
+    content,
+    publishedContent: publishedContent as Record<string, unknown>,
+    publishedAt: page.publishedAt,
+    updatedAt: page.updatedAt
+  };
 }
 
-export async function getSingularSection(slug: string, config: SingularSectionConfig) {
-  const { content } = await getPageState(slug);
+export async function getSingularSection(config: SingularSectionConfig) {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
   const section = content[config.key];
 
   if (!section) {
@@ -232,13 +175,12 @@ export async function getSingularSection(slug: string, config: SingularSectionCo
 }
 
 export async function createSingularSection(
-  slug: string,
   config: SingularSectionConfig,
   input: unknown,
   userId: string
 ) {
-  await ensureDraftPageExists(slug, userId);
-  const { page, content } = await getPageState(slug);
+  const page = await ensureMainDraftPageExists(userId);
+  const content = await getMainDraftContent(page);
 
   if (content[config.key]) {
     conflict(`${config.label} já cadastrada.`);
@@ -249,18 +191,18 @@ export async function createSingularSection(
     [config.key]: input
   } as DraftContent;
 
-  await saveDraftContent(page.id, nextContent, userId);
+  await saveMainDraftContent(page.id, nextContent, userId);
 
   return input;
 }
 
 export async function updateSingularSection(
-  slug: string,
   config: SingularSectionConfig,
   input: unknown,
   userId: string
 ) {
-  const { page, content } = await getPageState(slug);
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
 
   if (!content[config.key]) {
     notFound(`${config.label} não encontrada.`);
@@ -271,17 +213,17 @@ export async function updateSingularSection(
     [config.key]: input
   } as DraftContent;
 
-  await saveDraftContent(page.id, nextContent, userId);
+  await saveMainDraftContent(page.id, nextContent, userId);
 
   return input;
 }
 
 export async function deleteSingularSection(
-  slug: string,
   config: SingularSectionConfig,
   userId: string
 ) {
-  const { page, content } = await getPageState(slug);
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
 
   if (!content[config.key]) {
     notFound(`${config.label} não encontrada.`);
@@ -290,20 +232,44 @@ export async function deleteSingularSection(
   const nextContent = { ...content };
   delete nextContent[config.key];
 
-  await saveDraftContent(page.id, nextContent, userId);
+  await saveMainDraftContent(page.id, nextContent, userId);
 }
 
-export async function listCollectionItems(slug: string, config: CollectionConfig) {
-  const { content } = await getPageState(slug);
+export async function listCollectionItems(config: CollectionConfig) {
+  const page = await findMainPage();
+
+  if (!page) {
+    return [];
+  }
+
+  const content = await getMainDraftContent(page);
   return ensureCollectionIds(content, config).items;
 }
 
-export async function getCollectionItem(
-  slug: string,
-  config: CollectionConfig,
-  itemId: string
-) {
-  const items = await listCollectionItems(slug, config);
+export async function listServicePages() {
+  const page = await findMainPage();
+
+  if (!page) {
+    return [];
+  }
+
+  const content = await getMainDraftContent(page);
+  return getServicesPages(content);
+}
+
+export async function getServicePage(slug: string) {
+  const servicesPages = await listServicePages();
+  const item = servicesPages.find((currentItem) => currentItem.slug === slug);
+
+  if (!item) {
+    notFound("Página de serviço não encontrada.");
+  }
+
+  return item;
+}
+
+export async function getCollectionItem(config: CollectionConfig, itemId: string) {
+  const items = await listCollectionItems(config);
   const item = items.find((currentItem) => currentItem.id === itemId);
 
   if (!item) {
@@ -314,13 +280,12 @@ export async function getCollectionItem(
 }
 
 export async function createCollectionItem(
-  slug: string,
   config: CollectionConfig,
   input: Record<string, unknown>,
   userId: string
 ) {
-  await ensureDraftPageExists(slug, userId);
-  const { page, content } = await getPageState(slug);
+  const page = await ensureMainDraftPageExists(userId);
+  const content = await getMainDraftContent(page);
   const items = ensureCollectionIds(content, config).items;
   const item = {
     ...input,
@@ -332,19 +297,41 @@ export async function createCollectionItem(
     [config.key]: [...items, item]
   } as DraftContent;
 
-  await saveDraftContent(page.id, nextContent, userId);
+  await saveMainDraftContent(page.id, nextContent, userId);
 
   return item;
 }
 
+export async function createServicePage(
+  input: DraftServicesPageItem,
+  userId: string
+) {
+  const page = await ensureMainDraftPageExists(userId);
+  const content = await getMainDraftContent(page);
+  const servicesPages = getServicesPages(content);
+
+  if (servicesPages.some((currentItem) => currentItem.slug === input.slug)) {
+    conflict("Já existe uma página de serviço com este slug.");
+  }
+
+  const nextContent = {
+    ...content,
+    servicesPages: [...servicesPages, input]
+  } as DraftContent;
+
+  await saveMainDraftContent(page.id, nextContent, userId);
+
+  return input;
+}
+
 export async function updateCollectionItem(
-  slug: string,
   config: CollectionConfig,
   itemId: string,
   input: Record<string, unknown>,
   userId: string
 ) {
-  const { page, content } = await getPageState(slug);
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
   const items = ensureCollectionIds(content, config).items;
   const item = items.find((currentItem) => currentItem.id === itemId);
 
@@ -364,18 +351,51 @@ export async function updateCollectionItem(
     )
   } as DraftContent;
 
-  await saveDraftContent(page.id, nextContent, userId);
+  await saveMainDraftContent(page.id, nextContent, userId);
 
   return updatedItem;
 }
 
+export async function updateServicePage(
+  currentSlug: string,
+  input: DraftServicesPageItem,
+  userId: string
+) {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const servicesPages = getServicesPages(content);
+  const existingItem = servicesPages.find((currentItem) => currentItem.slug === currentSlug);
+
+  if (!existingItem) {
+    notFound("Página de serviço não encontrada.");
+  }
+
+  if (
+    input.slug !== currentSlug &&
+    servicesPages.some((currentItem) => currentItem.slug === input.slug)
+  ) {
+    conflict("Já existe uma página de serviço com este slug.");
+  }
+
+  const nextContent = {
+    ...content,
+    servicesPages: servicesPages.map((currentItem) =>
+      currentItem.slug === currentSlug ? input : currentItem
+    )
+  } as DraftContent;
+
+  await saveMainDraftContent(page.id, nextContent, userId);
+
+  return input;
+}
+
 export async function deleteCollectionItem(
-  slug: string,
   config: CollectionConfig,
   itemId: string,
   userId: string
 ) {
-  const { page, content } = await getPageState(slug);
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
   const items = ensureCollectionIds(content, config).items;
   const item = items.find((currentItem) => currentItem.id === itemId);
 
@@ -388,5 +408,23 @@ export async function deleteCollectionItem(
     [config.key]: items.filter((currentItem) => currentItem.id !== itemId)
   } as DraftContent;
 
-  await saveDraftContent(page.id, nextContent, userId);
+  await saveMainDraftContent(page.id, nextContent, userId);
+}
+
+export async function deleteServicePage(slug: string, userId: string) {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const servicesPages = getServicesPages(content);
+  const existingItem = servicesPages.find((currentItem) => currentItem.slug === slug);
+
+  if (!existingItem) {
+    notFound("Página de serviço não encontrada.");
+  }
+
+  const nextContent = {
+    ...content,
+    servicesPages: servicesPages.filter((currentItem) => currentItem.slug !== slug)
+  } as DraftContent;
+
+  await saveMainDraftContent(page.id, nextContent, userId);
 }

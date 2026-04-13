@@ -199,21 +199,21 @@ Após o deploy e as migrations:
 
 ### Conteúdo
 
-- `GET /api/content/public/pages/:slug`
-- `GET /api/content/admin/pages`
-- `GET /api/content/admin/pages/:slug`
-- `PUT /api/content/admin/pages/:slug`
-- `POST /api/content/admin/pages/:slug/publish`
-- `GET|POST|PUT|DELETE /api/content/admin/pages/:slug/hero-section`
-- `GET|POST|PUT|DELETE /api/content/admin/pages/:slug/scenery-section`
-- `GET|POST|PUT|DELETE /api/content/admin/pages/:slug/operation-section`
-- `GET|POST|PUT|DELETE /api/content/admin/pages/:slug/company-information`
-- `GET|POST /api/content/admin/pages/:slug/nps`
-- `GET|PUT|DELETE /api/content/admin/pages/:slug/nps/:itemId`
-- `GET|POST /api/content/admin/pages/:slug/services-pages`
-- `GET|PUT|DELETE /api/content/admin/pages/:slug/services-pages/:itemId`
-- `GET|POST /api/content/admin/pages/:slug/representants-base`
-- `GET|PUT|DELETE /api/content/admin/pages/:slug/representants-base/:itemId`
+- Todos os `GET` de `content` são públicos.
+- `POST`, `PUT` e `DELETE` em `/api/content/admin` exigem autenticação com perfil `MASTER` ou `ADMIN`.
+- `GET /api/content/public`
+- `GET /api/content/admin`
+- `POST /api/content/admin/publish`
+- `GET|POST|PUT|DELETE /api/content/admin/hero-section`
+- `GET|POST|PUT|DELETE /api/content/admin/scenery-section`
+- `GET|POST|PUT|DELETE /api/content/admin/operation-section`
+- `GET|POST|PUT|DELETE /api/content/admin/company-information`
+- `GET|POST /api/content/admin/nps`
+- `GET|PUT|DELETE /api/content/admin/nps/:itemId`
+- `GET|POST /api/content/admin/services-pages`
+- `GET|PUT|DELETE /api/content/admin/services-pages/:slug`
+- `GET|POST /api/content/admin/representants-base`
+- `GET|PUT|DELETE /api/content/admin/representants-base/:itemId`
 
 ## Exemplo de bootstrap do master
 
@@ -230,14 +230,8 @@ curl -X POST http://localhost:3001/api/auth/bootstrap \
 
 ## Modelo de conteúdo
 
-Cada `LandingPage` possui:
+O conteúdo principal da landing é tratado como um recurso único interno. A API gera um `id` interno para itens de `nps` e `representantsBase`, enquanto `servicesPages` usa `slug` como identificador da rota.
 
-- `slug`
-- metadados SEO
-- `draftContent` em JSON
-- `publishedContent` em JSON
-- status de rascunho/publicado
+A seção `heroSection` aceita uma lista com `1` a `3` tópicos, e cada tópico segue a mesma estrutura de `title`, `description`, `image` e `button`.
 
-Os CRUDs granulares acima operam sobre o `draftContent` da página. Para coleções como `nps`, `servicesPages` e `representantsBase`, a API gera um `id` interno por item para permitir atualização e remoção sem alterar o contrato público publicado.
-
-Isso facilita a leitura pública da versão publicada pela landing SSR e a edição segura da versão draft no painel administrativo.
+Isso mantém a edição do painel simples para a landing principal, enquanto `servicesPages` continua como a única parte com múltiplas páginas dentro da estrutura de conteúdo.

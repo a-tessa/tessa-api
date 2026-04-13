@@ -92,10 +92,6 @@ export function sanitizeContentForPublish(value: unknown): Prisma.InputJsonValue
     publishedContent.nps = content.nps.map(({ id, ...item }) => item);
   }
 
-  if (Array.isArray(content.servicesPages)) {
-    publishedContent.servicesPages = content.servicesPages.map(({ id, ...item }) => item);
-  }
-
   if (Array.isArray(content.representantsBase)) {
     publishedContent.representantsBase = content.representantsBase.map(({ id, ...item }) => item);
   }

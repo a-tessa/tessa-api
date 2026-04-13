@@ -1,6 +1,5 @@
-import type { LandingPage, LandingPageStatus } from "@prisma/client";
+import type { LandingPageStatus } from "@prisma/client";
 import { z, type ZodTypeAny } from "zod";
-import type { PaginationMetaDto, PaginationState } from "../shared/pagination.types.js";
 import {
   collectionItemParamsSchema,
   companyInformationSchema,
@@ -11,18 +10,14 @@ import {
   heroSectionSchema,
   npsItemSchema,
   operationSectionSchema,
-  pageListQuerySchema,
-  pageUpsertSchema,
   representantSchema,
+  servicePageSlugParamsSchema,
   scenerySectionSchema,
-  servicesPageItemSchema,
-  slugParamsSchema
+  servicesPageItemSchema
 } from "./content.schemas.js";
 
-export type SlugParams = z.infer<typeof slugParamsSchema>;
 export type CollectionItemParams = z.infer<typeof collectionItemParamsSchema>;
-export type PageListQuery = z.infer<typeof pageListQuerySchema>;
-export type PageUpsertInput = z.infer<typeof pageUpsertSchema>;
+export type ServicePageSlugParams = z.infer<typeof servicePageSlugParamsSchema>;
 
 export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type ScenerySection = z.infer<typeof scenerySectionSchema>;
@@ -43,7 +38,7 @@ export type SingularSectionKey =
   | "operationSection"
   | "companyInformation";
 
-export type CollectionKey = "nps" | "servicesPages" | "representantsBase";
+export type CollectionKey = "nps" | "representantsBase";
 
 export type SingularSectionConfig = {
   key: SingularSectionKey;
@@ -64,57 +59,37 @@ export type StoredCollectionItem = Record<string, unknown> & {
   id: string;
 };
 
-export type PageState = {
-  page: LandingPage;
-  content: DraftContent;
-};
-
 export type PublishedContent = Record<string, unknown>;
 
-export type PublicPageRecord = {
-  slug: string;
-  title: string;
-  seoTitle: string | null;
-  seoDescription: string | null;
-  publishedContent: PublishedContent;
+export type PublicContentRecord = {
+  content: PublishedContent;
   publishedAt: Date | null;
-  updatedAt: Date;
+  updatedAt: Date | null;
 };
 
-export type AdminPageSummaryRecord = {
-  id: string;
-  slug: string;
-  title: string;
+export type AdminContentRecord = {
   status: LandingPageStatus;
-  updatedAt: Date;
-  publishedAt: Date | null;
-};
-
-export type AdminPageRecord = Omit<LandingPage, "draftContent" | "publishedContent"> & {
-  draftContent: DraftContent;
+  content: DraftContent;
   publishedContent: PublishedContent | null;
+  publishedAt: Date | null;
+  updatedAt: Date | null;
 };
 
-export type PublicPageDto = PublicPageRecord;
-export type AdminPageSummaryDto = AdminPageSummaryRecord;
-export type AdminPageDto = AdminPageRecord;
+export type PublicContentDto = PublicContentRecord;
+export type AdminContentDto = AdminContentRecord;
 
-export type ContentPagesListResult = {
-  pages: AdminPageSummaryRecord[];
-  pagination: PaginationState;
+export type PublicContentResponseDto = {
+  content: PublicContentDto["content"];
+  publishedAt: Date | null;
+  updatedAt: Date | null;
 };
 
-export type ContentPagesListResponseDto = {
-  pages: AdminPageSummaryDto[];
-  pagination: PaginationMetaDto;
-};
-
-export type PublicPageResponseDto = {
-  page: PublicPageDto;
-};
-
-export type AdminPageResponseDto = {
-  page: AdminPageDto;
+export type AdminContentResponseDto = {
+  content: AdminContentDto["content"];
+  publishedContent: AdminContentDto["publishedContent"];
+  status: AdminContentDto["status"];
+  publishedAt: Date | null;
+  updatedAt: Date | null;
 };
 
 export type SectionResponseDto<K extends SingularSectionKey = SingularSectionKey> = {
@@ -127,4 +102,12 @@ export type CollectionResponseDto<K extends CollectionKey = CollectionKey> = {
 
 export type CollectionItemResponseDto = {
   item: StoredCollectionItem;
+};
+
+export type ServicePageResponseDto = {
+  item: DraftServicesPageItem;
+};
+
+export type ServicePagesResponseDto = {
+  servicesPages: DraftServicesPageItem[];
 };

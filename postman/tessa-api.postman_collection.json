@@ -3,7 +3,7 @@
     "_postman_id": "9f4bf3d7-eab5-4f16-8648-859278480e18",
     "name": "Tessa API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Collection para testar a API CMS da Tessa em ambiente local ou publicado na Vercel."
+    "description": "Collection atualizada para testar a API CMS da Tessa em ambiente local ou publicado na Vercel."
   },
   "variable": [
     {
@@ -31,8 +31,16 @@
       "value": ""
     },
     {
-      "key": "pageSlug",
-      "value": "home"
+      "key": "npsItemId",
+      "value": ""
+    },
+    {
+      "key": "servicePageSlug",
+      "value": "servico-premium"
+    },
+    {
+      "key": "representantItemId",
+      "value": ""
     }
   ],
   "item": [
@@ -101,8 +109,7 @@
                 "auth",
                 "bootstrap"
               ]
-            },
-            "description": "Cria o usuario MASTER uma unica vez."
+            }
           },
           "response": []
         },
@@ -284,8 +291,7 @@
                 "{{adminId}}",
                 "status"
               ]
-            },
-            "description": "Desativa o admin salvo na variavel adminId."
+            }
           },
           "response": []
         }
@@ -295,102 +301,26 @@
       "name": "Content",
       "item": [
         {
-          "name": "GET /api/content/admin/pages",
+          "name": "GET /api/content/admin",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/content/admin/pages?page=1&perPage=20",
+              "raw": "{{baseUrl}}/api/content/admin",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "content",
-                "admin",
-                "pages"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "perPage",
-                  "value": "20"
-                }
+                "admin"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "PUT /api/content/admin/pages/:slug",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Home\",\n  \"seoTitle\": \"Home Tessa\",\n  \"seoDescription\": \"Landing page da Tessa\",\n  \"draftContent\": {\n    \"hero\": {\n      \"title\": \"Bem-vindo\",\n      \"subtitle\": \"Conteudo vindo da API\"\n    },\n    \"cta\": {\n      \"label\": \"Falar com a Tessa\",\n      \"href\": \"https://example.com\"\n    }\n  }\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/content/admin/pages/{{pageSlug}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "content",
-                "admin",
-                "pages",
-                "{{pageSlug}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET /api/content/admin/pages/:slug",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/content/admin/pages/{{pageSlug}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "content",
-                "admin",
-                "pages",
-                "{{pageSlug}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "POST /api/content/admin/pages/:slug/publish",
+          "name": "POST /api/content/admin/publish",
           "request": {
             "method": "POST",
             "header": [
@@ -400,7 +330,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/content/admin/pages/{{pageSlug}}/publish",
+              "raw": "{{baseUrl}}/api/content/admin/publish",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -408,8 +338,6 @@
                 "api",
                 "content",
                 "admin",
-                "pages",
-                "{{pageSlug}}",
                 "publish"
               ]
             }
@@ -417,25 +345,950 @@
           "response": []
         },
         {
-          "name": "GET /api/content/public/pages/:slug",
+          "name": "GET /api/content/public",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/content/public/pages/{{pageSlug}}",
+              "raw": "{{baseUrl}}/api/content/public",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "content",
-                "public",
-                "pages",
-                "{{pageSlug}}"
+                "public"
               ]
             }
           },
           "response": []
+        },
+        {
+          "name": "Sections",
+          "item": [
+            {
+              "name": "GET /hero-section",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "hero-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST /hero-section",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  {\n    \"title\": \"Bem-vindo a Tessa\",\n    \"description\": \"Conteudo vindo da API\",\n    \"image\": \"https://example.com/hero.jpg\",\n    \"button\": {\n      \"text\": \"Saiba mais\",\n      \"url\": \"https://example.com\"\n    }\n  },\n  {\n    \"title\": \"Conheca nossos servicos\",\n    \"description\": \"Veja as principais solucoes disponiveis\",\n    \"image\": \"https://example.com/hero-2.jpg\",\n    \"button\": {\n      \"text\": \"Ver servicos\",\n      \"url\": \"https://example.com/servicos\"\n    }\n  }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "hero-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /hero-section",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  {\n    \"title\": \"Bem-vindo a Tessa Atualizado\",\n    \"description\": \"Conteudo atualizado via API\",\n    \"image\": \"https://example.com/hero-2.jpg\",\n    \"button\": {\n      \"text\": \"Fale conosco\",\n      \"url\": \"https://example.com/contato\"\n    }\n  },\n  {\n    \"title\": \"Solicite um atendimento\",\n    \"description\": \"Escolha a melhor forma de falar com a nossa equipe\",\n    \"image\": \"https://example.com/hero-3.jpg\",\n    \"button\": {\n      \"text\": \"Entrar em contato\",\n      \"url\": \"https://example.com/atendimento\"\n    }\n  },\n  {\n    \"title\": \"Conheca a experiencia Tessa\",\n    \"description\": \"Acompanhe novidades e atualizacoes da plataforma\",\n    \"image\": \"https://example.com/hero-4.jpg\",\n    \"button\": {\n      \"text\": \"Saiba mais\",\n      \"url\": \"https://example.com/novidades\"\n    }\n  }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "hero-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE /hero-section",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "hero-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET /scenery-section",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "scenery-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST /scenery-section",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Conheca nosso cenario\",\n  \"image\": \"https://example.com/scenery.jpg\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "scenery-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /scenery-section",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Cenario atualizado\",\n  \"image\": \"https://example.com/scenery-2.jpg\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "scenery-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE /scenery-section",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "scenery-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET /operation-section",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST /operation-section",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-1.jpg\",\n      \"alt\": \"Primeira imagem operacional\"\n    },\n    {\n      \"url\": \"https://example.com/operation-2.jpg\",\n      \"alt\": \"Segunda imagem operacional\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /operation-section",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-updated.jpg\",\n      \"alt\": \"Imagem operacional atualizada\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE /operation-section",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET /company-information",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/company-information",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "company-information"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST /company-information",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Tessa LTDA\",\n  \"cnpj\": \"00.000.000/0001-00\",\n  \"address\": \"Rua Exemplo, 123\",\n  \"zipCode\": \"01000-000\",\n  \"email\": \"contato@tessa.com\",\n  \"phoneContacts\": [\n    {\n      \"phone\": \"+55 11 4000-0000\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/company-information",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "company-information"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /company-information",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Tessa LTDA Atualizada\",\n  \"cnpj\": \"00.000.000/0001-00\",\n  \"address\": \"Avenida Exemplo, 456\",\n  \"zipCode\": \"02000-000\",\n  \"email\": \"contato@tessa.com\",\n  \"phoneContacts\": [\n    {\n      \"phone\": \"+55 11 5000-0000\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/company-information",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "company-information"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE /company-information",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/company-information",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "company-information"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Collections",
+          "item": [
+            {
+              "name": "NPS",
+              "item": [
+                {
+                  "name": "GET /nps",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/nps",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "nps"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "POST /nps",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 201) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('npsItemId', data.item.id);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"question\": \"Como voce avalia nosso atendimento?\",\n  \"answers\": [\n    {\n      \"text\": \"Excelente\",\n      \"value\": 10,\n      \"imageUrl\": \"https://example.com/nps-10.jpg\"\n    },\n    {\n      \"text\": \"Bom\",\n      \"value\": 8,\n      \"imageUrl\": \"https://example.com/nps-8.jpg\"\n    }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/nps",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "nps"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GET /nps/:itemId",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/nps/{{npsItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "nps",
+                        "{{npsItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "PUT /nps/:itemId",
+                  "request": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"question\": \"Como voce avalia nosso suporte?\",\n  \"answers\": [\n    {\n      \"text\": \"Perfeito\",\n      \"value\": 10,\n      \"imageUrl\": \"https://example.com/nps-perfect.jpg\"\n    }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/nps/{{npsItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "nps",
+                        "{{npsItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "DELETE /nps/:itemId",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/nps/{{npsItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "nps",
+                        "{{npsItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Services Pages",
+              "item": [
+                {
+                  "name": "GET /services-pages",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "POST /services-pages",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 201) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('servicePageSlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"slug\": \"servico-premium\",\n  \"title\": \"Servico Premium\",\n  \"category\": \"Consultoria\",\n  \"subtitle\": \"Atendimento especializado\",\n  \"imageUrl\": \"https://example.com/service.jpg\",\n  \"exampleVideoUrl\": \"https://example.com/video.mp4\",\n  \"examples\": [\n    {\n      \"imgUrl\": \"https://example.com/service-example.jpg\"\n    }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GET /services-pages/:slug",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages",
+                        "{{servicePageSlug}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "PUT /services-pages/:slug",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('servicePageSlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"slug\": \"servico-premium-atualizado\",\n  \"title\": \"Servico Premium Atualizado\",\n  \"category\": \"Consultoria\",\n  \"subtitle\": \"Atendimento ainda mais especializado\",\n  \"imageUrl\": \"https://example.com/service-updated.jpg\",\n  \"exampleVideoUrl\": \"https://example.com/video-updated.mp4\",\n  \"examples\": [\n    {\n      \"imgUrl\": \"https://example.com/service-example-updated.jpg\"\n    }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages",
+                        "{{servicePageSlug}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "DELETE /services-pages/:slug",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages",
+                        "{{servicePageSlug}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Representants Base",
+              "item": [
+                {
+                  "name": "GET /representants-base",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/representants-base",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "representants-base"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "POST /representants-base",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 201) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('representantItemId', data.item.id);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"Joao Silva\",\n  \"phone\": \"+55 11 99999-9999\",\n  \"email\": \"joao@tessa.com\",\n  \"city\": \"Sao Paulo\",\n  \"state\": \"SP\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/representants-base",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "representants-base"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GET /representants-base/:itemId",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/representants-base/{{representantItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "representants-base",
+                        "{{representantItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "PUT /representants-base/:itemId",
+                  "request": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"Joao Silva Atualizado\",\n  \"phone\": \"+55 11 98888-8888\",\n  \"email\": \"joao@tessa.com\",\n  \"city\": \"Campinas\",\n  \"state\": \"SP\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/representants-base/{{representantItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "representants-base",
+                        "{{representantItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "DELETE /representants-base/:itemId",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/representants-base/{{representantItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "representants-base",
+                        "{{representantItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ]
         }
       ]
     }
