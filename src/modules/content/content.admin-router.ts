@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono, type Context } from "hono";
 import { requireAuth, requireRole } from "../../middlewares/auth.js";
-import { badRequest } from "../../lib/http.js";
+import { badRequest, payloadTooLarge } from "../../lib/http.js";
 import type { AppBindings } from "../../types.js";
 import { heroSectionImageAltSchema } from "../assets/assets.schemas.js";
 import { normalizeOptionalText } from "../assets/assets.utils.js";
@@ -47,9 +47,19 @@ export const adminContentRouter = new Hono<AppBindings>();
 const requireAdminWriteAccess = [requireAuth, requireRole(["MASTER", "ADMIN"])] as const;
 const heroSectionConfig = singularSectionConfigs.find((section) => section.key === "heroSection")!;
 const nonHeroSections = singularSectionConfigs.filter((section) => section.key !== "heroSection");
+const MAX_MULTIPART_BODY_BYTES = 4 * 1024 * 1024;
 
 function isMultipartRequest(contentType: string | undefined) {
   return contentType?.toLowerCase().includes("multipart/form-data") ?? false;
+}
+
+function parseContentLength(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 async function parseHeroSectionBody(c: Context<AppBindings>): Promise<{
@@ -80,7 +90,40 @@ async function parseHeroSectionBody(c: Context<AppBindings>): Promise<{
     };
   }
 
-  const formData = await c.req.formData();
+  const contentLength = parseContentLength(c.req.header("content-length"));
+  if (contentLength !== null && contentLength > MAX_MULTIPART_BODY_BYTES) {
+    payloadTooLarge(
+      `Multipart maior do que o suportado por este endpoint (${MAX_MULTIPART_BODY_BYTES} bytes). ` +
+        "Reduza o tamanho total do request ou envie menos imagens por chamada."
+    );
+  }
+
+  console.log(
+    JSON.stringify({
+      event: "hero-section.multipart.received",
+      path: c.req.path,
+      contentType,
+      contentLength
+    })
+  );
+
+  let formData: FormData;
+
+  try {
+    formData = await c.req.formData();
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "hero-section.multipart.parse-failed",
+        path: c.req.path,
+        contentType,
+        contentLength,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    );
+    badRequest("Não foi possível processar o multipart/form-data enviado.");
+  }
+
   const payload = formData.get("payload");
 
   if (typeof payload !== "string" || payload.trim().length === 0) {
