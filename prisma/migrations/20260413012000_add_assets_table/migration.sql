@@ -21,10 +21,10 @@ CREATE TABLE "Asset" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Asset_pathname_key" ON "Asset"("pathname");
+CREATE INDEX "Asset_pathname_idx" ON "Asset"("pathname");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Asset_url_key" ON "Asset"("url");
+CREATE INDEX "Asset_url_idx" ON "Asset"("url");
 
 -- CreateIndex
 CREATE INDEX "Asset_entityType_entityId_sectionKey_fieldKey_slot_idx" ON "Asset"("entityType", "entityId", "sectionKey", "fieldKey", "slot");

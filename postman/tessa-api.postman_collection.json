@@ -387,7 +387,7 @@
               "response": []
             },
             {
-              "name": "POST /hero-section",
+              "name": "POST /hero-section (JSON)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -420,7 +420,7 @@
               "response": []
             },
             {
-              "name": "PUT /hero-section",
+              "name": "PUT /hero-section (JSON)",
               "request": {
                 "method": "PUT",
                 "header": [
@@ -453,7 +453,7 @@
               "response": []
             },
             {
-              "name": "POST /hero-section/:topicIndex/image",
+              "name": "POST /hero-section (multipart)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -466,19 +466,24 @@
                   "mode": "formdata",
                   "formdata": [
                     {
-                      "key": "file",
+                      "key": "payload",
+                      "type": "text",
+                      "value": "[\n  {\n    \"title\": \"Bem-vindo a Tessa com Upload\",\n    \"description\": \"Conteudo enviado com imagem no mesmo request\",\n    \"button\": {\n      \"text\": \"Saiba mais\",\n      \"url\": \"https://example.com\"\n    }\n  }\n]"
+                    },
+                    {
+                      "key": "image_0",
                       "type": "file",
                       "src": "/caminho/para/hero.jpg"
                     },
                     {
-                      "key": "alt",
+                      "key": "alt_0",
                       "type": "text",
                       "value": "Banner principal"
                     }
                   ]
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/api/content/admin/hero-section/0/image",
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section",
                   "host": [
                     "{{baseUrl}}"
                   ],
@@ -486,9 +491,62 @@
                     "api",
                     "content",
                     "admin",
-                    "hero-section",
-                    "0",
-                    "image"
+                    "hero-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /hero-section (multipart)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "payload",
+                      "type": "text",
+                      "value": "[\n  {\n    \"title\": \"Bem-vindo a Tessa Atualizado com Upload\",\n    \"description\": \"Texto e imagem atualizados no mesmo request\",\n    \"button\": {\n      \"text\": \"Fale conosco\",\n      \"url\": \"https://example.com/contato\"\n    }\n  },\n  {\n    \"title\": \"Segundo destaque\",\n    \"description\": \"Mantendo ou trocando a segunda imagem conforme o envio\",\n    \"button\": {\n      \"text\": \"Ver mais\",\n      \"url\": \"https://example.com/segundo\"\n    }\n  }\n]"
+                    },
+                    {
+                      "key": "image_0",
+                      "type": "file",
+                      "src": "/caminho/para/hero-atualizado.jpg"
+                    },
+                    {
+                      "key": "alt_0",
+                      "type": "text",
+                      "value": "Banner principal atualizado"
+                    },
+                    {
+                      "key": "image_1",
+                      "type": "file",
+                      "src": "/caminho/para/hero-secundario.jpg"
+                    },
+                    {
+                      "key": "alt_1",
+                      "type": "text",
+                      "value": "Banner secundario"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "hero-section"
                   ]
                 }
               },

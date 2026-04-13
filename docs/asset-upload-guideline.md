@@ -2,56 +2,88 @@
 
 ## Objetivo
 
-Padronizar o upload de imagens e arquivos do painel admin usando:
+Padronizar uploads do painel admin usando:
 
-- Vercel Blob para armazenar os binários
+- Vercel Blob para armazenar binários
 - Neon/Postgres para armazenar metadados e vínculo com o conteúdo
-- Rotas dedicadas de upload no backend Hono
+- Backend Hono como responsável por validação, conversão e persistência
 
-Esta diretriz deve ser seguida para a `heroSection` e para futuras rotas de upload de imagem do projeto.
+Esta diretriz vale para a `heroSection` e deve servir de base para futuras rotas de imagem do projeto.
 
 ## Decisões Arquiteturais
 
 1. Binários não serão salvos no Postgres.
-   O banco guardará apenas metadados e o vínculo com a entidade/slot do conteúdo.
+   O banco guarda apenas metadados e a ligação do asset com o conteúdo.
 
-2. Upload será feito server-side pelo backend.
-   Motivos:
-   - o painel já conversa com a API Hono
-   - haverá validação e conversão antes do upload
-   - os arquivos esperados são pequenos o suficiente para esse fluxo
+2. O upload é server-side.
+   O painel envia o arquivo para a API Hono, e a API faz a conversão e o upload no Blob.
 
-3. Assets públicos devem usar Vercel Blob com `access: "public"`.
-   O backend fará upload usando `@vercel/blob` e `TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN`.
+3. Assets públicos usam Vercel Blob com `access: "public"`.
+   O backend usa `@vercel/blob` com `BLOB_READ_WRITE_TOKEN`.
 
-4. Imagens devem ser convertidas antes do upload.
+4. Imagens são convertidas antes do upload.
    Regra inicial:
    - imagens: converter para `webp`
    - PDF: manter `pdf`
 
-5. Endpoints JSON de conteúdo e endpoints binários devem ser separados.
-   Exemplo:
-   - `PUT /api/content/admin/hero-section` continua responsável pelo conteúdo textual
-   - `POST /api/content/admin/hero-section/:topicIndex/image` fica responsável pelo upload da imagem
+5. Para seções de conteúdo como Hero, o endpoint de salvar conteúdo e o upload devem funcionar juntos.
+   Preferência do projeto:
+   - `POST /api/content/admin/hero-section`
+   - `PUT /api/content/admin/hero-section`
 
-6. O `draftContent` continua sendo a fonte de edição.
-   O upload de imagem atualiza apenas o rascunho. O conteúdo publicado só muda quando a ação de publish for executada.
+6. Os endpoints do Hero aceitam dois formatos:
+   - `application/json` quando as imagens já são URLs finais
+   - `multipart/form-data` quando texto e imagens são enviados no mesmo request
 
-## Fluxo Recomendado
+7. O `draftContent` continua sendo a fonte de edição.
+   O upload altera apenas o rascunho. O conteúdo publicado só muda no publish.
 
-1. O admin envia `multipart/form-data` para a API.
-2. A API valida autenticação, tipo do arquivo e tamanho.
-3. A API converte a imagem para `webp`.
-4. A API envia o arquivo convertido para o Vercel Blob.
-5. A API salva os metadados no Neon.
-6. A API atualiza o campo de imagem no `draftContent`.
-7. Em substituição, a API remove o asset antigo do Blob em modo best-effort.
+## Formato Recomendado para Multipart
 
-## Hero Section: Primeira Implementação
+O request deve usar `multipart/form-data` com:
 
-### Rota
+- `payload`: JSON em texto contendo o array do `heroSection`
+- `image_0`, `image_1`, `image_2`: arquivos opcionais
+- `alt_0`, `alt_1`, `alt_2`: textos opcionais
 
-`POST /api/content/admin/hero-section/:topicIndex/image`
+### Exemplo de payload
+
+```json
+[
+  {
+    "title": "Bem-vindo a Tessa",
+    "description": "Conteúdo do Hero",
+    "button": {
+      "text": "Saiba mais",
+      "url": "https://example.com"
+    }
+  },
+  {
+    "title": "Conheça nossos serviços",
+    "description": "Veja as principais soluções",
+    "button": {
+      "text": "Ver serviços",
+      "url": "https://example.com/servicos"
+    }
+  }
+]
+```
+
+### Regras do payload
+
+- o Hero aceita de `1` a `3` tópicos
+- `title`, `description` e `button` são obrigatórios
+- `image` pode ser omitido no multipart se vier um arquivo `image_n`
+- no `PUT`, se não vier `image_n` e o item também não trouxer `image`, a API preserva a imagem atual daquele slot
+- no `POST`, cada item precisa terminar com uma imagem resolvida, seja por arquivo ou por URL já presente no payload
+
+## Hero Section: Implementação Atual
+
+### Rotas
+
+- `POST /api/content/admin/hero-section`
+- `PUT /api/content/admin/hero-section`
+- `DELETE /api/content/admin/hero-section`
 
 ### Autorização
 
@@ -60,65 +92,55 @@ Mesma regra já usada no admin de conteúdo:
 - `MASTER`
 - `ADMIN`
 
-### Path params
-
-- `topicIndex`: índice do tópico do Hero
-
-Regras:
-
-- valor inteiro
-- intervalo permitido: `0`, `1` ou `2`
-- o tópico precisa existir no `heroSection` atual
-
-### Body
-
-`multipart/form-data`
-
-Campos:
-
-- `file`: obrigatório
-- `alt`: opcional
-
-### Regras de validação
+### Validações iniciais de arquivo
 
 - aceitar apenas imagem
-- tipos iniciais permitidos: `image/jpeg`, `image/png`, `image/webp`
-- limitar tamanho de upload no backend
-- recomendação inicial: `4 MB` como limite operacional
+- tipos permitidos: `image/jpeg`, `image/png`, `image/webp`
+- limitar tamanho no backend
+- valor inicial recomendado: `4 MB`
 
 Observação:
-o ChatGPT citou o limite prático de upload server-side em funções da Vercel. Mesmo quando o arquivo médio estiver em torno de `2 MB`, o backend deve impor um limite explícito para proteger memória, tempo de execução e evitar uploads fora do perfil esperado.
+mesmo com arquivos médios pequenos, o backend deve impor um limite explícito para proteger memória e tempo de execução da função.
 
 ### Conversão
 
-Sugestão inicial:
+Configuração inicial:
 
 - biblioteca: `sharp`
 - saída: `webp`
 - qualidade inicial: `82`
-- remover metadados EXIF quando possível
+- aplicar `rotate()` para respeitar EXIF
 
-### Pathname no Blob
+## Fluxo Recomendado
 
-Usar pathname único por upload. Evitar sobrescrever o mesmo arquivo.
+1. O admin envia JSON puro ou multipart.
+2. A API valida autenticação, payload, tipo do arquivo e tamanho.
+3. A API converte imagens recebidas para `webp`.
+4. A API envia os arquivos convertidos para o Vercel Blob.
+5. A API monta o `heroSection` final com URLs públicas.
+6. A API atualiza o `draftContent`.
+7. A API recria os metadados da `heroSection` na tabela `Asset`.
+8. A API remove blobs antigos que deixaram de ser usados, em modo best-effort.
+
+## Pathname no Blob
+
+Usar pathname único por upload. Não usar overwrite como padrão.
 
 Exemplo:
 
 `landing-page/home/hero-section/topic-0/2026-04-13T12-30-00Z-cover.webp`
 
-Motivo:
+Motivos:
 
-- evita servir asset antigo em cache/CDN
-- facilita rollback e diagnóstico
-- simplifica troca de imagem
-
-Mesmo que o Blob permita `allowOverwrite`, o padrão do projeto deve ser criar uma URL nova a cada substituição.
+- evita servir arquivo antigo em cache/CDN
+- simplifica troca e rollback
+- reduz risco de inconsistência entre conteúdo e asset
 
 ## Estratégia de Persistência
 
 ### Conteúdo
 
-O campo `image` dentro do `heroSection` continua armazenando a URL pública final do Blob.
+O campo `image` dentro do `heroSection` continua guardando a URL pública final.
 
 Exemplo:
 
@@ -137,8 +159,6 @@ Exemplo:
 ```
 
 ### Metadados no banco
-
-Criar uma tabela/modelo de assets.
 
 Campos recomendados:
 
@@ -159,7 +179,7 @@ Campos recomendados:
 - `updatedAt`
 - `createdById`
 
-### Convenção recomendada para o Hero
+### Convenção atual do Hero
 
 - `kind`: `image`
 - `entityType`: `landingPage`
@@ -169,56 +189,20 @@ Campos recomendados:
 - `slot`: índice do tópico (`0`, `1`, `2`)
 
 Observação:
-como os tópicos do Hero ainda não possuem `id` próprio, o vínculo inicial será posicional via `slot`.
+o vínculo atual é posicional. Se no futuro o Hero passar a ter reorder frequente, vale considerar um `id` por tópico.
 
 ## Ordem Segura de Substituição
 
-Para trocar a imagem de um tópico:
+1. Ler o Hero atual e os assets vinculados.
+2. Fazer upload dos novos arquivos.
+3. Persistir o `heroSection` final e os metadados em transação.
+4. Se a transação falhar, apagar os blobs recém-criados.
+5. Depois de sucesso, apagar blobs antigos que deixaram de ser usados.
 
-1. Ler o `draftContent` atual e localizar a URL antiga.
-2. Fazer upload do novo arquivo convertido para o Blob.
-3. Atualizar banco e `draftContent` para apontar para a nova URL.
-4. Tentar apagar o blob antigo em modo best-effort.
+Regras importantes:
 
-Regra importante:
-
-- se o upload no Blob der certo e a atualização no banco falhar, o backend deve tentar apagar imediatamente o blob recém-criado para evitar lixo órfão
-- se a atualização no banco der certo e a remoção do blob antigo falhar, o sistema não deve quebrar a resposta do usuário; registrar log e seguir
-
-## Resposta da Rota
-
-Resposta sugerida:
-
-```json
-{
-  "asset": {
-    "id": "string",
-    "kind": "image",
-    "entityType": "landingPage",
-    "entityId": "home",
-    "sectionKey": "heroSection",
-    "fieldKey": "image",
-    "slot": 0,
-    "pathname": "landing-page/home/hero-section/topic-0/2026-04-13T12-30-00Z-cover.webp",
-    "url": "https://...public.blob.vercel-storage.com/.../cover.webp",
-    "mimeType": "image/webp",
-    "sizeBytes": 182340,
-    "alt": "Banner principal",
-    "createdAt": "2026-04-13T12:30:00.000Z"
-  },
-  "heroSection": [
-    {
-      "title": "Bem-vindo a Tessa",
-      "description": "Conteúdo do Hero",
-      "image": "https://...public.blob.vercel-storage.com/.../cover.webp",
-      "button": {
-        "text": "Saiba mais",
-        "url": "https://example.com"
-      }
-    }
-  ]
-}
-```
+- se o upload no Blob der certo e a persistência falhar, os novos blobs devem ser limpos
+- se a persistência der certo e a remoção dos blobs antigos falhar, a resposta do usuário não deve quebrar; apenas registrar log
 
 ## Estrutura de Código Recomendada
 
@@ -232,18 +216,16 @@ Resposta sugerida:
 - `src/modules/assets/assets.schemas.ts`
 - `src/modules/assets/assets.service.ts`
 - `src/modules/assets/assets.utils.ts`
-- integração da rota específica em `src/modules/content/content.admin-router.ts`
+- integração do recurso no módulo de conteúdo
 
 ### Responsabilidades
 
-- módulo `assets`: upload, conversão, pathname, delete, persistência de metadados
-- módulo `content`: localizar slot correto e atualizar `draftContent`
+- módulo `assets`: upload, delete, conversão, pathname e helpers
+- módulo `content`: composição do payload final e persistência do `draftContent`
 
 ## Variáveis de Ambiente
 
-Adicionar ao schema de ambiente:
-
-- `TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN`
+- `BLOB_READ_WRITE_TOKEN`
 - `ASSET_MAX_UPLOAD_BYTES`
 
 Valor inicial sugerido:
@@ -252,39 +234,38 @@ Valor inicial sugerido:
 
 ## Convenções para Próximas Rotas
 
-Para novos uploads, seguir este padrão:
+Para novos uploads de seções semelhantes:
 
-1. Criar rota binária dedicada dentro do contexto do recurso.
-2. Não misturar arquivo com payload JSON de edição textual.
-3. Converter antes do upload sempre que o tipo permitir.
-4. Salvar URL final no conteúdo publicado/rascunho.
-5. Salvar metadados completos no banco.
-6. Usar pathname único e evitar overwrite.
-7. Remover asset antigo em best-effort após swap bem-sucedido.
+1. Preferir o mesmo endpoint de `POST`/`PUT` do recurso, com suporte a JSON e multipart.
+2. Usar um campo `payload` para o JSON estrutural.
+3. Nomear arquivos por slot ou campo, como `image_0`, `image_1`, `logo`, `cover`.
+4. Converter imagens antes do upload.
+5. Salvar a URL final no conteúdo.
+6. Salvar metadados completos no banco.
+7. Usar pathname único por upload.
+8. Limpar blobs antigos em best-effort após sucesso.
 
 Exemplos futuros:
 
-- `POST /api/content/admin/scenery-section/image`
-- `POST /api/content/admin/services-pages/:slug/image`
-- `POST /api/content/admin/company-information/logo`
+- `PUT /api/content/admin/scenery-section` com `payload` + `image`
+- `PUT /api/content/admin/services-pages/:slug` com `payload` + `image`
+- `PUT /api/content/admin/company-information` com `payload` + `logo`
 
-## Plano de Implementação
+## Plano de Implementação Base
 
 1. Adicionar `@vercel/blob` e `sharp`.
-2. Criar modelo Prisma para assets.
-3. Criar migration do novo modelo.
+2. Criar tabela/modelo `Asset`.
+3. Adicionar migration.
 4. Expandir `env.ts` e `.env.example`.
-5. Implementar serviço de upload e delete no Blob.
+5. Implementar upload e delete no Blob.
 6. Implementar conversão para `webp`.
-7. Implementar a rota `POST /api/content/admin/hero-section/:topicIndex/image`.
-8. Atualizar o `draftContent.heroSection[topicIndex].image` com a URL pública.
-9. Salvar metadados do asset.
-10. Atualizar Postman e README.
+7. Fazer `POST` e `PUT` do recurso aceitarem JSON e multipart.
+8. Atualizar o `draftContent` com a URL pública final.
+9. Persistir metadados dos assets.
+10. Atualizar README e Postman.
 
 ## Contexto Curto para IA
 
-Use este texto como contexto em tarefas futuras:
-
 ```text
-Neste projeto, uploads de imagem do admin devem usar Vercel Blob para armazenar binários e Neon/Postgres apenas para metadados. O backend Hono é responsável por receber multipart/form-data, validar o arquivo, converter imagens para WebP, fazer upload server-side com @vercel/blob usando TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN e salvar a URL pública no draftContent. Para a heroSection, a rota planejada é POST /api/content/admin/hero-section/:topicIndex/image, com topicIndex entre 0 e 2. O campo heroSection[topicIndex].image deve armazenar a URL pública final do Blob. A substituição deve usar pathname único por upload, atualizar banco/conteúdo primeiro e apagar o blob antigo em best-effort depois. Metadados do asset devem ser salvos em tabela própria no banco.
+Neste projeto, uploads de imagem do admin devem usar Vercel Blob para armazenar binários e Neon/Postgres apenas para metadados. O backend Hono recebe JSON puro ou multipart/form-data. Quando o request for multipart, ele recebe um campo payload com o JSON estrutural e campos de arquivo como image_0, image_1, image_2. O backend valida o payload, converte imagens para WebP, faz upload server-side com @vercel/blob usando BLOB_READ_WRITE_TOKEN e salva a URL pública final no draftContent. Para a heroSection, POST e PUT /api/content/admin/hero-section devem aceitar esse fluxo integrado. O campo heroSection[n].image deve armazenar a URL pública do Blob. A substituição deve usar pathname único por upload, persistir conteúdo e metadados em transação e apagar blobs antigos em best-effort depois.
 ```

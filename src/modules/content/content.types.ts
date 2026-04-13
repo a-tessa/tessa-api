@@ -7,6 +7,7 @@ import {
   draftNpsItemSchema,
   draftRepresentantSchema,
   draftServicesPageItemSchema,
+  heroSectionInputSchema,
   heroSectionSchema,
   npsItemSchema,
   operationSectionSchema,
@@ -20,6 +21,7 @@ export type CollectionItemParams = z.infer<typeof collectionItemParamsSchema>;
 export type ServicePageSlugParams = z.infer<typeof servicePageSlugParamsSchema>;
 
 export type HeroSection = z.infer<typeof heroSectionSchema>;
+export type HeroSectionInput = z.infer<typeof heroSectionInputSchema>;
 export type ScenerySection = z.infer<typeof scenerySectionSchema>;
 export type OperationSection = z.infer<typeof operationSectionSchema>;
 export type NpsItem = z.infer<typeof npsItemSchema>;

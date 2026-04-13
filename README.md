@@ -27,7 +27,7 @@ DATABASE_URL="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
 DATABASE_URL_UNPOOLED="postgresql://tessa:tessa@localhost:5434/tessa_local?schema=public"
 JWT_SECRET="change-me-min-16-chars"
 MASTER_SETUP_KEY="change-me-min-8"
-TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN="vercel_blob_rw_token"
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token"
 ASSET_MAX_UPLOAD_BYTES="4194304"
 ```
 
@@ -100,7 +100,7 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST-pooler:5432/tessa_prod?sslmode=req
 DATABASE_URL_UNPOOLED="postgresql://USER:PASSWORD@HOST:5432/tessa_prod?sslmode=require"
 JWT_SECRET="uma-chave-bem-grande-e-segura"
 MASTER_SETUP_KEY="uma-chave-secreta-para-bootstrap"
-TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN="vercel_blob_rw_token"
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token"
 ASSET_MAX_UPLOAD_BYTES="4194304"
 ```
 
@@ -108,7 +108,7 @@ Importante:
 
 - `DATABASE_URL` deve ser a conexão poolada usada no runtime
 - `DATABASE_URL_UNPOOLED` deve ser a conexão direta usada pelo Prisma CLI para migrations
-- `TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN` deve ser o token do Vercel Blob conectado ao projeto
+- `BLOB_READ_WRITE_TOKEN` deve ser o token do Vercel Blob conectado ao projeto
 - não use a `DATABASE_URL` local do Docker na Vercel
 - a Vercel não vai hospedar seu Postgres local
 - o Docker deste projeto é apenas para desenvolvimento
@@ -160,7 +160,7 @@ vercel env add DATABASE_URL production
 vercel env add DATABASE_URL_UNPOOLED production
 vercel env add JWT_SECRET production
 vercel env add MASTER_SETUP_KEY production
-vercel env add TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN production
+vercel env add BLOB_READ_WRITE_TOKEN production
 vercel env add ASSET_MAX_UPLOAD_BYTES production
 vercel deploy
 vercel --prod
@@ -212,7 +212,6 @@ Após o deploy e as migrations:
 - `GET /api/content/admin`
 - `POST /api/content/admin/publish`
 - `GET|POST|PUT|DELETE /api/content/admin/hero-section`
-- `POST /api/content/admin/hero-section/:topicIndex/image`
 - `GET|POST|PUT|DELETE /api/content/admin/scenery-section`
 - `GET|POST|PUT|DELETE /api/content/admin/operation-section`
 - `GET|POST|PUT|DELETE /api/content/admin/company-information`
@@ -241,6 +240,11 @@ curl -X POST http://localhost:3001/api/auth/bootstrap \
 O conteúdo principal da landing é tratado como um recurso único interno. A API gera um `id` interno para itens de `nps` e `representantsBase`, enquanto `servicesPages` usa `slug` como identificador da rota.
 
 A seção `heroSection` aceita uma lista com `1` a `3` tópicos, e cada tópico segue a mesma estrutura de `title`, `description`, `image` e `button`.
+
+As rotas `POST` e `PUT` de `heroSection` aceitam:
+
+- `application/json`, quando as imagens já estiverem como URL final
+- `multipart/form-data`, com um campo `payload` contendo o JSON dos tópicos e arquivos opcionais `image_0`, `image_1` e `image_2`
 
 Uploads de imagem do admin usam Vercel Blob para o binário e Postgres para os metadados. A diretriz completa está em [docs/asset-upload-guideline.md](/home/luisfaf/tessa/tessa-api/docs/asset-upload-guideline.md).
 

@@ -58,8 +58,8 @@ model Asset {
   sectionKey       String?
   fieldKey         String?
   slot             Int?
-  pathname         String   @unique
-  url              String   @unique
+  pathname         String
+  url              String
   mimeType         String
   sizeBytes        Int
   originalFilename String?
@@ -69,5 +69,7 @@ model Asset {
   createdById      String
   createdBy        User     @relation(fields: [createdById], references: [id])
 
+  @@index([pathname])
+  @@index([url])
   @@index([entityType, entityId, sectionKey, fieldKey, slot])
 }

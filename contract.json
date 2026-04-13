@@ -11,10 +11,15 @@
         }
       }
     ],
-    "scenerySection": {
+    "scenerySection": [{
       "title": "string",
-      "image": "string"
-    },
+      "images": [
+        {
+          "url": "string",
+          "alt": "string"
+        }
+      ]
+    }],
     "operationSection": {
       "images": [
         {

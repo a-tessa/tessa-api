@@ -1,12 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { requireAuth, requireRole } from "../../middlewares/auth.js";
 import { badRequest } from "../../lib/http.js";
 import type { AppBindings } from "../../types.js";
-import {
-  heroSectionImageUploadFormSchema,
-  heroSectionImageUploadParamsSchema
-} from "../assets/assets.schemas.js";
+import { heroSectionImageAltSchema } from "../assets/assets.schemas.js";
 import { normalizeOptionalText } from "../assets/assets.utils.js";
 import { collectionConfigs, servicesPagesConfig, singularSectionConfigs } from "./content.config.js";
 import {
@@ -18,9 +15,11 @@ import {
   serializeSectionResponse
 } from "./content.serializers.js";
 import {
+  createHeroSection,
   createCollectionItem,
   createServicePage,
   createSingularSection,
+  deleteHeroSection,
   deleteCollectionItem,
   deleteServicePage,
   deleteSingularSection,
@@ -31,16 +30,126 @@ import {
   listCollectionItems,
   listServicePages,
   publishMainContent,
+  updateHeroSection,
   updateCollectionItem,
   updateServicePage,
-  updateSingularSection,
-  uploadHeroSectionTopicImage
+  updateSingularSection
 } from "./content.service.js";
-import { collectionItemParamsSchema, servicePageSlugParamsSchema } from "./content.schemas.js";
-import type { DraftContent } from "./content.types.js";
+import {
+  collectionItemParamsSchema,
+  heroSectionInputSchema,
+  heroSectionSchema,
+  servicePageSlugParamsSchema
+} from "./content.schemas.js";
+import type { DraftContent, HeroSectionInput } from "./content.types.js";
 
 export const adminContentRouter = new Hono<AppBindings>();
 const requireAdminWriteAccess = [requireAuth, requireRole(["MASTER", "ADMIN"])] as const;
+const heroSectionConfig = singularSectionConfigs.find((section) => section.key === "heroSection")!;
+const nonHeroSections = singularSectionConfigs.filter((section) => section.key !== "heroSection");
+
+function isMultipartRequest(contentType: string | undefined) {
+  return contentType?.toLowerCase().includes("multipart/form-data") ?? false;
+}
+
+async function parseHeroSectionBody(c: Context<AppBindings>): Promise<{
+  input: HeroSectionInput;
+  uploadsByIndex: Map<number, File>;
+  altsByIndex: Map<number, string>;
+}> {
+  const contentType = c.req.header("content-type");
+
+  if (!isMultipartRequest(contentType)) {
+    let rawBody: unknown;
+
+    try {
+      rawBody = await c.req.json();
+    } catch {
+      badRequest("Body JSON inválido.");
+    }
+
+    const parsedBody = heroSectionSchema.safeParse(rawBody);
+    if (!parsedBody.success) {
+      badRequest("Payload da seção hero inválido.");
+    }
+
+    return {
+      input: parsedBody.data,
+      uploadsByIndex: new Map(),
+      altsByIndex: new Map()
+    };
+  }
+
+  const formData = await c.req.formData();
+  const payload = formData.get("payload");
+
+  if (typeof payload !== "string" || payload.trim().length === 0) {
+    badRequest("Campo 'payload' é obrigatório.");
+  }
+
+  let rawPayload: unknown;
+
+  try {
+    rawPayload = JSON.parse(payload);
+  } catch {
+    badRequest("Campo 'payload' precisa conter um JSON válido.");
+  }
+
+  const parsedPayload = heroSectionInputSchema.safeParse(rawPayload);
+  if (!parsedPayload.success) {
+    badRequest("Payload da seção hero inválido.");
+  }
+
+  const uploadsByIndex = new Map<number, File>();
+  const altsByIndex = new Map<number, string>();
+  const topicCount = parsedPayload.data.length;
+
+  for (let index = 0; index < 3; index += 1) {
+    const rawFile = formData.get(`image_${index}`);
+    const rawAlt = formData.get(`alt_${index}`);
+    const hasSlot = index < topicCount;
+
+    if (rawFile !== null) {
+      if (!(rawFile instanceof File)) {
+        badRequest(`Campo 'image_${index}' inválido.`);
+      }
+
+      if (!hasSlot && (rawFile.size > 0 || rawFile.name)) {
+        badRequest(`Campo 'image_${index}' não corresponde a nenhum tópico do Hero.`);
+      }
+
+      if (rawFile.size > 0 || rawFile.name) {
+        uploadsByIndex.set(index, rawFile);
+      }
+    }
+
+    if (rawAlt !== null && typeof rawAlt !== "string") {
+      badRequest(`Campo 'alt_${index}' inválido.`);
+    }
+
+    const normalizedAlt = normalizeOptionalText(rawAlt);
+
+    if (normalizedAlt) {
+      if (!hasSlot) {
+        badRequest(`Campo 'alt_${index}' não corresponde a nenhum tópico do Hero.`);
+      }
+
+      const parsedAlt = heroSectionImageAltSchema.safeParse(normalizedAlt);
+
+      if (!parsedAlt.success) {
+        badRequest(`Campo 'alt_${index}' inválido.`);
+      }
+
+      altsByIndex.set(index, parsedAlt.data);
+    }
+  }
+
+  return {
+    input: parsedPayload.data,
+    uploadsByIndex,
+    altsByIndex
+  };
+}
 
 adminContentRouter.get("/", async (c) => {
   const content = await getAdminContent();
@@ -54,45 +163,35 @@ adminContentRouter.post("/publish", ...requireAdminWriteAccess, async (c) => {
   return c.json(serializeAdminContentResponse(content));
 });
 
-adminContentRouter.post(
-  "/hero-section/:topicIndex/image",
-  ...requireAdminWriteAccess,
-  zValidator("param", heroSectionImageUploadParamsSchema),
-  async (c) => {
-    const { topicIndex } = c.req.valid("param");
-    const formData = await c.req.formData();
-    const file = formData.get("file");
-    const rawAlt = formData.get("alt");
+adminContentRouter.get("/hero-section", async (c) => {
+  const value = await getSingularSection(heroSectionConfig);
+  return c.json(serializeSectionResponse(heroSectionConfig.key, value));
+});
 
-    if (!(file instanceof File)) {
-      badRequest("Arquivo 'file' é obrigatório.");
-    }
+adminContentRouter.post("/hero-section", ...requireAdminWriteAccess, async (c) => {
+  const { input, uploadsByIndex, altsByIndex } = await parseHeroSectionBody(c);
+  const user = c.get("user");
+  const value = await createHeroSection(input, uploadsByIndex, altsByIndex, user.id);
 
-    if (rawAlt !== null && typeof rawAlt !== "string") {
-      badRequest("Campo 'alt' inválido.");
-    }
+  return c.json(serializeSectionResponse("heroSection", value), 201);
+});
 
-    const parsedForm = heroSectionImageUploadFormSchema.safeParse({
-      alt: normalizeOptionalText(rawAlt)
-    });
+adminContentRouter.put("/hero-section", ...requireAdminWriteAccess, async (c) => {
+  const { input, uploadsByIndex, altsByIndex } = await parseHeroSectionBody(c);
+  const user = c.get("user");
+  const value = await updateHeroSection(input, uploadsByIndex, altsByIndex, user.id);
 
-    if (!parsedForm.success) {
-      badRequest("Campo 'alt' inválido.");
-    }
+  return c.json(serializeSectionResponse("heroSection", value));
+});
 
-    const user = c.get("user");
-    const result = await uploadHeroSectionTopicImage(
-      topicIndex,
-      file,
-      parsedForm.data.alt,
-      user.id
-    );
+adminContentRouter.delete("/hero-section", ...requireAdminWriteAccess, async (c) => {
+  const user = c.get("user");
+  await deleteHeroSection(user.id);
 
-    return c.json(result, 201);
-  }
-);
+  return c.body(null, 204);
+});
 
-for (const section of singularSectionConfigs) {
+for (const section of nonHeroSections) {
   const path = `/${section.path}`;
 
   adminContentRouter.get(path, async (c) => {

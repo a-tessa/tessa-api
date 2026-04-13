@@ -3,14 +3,20 @@ import sharp from "sharp";
 import { env } from "../../env.js";
 import { badRequest, internalServerError, payloadTooLarge } from "../../lib/http.js";
 import { allowedImageMimeTypeSchema } from "./assets.schemas.js";
-import type { PreparedImageAsset } from "./assets.types.js";
+
+type PreparedImageAsset = {
+  contentType: "image/webp";
+  body: Blob;
+  sizeBytes: number;
+  originalFilename: string;
+};
 
 function ensureBlobToken(): string {
-  if (!env.TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN) {
+  if (!env.BLOB_READ_WRITE_TOKEN) {
     internalServerError("Upload de assets não configurado.");
   }
 
-  return env.TESSA_BLOB_WRITE_TOKEN_READ_WRITE_TOKEN;
+  return env.BLOB_READ_WRITE_TOKEN;
 }
 
 export async function prepareImageAsset(file: File): Promise<PreparedImageAsset> {

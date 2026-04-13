@@ -11,17 +11,25 @@ export const servicePageSlugParamsSchema = z.object({
   slug: slugString
 });
 
-export const heroTopicSchema = z.object({
+const heroTopicBaseSchema = z.object({
   title: nonEmptyString,
   description: nonEmptyString,
-  image: nonEmptyString,
   button: z.object({
     text: nonEmptyString,
     url: nonEmptyString
   })
 });
 
+export const heroTopicSchema = heroTopicBaseSchema.extend({
+  image: nonEmptyString
+});
+
+export const heroTopicInputSchema = heroTopicBaseSchema.extend({
+  image: nonEmptyString.optional()
+});
+
 const heroSectionArraySchema = z.array(heroTopicSchema).min(1).max(3);
+const heroSectionInputArraySchema = z.array(heroTopicInputSchema).min(1).max(3);
 
 export const heroSectionSchema = z.preprocess((value) => {
   if (typeof value === "object" && value !== null && !Array.isArray(value)) {
@@ -30,6 +38,14 @@ export const heroSectionSchema = z.preprocess((value) => {
 
   return value;
 }, heroSectionArraySchema);
+
+export const heroSectionInputSchema = z.preprocess((value) => {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return [value];
+  }
+
+  return value;
+}, heroSectionInputArraySchema);
 
 export const scenerySectionSchema = z.object({
   title: nonEmptyString,
