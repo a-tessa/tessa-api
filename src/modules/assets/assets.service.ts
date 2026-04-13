@@ -42,7 +42,7 @@ export async function prepareImageAsset(file: File): Promise<PreparedImageAsset>
 
     return {
       contentType: "image/webp",
-      body: new Blob([outputBuffer], { type: "image/webp" }),
+      body: new Blob([new Uint8Array(outputBuffer)], { type: "image/webp" }),
       sizeBytes: outputBuffer.byteLength,
       originalFilename: file.name
     };

@@ -37,6 +37,7 @@ import {
   uploadHeroSectionTopicImage
 } from "./content.service.js";
 import { collectionItemParamsSchema, servicePageSlugParamsSchema } from "./content.schemas.js";
+import type { DraftContent } from "./content.types.js";
 
 export const adminContentRouter = new Hono<AppBindings>();
 const requireAdminWriteAccess = [requireAuth, requireRole(["MASTER", "ADMIN"])] as const;
@@ -108,7 +109,13 @@ for (const section of singularSectionConfigs) {
       const user = c.get("user");
       const value = await createSingularSection(section, input, user.id);
 
-      return c.json(serializeSectionResponse(section.key, value), 201);
+      return c.json(
+        serializeSectionResponse(
+          section.key,
+          value as NonNullable<DraftContent[typeof section.key]>
+        ),
+        201
+      );
     }
   );
 
@@ -121,7 +128,12 @@ for (const section of singularSectionConfigs) {
       const user = c.get("user");
       const value = await updateSingularSection(section, input, user.id);
 
-      return c.json(serializeSectionResponse(section.key, value));
+      return c.json(
+        serializeSectionResponse(
+          section.key,
+          value as NonNullable<DraftContent[typeof section.key]>
+        )
+      );
     }
   );
 
