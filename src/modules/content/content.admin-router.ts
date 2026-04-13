@@ -165,7 +165,7 @@ adminContentRouter.post("/publish", ...requireAdminWriteAccess, async (c) => {
 
 adminContentRouter.get("/hero-section", async (c) => {
   const value = await getSingularSection(heroSectionConfig);
-  return c.json(serializeSectionResponse(heroSectionConfig.key, value));
+  return c.json(serializeSectionResponse("heroSection", value as NonNullable<DraftContent["heroSection"]>));
 });
 
 adminContentRouter.post("/hero-section", ...requireAdminWriteAccess, async (c) => {
@@ -196,7 +196,12 @@ for (const section of nonHeroSections) {
 
   adminContentRouter.get(path, async (c) => {
     const value = await getSingularSection(section);
-    return c.json(serializeSectionResponse(section.key, value));
+    return c.json(
+      serializeSectionResponse(
+        section.key,
+        value as NonNullable<DraftContent[typeof section.key]>
+      )
+    );
   });
 
   adminContentRouter.post(
