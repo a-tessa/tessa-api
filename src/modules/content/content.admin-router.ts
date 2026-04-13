@@ -1,7 +1,13 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { requireAuth, requireRole } from "../../middlewares/auth.js";
+import { badRequest } from "../../lib/http.js";
 import type { AppBindings } from "../../types.js";
+import {
+  heroSectionImageUploadFormSchema,
+  heroSectionImageUploadParamsSchema
+} from "../assets/assets.schemas.js";
+import { normalizeOptionalText } from "../assets/assets.utils.js";
 import { collectionConfigs, servicesPagesConfig, singularSectionConfigs } from "./content.config.js";
 import {
   serializeAdminContentResponse,
@@ -27,7 +33,8 @@ import {
   publishMainContent,
   updateCollectionItem,
   updateServicePage,
-  updateSingularSection
+  updateSingularSection,
+  uploadHeroSectionTopicImage
 } from "./content.service.js";
 import { collectionItemParamsSchema, servicePageSlugParamsSchema } from "./content.schemas.js";
 
@@ -45,6 +52,44 @@ adminContentRouter.post("/publish", ...requireAdminWriteAccess, async (c) => {
 
   return c.json(serializeAdminContentResponse(content));
 });
+
+adminContentRouter.post(
+  "/hero-section/:topicIndex/image",
+  ...requireAdminWriteAccess,
+  zValidator("param", heroSectionImageUploadParamsSchema),
+  async (c) => {
+    const { topicIndex } = c.req.valid("param");
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+    const rawAlt = formData.get("alt");
+
+    if (!(file instanceof File)) {
+      badRequest("Arquivo 'file' é obrigatório.");
+    }
+
+    if (rawAlt !== null && typeof rawAlt !== "string") {
+      badRequest("Campo 'alt' inválido.");
+    }
+
+    const parsedForm = heroSectionImageUploadFormSchema.safeParse({
+      alt: normalizeOptionalText(rawAlt)
+    });
+
+    if (!parsedForm.success) {
+      badRequest("Campo 'alt' inválido.");
+    }
+
+    const user = c.get("user");
+    const result = await uploadHeroSectionTopicImage(
+      topicIndex,
+      file,
+      parsedForm.data.alt,
+      user.id
+    );
+
+    return c.json(result, 201);
+  }
+);
 
 for (const section of singularSectionConfigs) {
   const path = `/${section.path}`;

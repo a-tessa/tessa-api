@@ -3,8 +3,20 @@ import type { LandingPage } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { conflict, notFound } from "../../lib/http.js";
+import {
+  deleteBlobAsset,
+  prepareImageAsset,
+  uploadPublicAsset
+} from "../assets/assets.service.js";
+import { buildHeroSectionImagePath } from "../assets/assets.utils.js";
 import { collectionConfigs } from "./content.config.js";
-import { ensureCollectionIds, parseDraftContent, sanitizeContentForPublish, toDraftContentInput } from "./content.utils.js";
+import {
+  ensureCollectionIds,
+  hasLegacyHeroSectionFormat,
+  parseDraftContent,
+  sanitizeContentForPublish,
+  toDraftContentInput
+} from "./content.utils.js";
 import type {
   AdminContentRecord,
   CollectionConfig,
@@ -54,7 +66,7 @@ async function getMainPageOrThrow(): Promise<LandingPage> {
 async function getMainDraftContent(page: LandingPage): Promise<DraftContent> {
   const parsedContent = parseDraftContent(page.draftContent);
   let nextContent = parsedContent;
-  let changed = false;
+  let changed = hasLegacyHeroSectionFormat(page.draftContent);
 
   for (const config of collectionConfigs) {
     const normalized = ensureCollectionIds(nextContent, config);
@@ -100,6 +112,16 @@ function getEmptyAdminContent(): AdminContentRecord {
 
 function getServicesPages(content: DraftContent): DraftServicesPageItem[] {
   return Array.isArray(content.servicesPages) ? content.servicesPages : [];
+}
+
+function getHeroSectionOrThrow(content: DraftContent) {
+  const heroSection = content.heroSection;
+
+  if (!heroSection) {
+    notFound("Seção hero não encontrada.");
+  }
+
+  return heroSection;
 }
 
 export async function getPublicContent(): Promise<PublicContentRecord> {
@@ -427,4 +449,117 @@ export async function deleteServicePage(slug: string, userId: string) {
   } as DraftContent;
 
   await saveMainDraftContent(page.id, nextContent, userId);
+}
+
+export async function uploadHeroSectionTopicImage(
+  topicIndex: number,
+  file: File,
+  alt: string | undefined,
+  userId: string
+) {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const heroSection = getHeroSectionOrThrow(content);
+  const currentTopic = heroSection[topicIndex];
+
+  if (!currentTopic) {
+    notFound("Tópico da seção hero não encontrado.");
+  }
+
+  const preparedAsset = await prepareImageAsset(file);
+  const pathname = buildHeroSectionImagePath(topicIndex, preparedAsset.originalFilename);
+  const uploadedBlob = await uploadPublicAsset(pathname, preparedAsset);
+
+  const assetFilter = {
+    entityType: "landingPage",
+    entityId: MAIN_CONTENT_SLUG,
+    sectionKey: "heroSection",
+    fieldKey: "image",
+    slot: topicIndex
+  } as const;
+
+  const previousAssets = await prisma.asset.findMany({
+    where: assetFilter,
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  const nextHeroSection = heroSection.map((topic, index) =>
+    index === topicIndex
+      ? {
+          ...topic,
+          image: uploadedBlob.url
+        }
+      : topic
+  );
+
+  try {
+    const asset = await prisma.$transaction(async (tx) => {
+      await tx.landingPage.update({
+        where: { id: page.id },
+        data: {
+          draftContent: toDraftContentInput({
+            ...content,
+            heroSection: nextHeroSection
+          } as DraftContent),
+          status: "draft",
+          updatedById: userId
+        }
+      });
+
+      await tx.asset.deleteMany({
+        where: assetFilter
+      });
+
+      return tx.asset.create({
+        data: {
+          kind: "image",
+          entityType: "landingPage",
+          entityId: MAIN_CONTENT_SLUG,
+          sectionKey: "heroSection",
+          fieldKey: "image",
+          slot: topicIndex,
+          pathname: uploadedBlob.pathname,
+          url: uploadedBlob.url,
+          mimeType: preparedAsset.contentType,
+          sizeBytes: preparedAsset.sizeBytes,
+          originalFilename: preparedAsset.originalFilename,
+          alt: alt ?? previousAssets[0]?.alt ?? null,
+          createdById: userId
+        }
+      });
+    });
+
+    const previousUrls = previousAssets
+      .map((currentAsset) => currentAsset.url)
+      .filter((url) => url !== uploadedBlob.url);
+
+    for (const previousUrl of previousUrls) {
+      try {
+        await deleteBlobAsset(previousUrl);
+      } catch (error) {
+        console.error("Falha ao remover asset antigo do Blob.", {
+          url: previousUrl,
+          error
+        });
+      }
+    }
+
+    return {
+      asset,
+      heroSection: nextHeroSection
+    };
+  } catch (error) {
+    try {
+      await deleteBlobAsset(uploadedBlob.url);
+    } catch (deleteError) {
+      console.error("Falha ao limpar asset recém-enviado após erro de persistência.", {
+        url: uploadedBlob.url,
+        error: deleteError
+      });
+    }
+
+    throw error;
+  }
 }

@@ -8,6 +8,14 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export function hasLegacyHeroSectionFormat(value: unknown): boolean {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return isObject(value.heroSection);
+}
+
 export function parseDraftContent(value: unknown): DraftContent {
   const rawContent = isObject(value) ? value : {};
   return draftContentSchema.parse(rawContent) as DraftContent;

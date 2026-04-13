@@ -21,7 +21,15 @@ export const heroTopicSchema = z.object({
   })
 });
 
-export const heroSectionSchema = z.array(heroTopicSchema).min(1).max(3);
+const heroSectionArraySchema = z.array(heroTopicSchema).min(1).max(3);
+
+export const heroSectionSchema = z.preprocess((value) => {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return [value];
+  }
+
+  return value;
+}, heroSectionArraySchema);
 
 export const scenerySectionSchema = z.object({
   title: nonEmptyString,

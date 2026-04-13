@@ -453,6 +453,48 @@
               "response": []
             },
             {
+              "name": "POST /hero-section/:topicIndex/image",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/caminho/para/hero.jpg"
+                    },
+                    {
+                      "key": "alt",
+                      "type": "text",
+                      "value": "Banner principal"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section/0/image",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "hero-section",
+                    "0",
+                    "image"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "DELETE /hero-section",
               "request": {
                 "method": "DELETE",

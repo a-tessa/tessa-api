@@ -19,16 +19,17 @@ enum LandingPageStatus {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         UserRole
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  pagesUpdated LandingPage[] @relation("LandingPageUpdatedBy")
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  passwordHash   String
+  role           UserRole
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  pagesUpdated   LandingPage[] @relation("LandingPageUpdatedBy")
   pagesPublished LandingPage[] @relation("LandingPagePublishedBy")
+  createdAssets  Asset[]
 }
 
 model LandingPage {
@@ -47,4 +48,26 @@ model LandingPage {
   updatedBy        User              @relation("LandingPageUpdatedBy", fields: [updatedById], references: [id])
   publishedById    String?
   publishedBy      User?             @relation("LandingPagePublishedBy", fields: [publishedById], references: [id])
+}
+
+model Asset {
+  id               String   @id @default(cuid())
+  kind             String
+  entityType       String
+  entityId         String
+  sectionKey       String?
+  fieldKey         String?
+  slot             Int?
+  pathname         String   @unique
+  url              String   @unique
+  mimeType         String
+  sizeBytes        Int
+  originalFilename String?
+  alt              String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdById      String
+  createdBy        User     @relation(fields: [createdById], references: [id])
+
+  @@index([entityType, entityId, sectionKey, fieldKey, slot])
 }
