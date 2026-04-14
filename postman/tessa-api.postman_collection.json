@@ -27,12 +27,28 @@
       "value": "12345678"
     },
     {
+      "key": "loginEmail",
+      "value": "contato.tessa.estruturas@gmail.com"
+    },
+    {
+      "key": "loginPassword",
+      "value": "Contato@2026"
+    },
+    {
       "key": "adminId",
       "value": ""
     },
     {
       "key": "npsItemId",
       "value": ""
+    },
+    {
+      "key": "categoryItemId",
+      "value": ""
+    },
+    {
+      "key": "categorySlug",
+      "value": "consultoria"
     },
     {
       "key": "servicePageSlug",
@@ -139,7 +155,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{masterEmail}}\",\n  \"password\": \"{{masterPassword}}\"\n}"
+              "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
@@ -367,6 +383,9 @@
           "name": "Sections",
           "item": [
             {
+              "name": "Hero",
+              "item": [
+            {
               "name": "GET /hero-section",
               "request": {
                 "method": "GET",
@@ -576,7 +595,12 @@
                 }
               },
               "response": []
+            }
+              ]
             },
+            {
+              "name": "Cenário",
+              "item": [
             {
               "name": "GET /scenery-section",
               "request": {
@@ -596,98 +620,12 @@
                 }
               },
               "response": []
+            }
+              ]
             },
             {
-              "name": "POST /scenery-section",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Conheca nosso cenario\",\n  \"image\": \"https://example.com/scenery.jpg\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "content",
-                    "admin",
-                    "scenery-section"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "PUT /scenery-section",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Cenario atualizado\",\n  \"image\": \"https://example.com/scenery-2.jpg\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "content",
-                    "admin",
-                    "scenery-section"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "DELETE /scenery-section",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "content",
-                    "admin",
-                    "scenery-section"
-                  ]
-                }
-              },
-              "response": []
-            },
+              "name": "Operação",
+              "item": [
             {
               "name": "GET /operation-section",
               "request": {
@@ -709,7 +647,7 @@
               "response": []
             },
             {
-              "name": "POST /operation-section",
+              "name": "POST /operation-section (json)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -724,7 +662,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-1.jpg\",\n      \"alt\": \"Primeira imagem operacional\"\n    },\n    {\n      \"url\": \"https://example.com/operation-2.jpg\",\n      \"alt\": \"Segunda imagem operacional\"\n    }\n  ]\n}"
+                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-1.jpg\"\n    },\n    {\n      \"url\": \"https://example.com/operation-2.jpg\"\n    }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/operation-section",
@@ -742,7 +680,47 @@
               "response": []
             },
             {
-              "name": "PUT /operation-section",
+              "name": "POST /operation-section (multipart)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image_0",
+                      "type": "file",
+                      "src": ""
+                    },
+                    {
+                      "key": "image_1",
+                      "type": "file",
+                      "src": ""
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /operation-section (json)",
               "request": {
                 "method": "PUT",
                 "header": [
@@ -757,7 +735,42 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-updated.jpg\",\n      \"alt\": \"Imagem operacional atualizada\"\n    }\n  ]\n}"
+                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-updated.jpg\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /operation-section (multipart)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image_0",
+                      "type": "file",
+                      "src": ""
+                    }
+                  ]
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/operation-section",
@@ -799,6 +812,38 @@
               },
               "response": []
             },
+            {
+              "name": "DELETE /operation-section/images/:imageIndex",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section/images/0",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section",
+                    "images",
+                    "0"
+                  ]
+                }
+              },
+              "response": []
+            }
+              ]
+            },
+            {
+              "name": "Empresa",
+              "item": [
             {
               "name": "GET /company-information",
               "request": {
@@ -909,6 +954,8 @@
                 }
               },
               "response": []
+            }
+              ]
             }
           ]
         },
@@ -1069,6 +1116,174 @@
               ]
             },
             {
+              "name": "Categories",
+              "item": [
+                {
+                  "name": "GET /categories",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "POST /categories",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 201) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('categoryItemId', data.item.id);",
+                          "  pm.collectionVariables.set('categorySlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"Consultoria\",\n  \"slug\": \"consultoria\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GET /categories/:itemId",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories/{{categoryItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories",
+                        "{{categoryItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "PUT /categories/:itemId",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('categorySlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"Consultoria Premium\",\n  \"slug\": \"consultoria-premium\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories/{{categoryItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories",
+                        "{{categoryItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "DELETE /categories/:itemId",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories/{{categoryItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories",
+                        "{{categoryItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
               "name": "Services Pages",
               "item": [
                 {
@@ -1121,7 +1336,76 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"slug\": \"servico-premium\",\n  \"title\": \"Servico Premium\",\n  \"category\": \"Consultoria\",\n  \"subtitle\": \"Atendimento especializado\",\n  \"imageUrl\": \"https://example.com/service.jpg\",\n  \"exampleVideoUrl\": \"https://example.com/video.mp4\",\n  \"examples\": [\n    {\n      \"imgUrl\": \"https://example.com/service-example.jpg\"\n    }\n  ]\n}"
+                      "raw": "{\n  \"slug\": \"servico-premium\",\n  \"title\": \"Servico Premium\",\n  \"category\": \"{{categorySlug}}\",\n  \"subtitle\": \"Atendimento especializado\",\n  \"exampleVideoUrl\": \"https://example.com/video.mp4\",\n  \"backgroundImageUrl\": \"https://example.com/service-background.jpg\",\n  \"images\": [\n    {\n      \"imgUrl\": \"https://example.com/service-image-1.jpg\"\n    },\n    {\n      \"imgUrl\": \"https://example.com/service-image-2.jpg\"\n    },\n    {\n      \"imgUrl\": \"https://example.com/service-image-3.jpg\"\n    }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "POST /services-pages (multipart)",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 201) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('servicePageSlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "payload",
+                          "type": "text",
+                          "value": "{\n  \"slug\": \"servico-premium-upload\",\n  \"title\": \"Servico Premium com Upload\",\n  \"category\": \"{{categorySlug}}\",\n  \"subtitle\": \"Atendimento especializado com galeria enviada no request\",\n  \"exampleVideoUrl\": \"https://example.com/video.mp4\"\n}"
+                        },
+                        {
+                          "key": "backgroundImage",
+                          "type": "file",
+                          "src": "/caminho/para/service-background.jpg"
+                        },
+                        {
+                          "key": "image_0",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-1.jpg"
+                        },
+                        {
+                          "key": "image_1",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-2.jpg"
+                        },
+                        {
+                          "key": "image_2",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-3.jpg"
+                        }
+                      ]
                     },
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/services-pages",
@@ -1189,7 +1473,72 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"slug\": \"servico-premium-atualizado\",\n  \"title\": \"Servico Premium Atualizado\",\n  \"category\": \"Consultoria\",\n  \"subtitle\": \"Atendimento ainda mais especializado\",\n  \"imageUrl\": \"https://example.com/service-updated.jpg\",\n  \"exampleVideoUrl\": \"https://example.com/video-updated.mp4\",\n  \"examples\": [\n    {\n      \"imgUrl\": \"https://example.com/service-example-updated.jpg\"\n    }\n  ]\n}"
+                      "raw": "{\n  \"slug\": \"servico-premium-atualizado\",\n  \"title\": \"Servico Premium Atualizado\",\n  \"category\": \"{{categorySlug}}\",\n  \"subtitle\": \"Atendimento ainda mais especializado\",\n  \"exampleVideoUrl\": \"https://example.com/video-updated.mp4\",\n  \"backgroundImageUrl\": \"https://example.com/service-background-updated.jpg\",\n  \"images\": [\n    {\n      \"imgUrl\": \"https://example.com/service-image-updated-1.jpg\"\n    },\n    {\n      \"imgUrl\": \"https://example.com/service-image-updated-2.jpg\"\n    }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages",
+                        "{{servicePageSlug}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "PUT /services-pages/:slug (multipart)",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('servicePageSlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "payload",
+                          "type": "text",
+                          "value": "{\n  \"slug\": \"servico-premium-upload-atualizado\",\n  \"title\": \"Servico Premium com Upload Atualizado\",\n  \"category\": \"{{categorySlug}}\",\n  \"subtitle\": \"Atualizacao mantendo parte da galeria anterior\",\n  \"exampleVideoUrl\": \"https://example.com/video-updated.mp4\",\n  \"images\": [\n    {},\n    {\n      \"imgUrl\": \"https://example.com/service-image-fixed.jpg\"\n    },\n    {}\n  ]\n}"
+                        },
+                        {
+                          "key": "backgroundImage",
+                          "type": "file",
+                          "src": "/caminho/para/service-background-updated.jpg"
+                        },
+                        {
+                          "key": "image_0",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-updated-1.jpg"
+                        },
+                        {
+                          "key": "image_2",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-updated-3.jpg"
+                        }
+                      ]
                     },
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",

@@ -1,12 +1,13 @@
 import {
+  categorySchema,
   companyInformationSchema,
+  draftCategorySchema,
   draftNpsItemSchema,
   draftRepresentantSchema,
   heroSectionSchema,
   npsItemSchema,
   operationSectionSchema,
   representantSchema,
-  scenerySectionSchema,
   servicesPageItemSchema
 } from "./content.schemas.js";
 import type { CollectionConfig, SingularSectionConfig } from "./content.types.js";
@@ -17,12 +18,6 @@ export const singularSectionConfigs = [
     path: "hero-section",
     label: "Seção hero",
     schema: heroSectionSchema
-  },
-  {
-    key: "scenerySection",
-    path: "scenery-section",
-    label: "Seção de cenário",
-    schema: scenerySectionSchema
   },
   {
     key: "operationSection",
@@ -52,6 +47,13 @@ export const collectionConfigs = [
     label: "Representante",
     schema: representantSchema,
     storedSchema: draftRepresentantSchema
+  },
+  {
+    key: "categories",
+    path: "categories",
+    label: "Categoria",
+    schema: categorySchema,
+    storedSchema: draftCategorySchema
   }
 ] satisfies readonly CollectionConfig[];
 

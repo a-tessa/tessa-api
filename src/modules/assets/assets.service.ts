@@ -1,8 +1,9 @@
+import { extname } from "node:path";
 import { del, put } from "@vercel/blob";
 import sharp from "sharp";
 import { env } from "../../env.js";
 import { badRequest, internalServerError, payloadTooLarge } from "../../lib/http.js";
-import { allowedImageMimeTypeSchema } from "./assets.schemas.js";
+import { allowedImageMimeTypeSchema, allowedImageMimeTypes } from "./assets.schemas.js";
 
 type PreparedImageAsset = {
   contentType: "image/webp";
@@ -11,12 +12,31 @@ type PreparedImageAsset = {
   originalFilename: string;
 };
 
+type AllowedImageMimeType = (typeof allowedImageMimeTypes)[number];
+
+const mimeTypeByExtension: Record<string, AllowedImageMimeType> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp"
+};
+
 function ensureBlobToken(): string {
   if (!env.BLOB_READ_WRITE_TOKEN) {
     internalServerError("Upload de assets não configurado.");
   }
 
   return env.BLOB_READ_WRITE_TOKEN;
+}
+
+function resolveAllowedImageMimeType(file: File): AllowedImageMimeType | null {
+  const mimeTypeResult = allowedImageMimeTypeSchema.safeParse(file.type);
+  if (mimeTypeResult.success) {
+    return mimeTypeResult.data;
+  }
+
+  const extension = extname(file.name).toLowerCase();
+  return mimeTypeByExtension[extension] ?? null;
 }
 
 export async function prepareImageAsset(file: File): Promise<PreparedImageAsset> {
@@ -34,13 +54,23 @@ export async function prepareImageAsset(file: File): Promise<PreparedImageAsset>
     );
   }
 
-  const mimeTypeResult = allowedImageMimeTypeSchema.safeParse(file.type);
-  if (!mimeTypeResult.success) {
+  const resolvedMimeType = resolveAllowedImageMimeType(file);
+  if (!resolvedMimeType) {
     badRequest("Tipo de arquivo inválido. Envie uma imagem JPG, PNG ou WebP.");
   }
 
   try {
     const inputBuffer = Buffer.from(await file.arrayBuffer());
+
+    if (resolvedMimeType === "image/webp") {
+      return {
+        contentType: "image/webp",
+        body: new Blob([new Uint8Array(inputBuffer)], { type: "image/webp" }),
+        sizeBytes: inputBuffer.byteLength,
+        originalFilename: file.name
+      };
+    }
+
     const outputBuffer = await sharp(inputBuffer)
       .rotate()
       .webp({ quality: 82 })
