@@ -2,9 +2,25 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { requireAuth, requireRole } from "../../middlewares/auth.js";
 import type { AppBindings } from "../../types.js";
-import { serializeContactListResponse, serializeContactResponse } from "./contact.serializers.js";
-import { contactIdParamsSchema, contactListQuerySchema, createContactSchema } from "./contact.schemas.js";
-import { createContact, deleteContact, getContactById, listContacts } from "./contact.service.js";
+import {
+  serializeContactListResponse,
+  serializeContactResponse,
+  serializeContactStatsResponse
+} from "./contact.serializers.js";
+import {
+  contactIdParamsSchema,
+  contactListQuerySchema,
+  createContactSchema,
+  updateContactStatusSchema
+} from "./contact.schemas.js";
+import {
+  createContact,
+  deleteContact,
+  getContactById,
+  getContactStats,
+  listContacts,
+  updateContactStatus
+} from "./contact.service.js";
 
 export const contactRouter = new Hono<AppBindings>();
 
@@ -15,6 +31,7 @@ contactRouter.post("/", zValidator("json", createContactSchema), async (c) => {
   return c.json(serializeContactResponse(contact), 201);
 });
 
+contactRouter.use("/admin", requireAuth, requireRole(["MASTER", "ADMIN"]));
 contactRouter.use("/admin/*", requireAuth, requireRole(["MASTER", "ADMIN"]));
 
 contactRouter.get(
@@ -28,12 +45,31 @@ contactRouter.get(
   }
 );
 
+contactRouter.get("/admin/stats", async (c) => {
+  const stats = await getContactStats();
+
+  return c.json(serializeContactStatsResponse(stats));
+});
+
 contactRouter.get(
   "/admin/:id",
   zValidator("param", contactIdParamsSchema),
   async (c) => {
     const { id } = c.req.valid("param");
     const contact = await getContactById(id);
+
+    return c.json(serializeContactResponse(contact));
+  }
+);
+
+contactRouter.patch(
+  "/admin/:id/contact-status",
+  zValidator("param", contactIdParamsSchema),
+  zValidator("json", updateContactStatusSchema),
+  async (c) => {
+    const { id } = c.req.valid("param");
+    const input = c.req.valid("json");
+    const contact = await updateContactStatus(id, input);
 
     return c.json(serializeContactResponse(contact));
   }

@@ -1,0 +1,2 @@
+ALTER TABLE "Contact"
+ADD COLUMN "hasBeenContacted" BOOLEAN NOT NULL DEFAULT false;

@@ -664,6 +664,67 @@
           "response": []
         },
         {
+          "name": "GET /api/contacts/admin/stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "admin",
+                "stats"
+              ]
+            },
+            "description": "Retorna o total de contatos recebidos e quantos ja foram respondidos (admin)."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/contacts/admin/:id/contact-status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hasBeenContacted\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/admin/{{contactId}}/contact-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "admin",
+                "{{contactId}}",
+                "contact-status"
+              ]
+            },
+            "description": "Marca se o contato ja recebeu o primeiro retorno da equipe (admin)."
+          },
+          "response": []
+        },
+        {
           "name": "DELETE /api/contacts/admin/:id",
           "request": {
             "method": "DELETE",

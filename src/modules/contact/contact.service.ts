@@ -4,7 +4,9 @@ import type {
   ContactListQuery,
   ContactListResult,
   ContactRecord,
-  CreateContactInput
+  ContactStatsRecord,
+  CreateContactInput,
+  UpdateContactStatusInput
 } from "./contact.types.js";
 
 const contactSelect = {
@@ -17,6 +19,7 @@ const contactSelect = {
   state: true,
   service: true,
   message: true,
+  hasBeenContacted: true,
   createdAt: true
 } as const;
 
@@ -70,6 +73,44 @@ export async function getContactById(id: string): Promise<ContactRecord> {
   }
 
   return contact;
+}
+
+export async function updateContactStatus(
+  id: string,
+  input: UpdateContactStatusInput
+): Promise<ContactRecord> {
+  const contact = await prisma.contact.findUnique({
+    where: { id },
+    select: { id: true }
+  });
+
+  if (!contact) {
+    notFound("Contato não encontrado.");
+  }
+
+  return prisma.contact.update({
+    where: { id },
+    data: {
+      hasBeenContacted: input.hasBeenContacted
+    },
+    select: contactSelect
+  });
+}
+
+export async function getContactStats(): Promise<ContactStatsRecord> {
+  const [totalContacts, respondedContacts] = await Promise.all([
+    prisma.contact.count(),
+    prisma.contact.count({
+      where: {
+        hasBeenContacted: true
+      }
+    })
+  ]);
+
+  return {
+    totalContacts,
+    respondedContacts
+  };
 }
 
 export async function deleteContact(id: string): Promise<void> {

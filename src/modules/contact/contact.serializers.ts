@@ -4,7 +4,10 @@ import type {
   ContactListResponseDto,
   ContactListResult,
   ContactRecord,
-  ContactResponseDto
+  ContactResponseDto,
+  ContactStatsDto,
+  ContactStatsRecord,
+  ContactStatsResponseDto
 } from "./contact.types.js";
 
 export function serializeContact(contact: ContactRecord): ContactDto {
@@ -18,6 +21,7 @@ export function serializeContact(contact: ContactRecord): ContactDto {
     state: contact.state,
     service: contact.service,
     message: contact.message,
+    hasBeenContacted: contact.hasBeenContacted,
     createdAt: contact.createdAt
   };
 }
@@ -32,5 +36,18 @@ export function serializeContactListResponse(input: ContactListResult): ContactL
 export function serializeContactResponse(contact: ContactRecord): ContactResponseDto {
   return {
     contact: serializeContact(contact)
+  };
+}
+
+export function serializeContactStats(stats: ContactStatsRecord): ContactStatsDto {
+  return {
+    totalContacts: stats.totalContacts,
+    respondedContacts: stats.respondedContacts
+  };
+}
+
+export function serializeContactStatsResponse(stats: ContactStatsRecord): ContactStatsResponseDto {
+  return {
+    stats: serializeContactStats(stats)
   };
 }

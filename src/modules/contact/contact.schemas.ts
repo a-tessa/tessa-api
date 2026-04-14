@@ -27,3 +27,7 @@ export const contactListQuerySchema = z.object({
 export const contactIdParamsSchema = z.object({
   id: nonEmptyString
 });
+
+export const updateContactStatusSchema = z.object({
+  hasBeenContacted: z.boolean()
+});

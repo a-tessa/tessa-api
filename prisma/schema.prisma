@@ -70,16 +70,17 @@ model BlogArticle {
 }
 
 model Contact {
-  id          String   @id @default(cuid())
-  fullName    String
-  email       String
-  phone       String
-  companyName String
-  city        String
-  state       String
-  service     String?
-  message     String?
-  createdAt   DateTime @default(now())
+  id                String   @id @default(cuid())
+  fullName          String
+  email             String
+  phone             String
+  companyName       String
+  city              String
+  state             String
+  service           String?
+  message           String?
+  hasBeenContacted Boolean @default(false)
+  createdAt         DateTime @default(now())
 
   @@index([createdAt])
 }
