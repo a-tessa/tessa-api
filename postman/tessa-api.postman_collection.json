@@ -57,6 +57,11 @@
     {
       "key": "representantItemId",
       "value": ""
+    },
+    {
+      "key": "blogArticleSlug",
+      "value": ""
+    },
     }
   ],
   "item": [
@@ -308,6 +313,238 @@
                 "status"
               ]
             }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Blog",
+      "item": [
+        {
+          "name": "GET /api/blog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog?page=1&perPage=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "perPage",
+                  "value": "20"
+                },
+                {
+                  "key": "categorySlug",
+                  "value": "{{categorySlug}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista artigos do blog com paginacao. Filtro opcional por categorySlug."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/blog/:slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/{{blogArticleSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "{{blogArticleSlug}}"
+              ]
+            },
+            "description": "Retorna um artigo completo pelo slug."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/blog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('blogArticleSlug', data.article.slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "type": "text",
+                  "value": "Meu Primeiro Artigo no Blog"
+                },
+                {
+                  "key": "content",
+                  "type": "text",
+                  "value": "<h2>Introducao</h2><p>Este e um artigo de <strong>exemplo</strong> com texto rico.</p><ul><li>Item 1</li><li>Item 2</li></ul><blockquote>Uma citacao importante.</blockquote>"
+                },
+                {
+                  "key": "categorySlug",
+                  "type": "text",
+                  "value": "{{categorySlug}}"
+                },
+                {
+                  "key": "headerImage",
+                  "type": "file",
+                  "src": "",
+                  "disabled": true
+                },
+                {
+                  "key": "headerImageAlt",
+                  "type": "text",
+                  "value": "Imagem de capa do artigo",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/blog",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog"
+              ]
+            },
+            "description": "Cria um novo artigo. Aceita multipart/form-data. headerImage e headerImageAlt sao opcionais."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/blog/:slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('blogArticleSlug', data.article.slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "type": "text",
+                  "value": "Meu Primeiro Artigo Atualizado"
+                },
+                {
+                  "key": "content",
+                  "type": "text",
+                  "value": "<h2>Introducao Atualizada</h2><p>Conteudo <strong>revisado</strong> do artigo.</p><ol><li>Passo 1</li><li>Passo 2</li></ol>"
+                },
+                {
+                  "key": "categorySlug",
+                  "type": "text",
+                  "value": "{{categorySlug}}",
+                  "disabled": true
+                },
+                {
+                  "key": "headerImage",
+                  "type": "file",
+                  "src": "",
+                  "disabled": true
+                },
+                {
+                  "key": "headerImageAlt",
+                  "type": "text",
+                  "value": "Nova imagem de capa",
+                  "disabled": true
+                },
+                {
+                  "key": "removeHeaderImage",
+                  "type": "text",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/{{blogArticleSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "{{blogArticleSlug}}"
+              ]
+            },
+            "description": "Atualiza um artigo existente. Todos os campos sao opcionais. removeHeaderImage=true remove a imagem de capa."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/blog/:slug",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/{{blogArticleSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "{{blogArticleSlug}}"
+              ]
+            },
+            "description": "Remove um artigo e sua imagem de capa (se existir)."
           },
           "response": []
         }

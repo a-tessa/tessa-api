@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { structuredLogger } from "./middlewares/logger.js";
 import { authRouter } from "./routes/auth.js";
+import { blogRouter } from "./routes/blog.js";
 import { contentRouter } from "./routes/content.js";
 import { healthRouter } from "./routes/health.js";
 import { usersRouter } from "./routes/users.js";
@@ -32,6 +33,7 @@ app.get("/", (c) =>
 app.route("/api/health", healthRouter);
 app.route("/api/auth", authRouter);
 app.route("/api/users", usersRouter);
+app.route("/api/blog", blogRouter);
 app.route("/api/content", contentRouter);
 
 app.notFound((c) =>
