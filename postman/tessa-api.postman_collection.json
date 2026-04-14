@@ -65,6 +65,10 @@
     {
       "key": "contactId",
       "value": ""
+    },
+    {
+      "key": "heroSlideIndex",
+      "value": "0"
     }
   ],
   "item": [
@@ -942,6 +946,34 @@
                     "hero-section"
                   ]
                 }
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE /hero-section/slides/:slideIndex",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section/slides/{{heroSlideIndex}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "hero-section",
+                    "slides",
+                    "{{heroSlideIndex}}"
+                  ]
+                },
+                "description": "Remove um slide do hero (indice 0, 1 ou 2). Se for o ultimo slide, responde 204 e remove a secao inteira (igual DELETE /hero-section)."
               },
               "response": []
             },

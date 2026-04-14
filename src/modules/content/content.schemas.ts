@@ -33,8 +33,14 @@ export const heroTopicInputSchema = heroTopicBaseSchema.extend({
   image: nonEmptyString.optional()
 });
 
-const heroSectionArraySchema = z.array(heroTopicSchema).min(1).max(3);
-const heroSectionInputArraySchema = z.array(heroTopicInputSchema).min(1).max(3);
+export const MAX_HERO_SLIDES = 3;
+
+const heroSectionArraySchema = z.array(heroTopicSchema).min(1).max(MAX_HERO_SLIDES);
+const heroSectionInputArraySchema = z.array(heroTopicInputSchema).min(1).max(MAX_HERO_SLIDES);
+
+export const heroSectionSlideParamsSchema = z.object({
+  slideIndex: z.coerce.number().int().min(0).max(MAX_HERO_SLIDES - 1)
+});
 
 export const heroSectionSchema = z.preprocess((value) => {
   if (typeof value === "object" && value !== null && !Array.isArray(value)) {
@@ -150,16 +156,15 @@ function normalizeLegacyServicesPage(value: unknown) {
 
   if (Array.isArray(record.examples)) {
     for (const example of record.examples) {
-      if (
-        typeof example === "object" &&
-        example !== null &&
-        !Array.isArray(example) &&
-        typeof (example as Record<string, unknown>).imgUrl === "string" &&
-        (example as Record<string, unknown>).imgUrl!.trim().length > 0
-      ) {
-        normalizedImages.push({
-          imgUrl: (example as Record<string, string>).imgUrl
-        });
+      if (typeof example !== "object" || example === null || Array.isArray(example)) {
+        continue;
+      }
+
+      const exampleRecord = example as Record<string, unknown>;
+      const imgUrl = exampleRecord.imgUrl;
+
+      if (typeof imgUrl === "string" && imgUrl.trim().length > 0) {
+        normalizedImages.push({ imgUrl });
       }
     }
   }

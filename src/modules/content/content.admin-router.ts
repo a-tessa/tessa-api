@@ -23,6 +23,7 @@ import {
   createServicePage,
   createSingularSection,
   deleteHeroSection,
+  deleteHeroSectionSlide,
   deleteOperationSection,
   deleteOperationSectionImage,
   deleteCollectionItem,
@@ -46,6 +47,7 @@ import {
   collectionItemParamsSchema,
   heroSectionInputSchema,
   heroSectionSchema,
+  heroSectionSlideParamsSchema,
   MAX_OPERATION_SECTION_IMAGES,
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
@@ -520,6 +522,23 @@ adminContentRouter.put("/hero-section", ...requireAdminWriteAccess, async (c) =>
 
   return c.json(serializeSectionResponse("heroSection", value));
 });
+
+adminContentRouter.delete(
+  "/hero-section/slides/:slideIndex",
+  ...requireAdminWriteAccess,
+  zValidator("param", heroSectionSlideParamsSchema),
+  async (c) => {
+    const { slideIndex } = c.req.valid("param");
+    const user = c.get("user");
+    const value = await deleteHeroSectionSlide(slideIndex, user.id);
+
+    if (!value) {
+      return c.body(null, 204);
+    }
+
+    return c.json(serializeSectionResponse("heroSection", value));
+  }
+);
 
 adminContentRouter.delete("/hero-section", ...requireAdminWriteAccess, async (c) => {
   const user = c.get("user");

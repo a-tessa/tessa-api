@@ -1178,6 +1178,116 @@ export async function deleteHeroSection(userId: string) {
   await cleanupBlobUrls(previousAssets.map((asset) => asset.url));
 }
 
+export async function deleteHeroSectionSlide(
+  slideIndex: number,
+  userId: string
+): Promise<HeroSection | null> {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const heroSection = content.heroSection;
+
+  if (!heroSection) {
+    notFound("Seção hero não encontrada.");
+  }
+
+  if (!heroSection[slideIndex]) {
+    notFound("Slide da seção hero não encontrado.");
+  }
+
+  const nextTopics = heroSection.filter((_, index) => index !== slideIndex);
+
+  if (nextTopics.length === 0) {
+    await deleteHeroSection(userId);
+    return null;
+  }
+
+  const validatedHeroSection = heroSectionSchema.parse(nextTopics);
+
+  const previousAssets = await prisma.asset.findMany({
+    where: HERO_ASSET_FILTER,
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  const previousAssetByUrl = new Map<string, (typeof previousAssets)[number]>();
+  const previousAssetBySlot = new Map<number, (typeof previousAssets)[number]>();
+
+  for (const asset of previousAssets) {
+    if (!previousAssetByUrl.has(asset.url)) {
+      previousAssetByUrl.set(asset.url, asset);
+    }
+
+    if (asset.slot !== null && !previousAssetBySlot.has(asset.slot)) {
+      previousAssetBySlot.set(asset.slot, asset);
+    }
+  }
+
+  const assetsToPersist: Prisma.AssetCreateManyInput[] = [];
+
+  for (const [newIndex, topic] of validatedHeroSection.entries()) {
+    const sourceIndex = newIndex < slideIndex ? newIndex : newIndex + 1;
+    const retainedAsset =
+      previousAssetBySlot.get(sourceIndex) ??
+      previousAssetByUrl.get(topic.image) ??
+      previousAssetBySlot.get(newIndex);
+
+    if (!retainedAsset || retainedAsset.url !== topic.image) {
+      badRequest("Inconsistência entre imagens da seção hero e assets registrados.");
+    }
+
+    assetsToPersist.push({
+      kind: retainedAsset.kind,
+      entityType: retainedAsset.entityType,
+      entityId: retainedAsset.entityId,
+      sectionKey: retainedAsset.sectionKey,
+      fieldKey: retainedAsset.fieldKey,
+      slot: newIndex,
+      pathname: retainedAsset.pathname,
+      url: retainedAsset.url,
+      mimeType: retainedAsset.mimeType,
+      sizeBytes: retainedAsset.sizeBytes,
+      originalFilename: retainedAsset.originalFilename,
+      alt: retainedAsset.alt,
+      createdById: retainedAsset.createdById
+    });
+  }
+
+  const finalImageUrls = new Set(validatedHeroSection.map((topic) => topic.image));
+
+  await prisma.$transaction(async (tx) => {
+    await tx.landingPage.update({
+      where: { id: page.id },
+      data: {
+        draftContent: toDraftContentInput({
+          ...content,
+          heroSection: validatedHeroSection
+        } as DraftContent),
+        status: "draft",
+        updatedById: userId
+      }
+    });
+
+    await tx.asset.deleteMany({
+      where: HERO_ASSET_FILTER
+    });
+
+    if (assetsToPersist.length > 0) {
+      await tx.asset.createMany({
+        data: assetsToPersist
+      });
+    }
+  });
+
+  const previousUrlsToDelete = previousAssets
+    .map((asset) => asset.url)
+    .filter((url) => !finalImageUrls.has(url));
+
+  await cleanupBlobUrls(previousUrlsToDelete);
+
+  return validatedHeroSection;
+}
+
 export async function deleteOperationSection(userId: string) {
   const page = await getMainPageOrThrow();
   const content = await getMainDraftContent(page);

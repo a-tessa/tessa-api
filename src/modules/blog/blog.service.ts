@@ -67,12 +67,12 @@ async function ensureUniqueSlug(base: string, excludeId?: string): Promise<strin
 }
 
 async function validateCategorySlug(categorySlug: string): Promise<void> {
-  const page = await prisma.landingPage.findFirst({
-    where: { status: "published" },
-    select: { publishedContent: true }
+  const page = await prisma.landingPage.findUnique({
+    where: { slug: "home" },
+    select: { status: true, publishedContent: true }
   });
 
-  if (!page?.publishedContent) {
+  if (!page || page.status !== "published" || !page.publishedContent) {
     badRequest("Nenhuma categoria disponível. Publique o conteúdo da landing page primeiro.");
   }
 
