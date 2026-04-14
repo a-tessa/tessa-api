@@ -30,6 +30,7 @@ model User {
   pagesUpdated   LandingPage[] @relation("LandingPageUpdatedBy")
   pagesPublished LandingPage[] @relation("LandingPagePublishedBy")
   createdAssets  Asset[]
+  blogArticles   BlogArticle[] @relation("BlogArticleAuthor")
 }
 
 model LandingPage {
@@ -48,6 +49,39 @@ model LandingPage {
   updatedBy        User              @relation("LandingPageUpdatedBy", fields: [updatedById], references: [id])
   publishedById    String?
   publishedBy      User?             @relation("LandingPagePublishedBy", fields: [publishedById], references: [id])
+}
+
+model BlogArticle {
+  id             String    @id @default(cuid())
+  title          String
+  slug           String    @unique
+  content        String
+  categorySlug   String
+  headerImageUrl String?
+  headerImageAlt String?
+  publishedAt    DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  authorId       String
+  author         User      @relation("BlogArticleAuthor", fields: [authorId], references: [id])
+
+  @@index([categorySlug])
+  @@index([publishedAt])
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  fullName    String
+  email       String
+  phone       String
+  companyName String
+  city        String
+  state       String
+  service     String?
+  message     String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model Asset {

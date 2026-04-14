@@ -6,6 +6,7 @@ import { authRouter } from "./routes/auth.js";
 import { blogRouter } from "./routes/blog.js";
 import { contentRouter } from "./routes/content.js";
 import { healthRouter } from "./routes/health.js";
+import { contactRouter } from "./routes/contact.js";
 import { usersRouter } from "./routes/users.js";
 
 const app = new Hono();
@@ -34,6 +35,7 @@ app.route("/api/health", healthRouter);
 app.route("/api/auth", authRouter);
 app.route("/api/users", usersRouter);
 app.route("/api/blog", blogRouter);
+app.route("/api/contacts", contactRouter);
 app.route("/api/content", contentRouter);
 
 app.notFound((c) =>
