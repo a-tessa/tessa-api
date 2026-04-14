@@ -82,6 +82,8 @@ const MAX_SERVICE_PAGE_IMAGES = 15;
 const MAX_SERVICE_PAGE_MULTIPART_BODY_BYTES =
   env.ASSET_MAX_UPLOAD_BYTES * (MAX_SERVICE_PAGE_IMAGES + 1) + 1024 * 1024;
 
+adminContentRouter.use("*", requireAuth, requireRole(["MASTER", "ADMIN"]));
+
 function isMultipartRequest(contentType: string | undefined) {
   return contentType?.toLowerCase().includes("multipart/form-data") ?? false;
 }

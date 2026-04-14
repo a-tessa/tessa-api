@@ -25,6 +25,7 @@ import {
   toDraftContentInput,
   withDerivedScenery
 } from "./content.utils.js";
+import { listApprovedNpsResponses } from "../nps/nps.service.js";
 import {
   heroSectionSchema,
   operationSectionSchema,
@@ -967,14 +968,22 @@ async function saveHeroSectionContent(
 }
 
 export async function getPublicContent(): Promise<PublicContentRecord> {
-  const page = await findMainPage();
+  const [page, approvedNpsResponses] = await Promise.all([
+    findMainPage(),
+    listApprovedNpsResponses()
+  ]);
 
   if (!page || !page.publishedContent) {
     notFound("Conteúdo publicado não encontrado.");
   }
 
+  const publishedContent = sanitizeContentForPublish(page.publishedContent) as PublicContentRecord["content"];
+
   return {
-    content: sanitizeContentForPublish(page.publishedContent) as PublicContentRecord["content"],
+    content: {
+      ...publishedContent,
+      npsResponses: approvedNpsResponses
+    } as PublicContentRecord["content"],
     publishedAt: page.publishedAt,
     updatedAt: page.updatedAt
   };

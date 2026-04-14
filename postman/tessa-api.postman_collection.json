@@ -43,6 +43,10 @@
       "value": ""
     },
     {
+      "key": "npsResponseId",
+      "value": ""
+    },
+    {
       "key": "categoryItemId",
       "value": ""
     },
@@ -759,7 +763,12 @@
           "name": "GET /api/content/admin",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/content/admin",
               "host": [
@@ -828,7 +837,12 @@
               "name": "GET /hero-section",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/hero-section",
                   "host": [
@@ -1072,7 +1086,12 @@
               "name": "GET /scenery-section",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/scenery-section",
                   "host": [
@@ -1097,7 +1116,12 @@
               "name": "GET /operation-section",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/operation-section",
                   "host": [
@@ -1315,7 +1339,12 @@
               "name": "GET /company-information",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/company-information",
                   "host": [
@@ -1430,13 +1459,18 @@
           "name": "Collections",
           "item": [
             {
-              "name": "NPS",
+              "name": "NPS Config",
               "item": [
                 {
                   "name": "GET /nps",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/nps",
                       "host": [
@@ -1503,7 +1537,12 @@
                   "name": "GET /nps/:itemId",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/nps/{{npsItemId}}",
                       "host": [
@@ -1589,7 +1628,12 @@
                   "name": "GET /categories",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/categories",
                       "host": [
@@ -1657,7 +1701,12 @@
                   "name": "GET /categories/:itemId",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/categories/{{categoryItemId}}",
                       "host": [
@@ -1757,7 +1806,12 @@
                   "name": "GET /services-pages",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/services-pages",
                       "host": [
@@ -1893,7 +1947,12 @@
                   "name": "GET /services-pages/:slug",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",
                       "host": [
@@ -2058,7 +2117,12 @@
                   "name": "GET /representants-base",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/representants-base",
                       "host": [
@@ -2125,7 +2189,12 @@
                   "name": "GET /representants-base/:itemId",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/representants-base/{{representantItemId}}",
                       "host": [
@@ -2205,6 +2274,228 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "NPS Responses",
+      "item": [
+        {
+          "name": "GET /api/nps/responses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/responses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "responses"
+              ]
+            },
+            "description": "Lista apenas respostas de NPS aprovadas para consumo publico."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/nps/responses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('npsResponseId', data.response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorName\": \"Maria Souza\",\n  \"authorRole\": \"Engenheira Civil\",\n  \"companyName\": \"Construtora Exemplo\",\n  \"score\": 10,\n  \"comment\": \"Atendimento excelente do inicio ao fim.\",\n  \"question\": \"Como foi sua experiencia com a Tessa?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/responses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "responses"
+              ]
+            },
+            "description": "Cria uma nova resposta de NPS em estado pending."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/nps/admin/responses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses?status=pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Lista respostas para moderacao. Remova o query param status para listar todas."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/nps/admin/responses/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses/{{npsResponseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses",
+                "{{npsResponseId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/nps/admin/responses/:id/moderation (approve)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses/{{npsResponseId}}/moderation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses",
+                "{{npsResponseId}}",
+                "moderation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/nps/admin/responses/:id/moderation (reject)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses/{{npsResponseId}}/moderation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses",
+                "{{npsResponseId}}",
+                "moderation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/nps/admin/responses/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses/{{npsResponseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses",
+                "{{npsResponseId}}"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     }

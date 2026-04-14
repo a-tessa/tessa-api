@@ -206,8 +206,8 @@ Após o deploy e as migrations:
 
 ### Conteúdo
 
-- Todos os `GET` de `content` são públicos.
-- `POST`, `PUT` e `DELETE` em `/api/content/admin` exigem autenticação com perfil `MASTER` ou `ADMIN`.
+- `GET /api/content/public` é público.
+- Todas as rotas em `/api/content/admin` exigem autenticação com perfil `MASTER` ou `ADMIN`.
 - `GET /api/content/public`
 - `GET /api/content/admin`
 - `POST /api/content/admin/publish`
@@ -225,6 +225,15 @@ Após o deploy e as migrations:
 - `GET|POST /api/content/admin/categories`
 - `GET|PUT|DELETE /api/content/admin/categories/:itemId`
 
+### Respostas de NPS
+
+- `GET /api/nps/responses`
+- `POST /api/nps/responses`
+- `GET /api/nps/admin/responses`
+- `GET /api/nps/admin/responses/:id`
+- `PATCH /api/nps/admin/responses/:id/moderation`
+- `DELETE /api/nps/admin/responses/:id`
+
 ## Exemplo de bootstrap do master
 
 ```bash
@@ -241,6 +250,8 @@ curl -X POST http://localhost:3001/api/auth/bootstrap \
 ## Modelo de conteúdo
 
 O conteúdo principal da landing é tratado como um recurso único interno. A API gera um `id` interno para itens de `nps`, `representantsBase` e `categories`, enquanto `servicesPages` usa `slug` como identificador da rota. A `scenerySection` é derivada da lista de `servicesPages`, então não possui CRUD próprio.
+
+As configurações de NPS da landing continuam em `content.nps`, mas as respostas enviadas pelos visitantes agora vivem no recurso separado `NpsResponse`. O fluxo é: visitante envia a resposta em `POST /api/nps/responses`, ela entra como `pending`, um admin revisa em `/api/nps/admin/responses/:id/moderation` e a landing pública recebe apenas as aprovadas no campo `content.npsResponses`.
 
 As `servicesPages` precisam referenciar uma categoria existente em `categories`. A API normaliza e salva o `slug` canônico da categoria no campo `category`.
 

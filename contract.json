@@ -38,6 +38,19 @@
         ]
       }
     ],
+    "npsResponses": [
+      {
+        "id": "string",
+        "authorName": "string",
+        "authorRole": "string | null",
+        "companyName": "string | null",
+        "score": "number",
+        "comment": "string",
+        "question": "string | null",
+        "createdAt": "date",
+        "reviewedAt": "date | null"
+      }
+    ],
     "servicesPages": [
       {
         "slug": "string",

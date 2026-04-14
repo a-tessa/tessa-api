@@ -18,19 +18,26 @@ enum LandingPageStatus {
   published
 }
 
+enum NpsResponseStatus {
+  pending
+  approved
+  rejected
+}
+
 model User {
-  id             String        @id @default(cuid())
-  name           String
-  email          String        @unique
-  passwordHash   String
-  role           UserRole
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  pagesUpdated   LandingPage[] @relation("LandingPageUpdatedBy")
-  pagesPublished LandingPage[] @relation("LandingPagePublishedBy")
-  createdAssets  Asset[]
-  blogArticles   BlogArticle[] @relation("BlogArticleAuthor")
+  id                   String        @id @default(cuid())
+  name                 String
+  email                String        @unique
+  passwordHash         String
+  role                 UserRole
+  isActive             Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  pagesUpdated         LandingPage[] @relation("LandingPageUpdatedBy")
+  pagesPublished       LandingPage[] @relation("LandingPagePublishedBy")
+  createdAssets        Asset[]
+  blogArticles         BlogArticle[] @relation("BlogArticleAuthor")
+  reviewedNpsResponses NpsResponse[] @relation("NpsResponseReviewedBy")
 }
 
 model LandingPage {
@@ -82,6 +89,24 @@ model Contact {
   hasBeenContacted Boolean @default(false)
   createdAt         DateTime @default(now())
 
+  @@index([createdAt])
+}
+
+model NpsResponse {
+  id          String            @id @default(cuid())
+  authorName  String
+  authorRole  String?
+  companyName String?
+  score       Int
+  comment     String
+  question    String?
+  status      NpsResponseStatus @default(pending)
+  createdAt   DateTime          @default(now())
+  reviewedAt  DateTime?
+  reviewedById String?
+  reviewedBy  User?             @relation("NpsResponseReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt])
   @@index([createdAt])
 }
 
