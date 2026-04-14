@@ -27,6 +27,14 @@
       "value": "12345678"
     },
     {
+      "key": "loginEmail",
+      "value": "contato.tessa.estruturas@gmail.com"
+    },
+    {
+      "key": "loginPassword",
+      "value": "Contato@2026"
+    },
+    {
       "key": "adminId",
       "value": ""
     },
@@ -35,12 +43,36 @@
       "value": ""
     },
     {
+      "key": "npsResponseId",
+      "value": ""
+    },
+    {
+      "key": "categoryItemId",
+      "value": ""
+    },
+    {
+      "key": "categorySlug",
+      "value": "consultoria"
+    },
+    {
       "key": "servicePageSlug",
       "value": "servico-premium"
     },
     {
       "key": "representantItemId",
       "value": ""
+    },
+    {
+      "key": "blogArticleSlug",
+      "value": ""
+    },
+    {
+      "key": "contactId",
+      "value": ""
+    },
+    {
+      "key": "heroSlideIndex",
+      "value": "0"
     }
   ],
   "item": [
@@ -139,7 +171,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{masterEmail}}\",\n  \"password\": \"{{masterPassword}}\"\n}"
+              "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
@@ -298,13 +330,445 @@
       ]
     },
     {
+      "name": "Blog",
+      "item": [
+        {
+          "name": "GET /api/blog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog?page=1&perPage=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "perPage",
+                  "value": "20"
+                },
+                {
+                  "key": "categorySlug",
+                  "value": "{{categorySlug}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista artigos do blog com paginacao. Filtro opcional por categorySlug."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/blog/:slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/{{blogArticleSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "{{blogArticleSlug}}"
+              ]
+            },
+            "description": "Retorna um artigo completo pelo slug."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/blog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('blogArticleSlug', data.article.slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "type": "text",
+                  "value": "Meu Primeiro Artigo no Blog"
+                },
+                {
+                  "key": "content",
+                  "type": "text",
+                  "value": "<h2>Introducao</h2><p>Este e um artigo de <strong>exemplo</strong> com texto rico.</p><ul><li>Item 1</li><li>Item 2</li></ul><blockquote>Uma citacao importante.</blockquote>"
+                },
+                {
+                  "key": "categorySlug",
+                  "type": "text",
+                  "value": "{{categorySlug}}"
+                },
+                {
+                  "key": "headerImage",
+                  "type": "file",
+                  "src": "",
+                  "disabled": true
+                },
+                {
+                  "key": "headerImageAlt",
+                  "type": "text",
+                  "value": "Imagem de capa do artigo",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/blog",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog"
+              ]
+            },
+            "description": "Cria um novo artigo. Aceita multipart/form-data. headerImage e headerImageAlt sao opcionais."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/blog/:slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('blogArticleSlug', data.article.slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "type": "text",
+                  "value": "Meu Primeiro Artigo Atualizado"
+                },
+                {
+                  "key": "content",
+                  "type": "text",
+                  "value": "<h2>Introducao Atualizada</h2><p>Conteudo <strong>revisado</strong> do artigo.</p><ol><li>Passo 1</li><li>Passo 2</li></ol>"
+                },
+                {
+                  "key": "categorySlug",
+                  "type": "text",
+                  "value": "{{categorySlug}}",
+                  "disabled": true
+                },
+                {
+                  "key": "headerImage",
+                  "type": "file",
+                  "src": "",
+                  "disabled": true
+                },
+                {
+                  "key": "headerImageAlt",
+                  "type": "text",
+                  "value": "Nova imagem de capa",
+                  "disabled": true
+                },
+                {
+                  "key": "removeHeaderImage",
+                  "type": "text",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/{{blogArticleSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "{{blogArticleSlug}}"
+              ]
+            },
+            "description": "Atualiza um artigo existente. Todos os campos sao opcionais. removeHeaderImage=true remove a imagem de capa."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/blog/:slug",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/{{blogArticleSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "{{blogArticleSlug}}"
+              ]
+            },
+            "description": "Remove um artigo e sua imagem de capa (se existir)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "POST /api/contacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('contactId', data.contact.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"João Silva\",\n  \"email\": \"joao@empresa.com\",\n  \"phone\": \"11999999999\",\n  \"companyName\": \"Empresa X\",\n  \"city\": \"São Paulo\",\n  \"state\": \"SP\",\n  \"service\": \"servico-premium\",\n  \"message\": \"Gostaria de saber mais sobre os serviços.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts"
+              ]
+            },
+            "description": "Envia um contato (publico, sem autenticacao)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/contacts/admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/admin?page=1&perPage=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "perPage",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lista todos os contatos recebidos (admin)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/contacts/admin/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/admin/{{contactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "admin",
+                "{{contactId}}"
+              ]
+            },
+            "description": "Retorna um contato especifico pelo ID (admin)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/contacts/admin/stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "admin",
+                "stats"
+              ]
+            },
+            "description": "Retorna o total de contatos recebidos e quantos ja foram respondidos (admin)."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/contacts/admin/:id/contact-status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hasBeenContacted\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/admin/{{contactId}}/contact-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "admin",
+                "{{contactId}}",
+                "contact-status"
+              ]
+            },
+            "description": "Marca se o contato ja recebeu o primeiro retorno da equipe (admin)."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/contacts/admin/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/admin/{{contactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacts",
+                "admin",
+                "{{contactId}}"
+              ]
+            },
+            "description": "Remove um contato pelo ID (admin)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Content",
       "item": [
         {
           "name": "GET /api/content/admin",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/content/admin",
               "host": [
@@ -367,10 +831,18 @@
           "name": "Sections",
           "item": [
             {
+              "name": "Hero",
+              "item": [
+            {
               "name": "GET /hero-section",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/hero-section",
                   "host": [
@@ -553,6 +1025,34 @@
               "response": []
             },
             {
+              "name": "DELETE /hero-section/slides/:slideIndex",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/hero-section/slides/{{heroSlideIndex}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "hero-section",
+                    "slides",
+                    "{{heroSlideIndex}}"
+                  ]
+                },
+                "description": "Remove um slide do hero (indice 0, 1 ou 2). Se for o ultimo slide, responde 204 e remove a secao inteira (igual DELETE /hero-section)."
+              },
+              "response": []
+            },
+            {
               "name": "DELETE /hero-section",
               "request": {
                 "method": "DELETE",
@@ -576,97 +1076,16 @@
                 }
               },
               "response": []
+            }
+              ]
             },
+            {
+              "name": "Cenário",
+              "item": [
             {
               "name": "GET /scenery-section",
               "request": {
                 "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "content",
-                    "admin",
-                    "scenery-section"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "POST /scenery-section",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Conheca nosso cenario\",\n  \"image\": \"https://example.com/scenery.jpg\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "content",
-                    "admin",
-                    "scenery-section"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "PUT /scenery-section",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Cenario atualizado\",\n  \"image\": \"https://example.com/scenery-2.jpg\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/content/admin/scenery-section",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "content",
-                    "admin",
-                    "scenery-section"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "DELETE /scenery-section",
-              "request": {
-                "method": "DELETE",
                 "header": [
                   {
                     "key": "Authorization",
@@ -687,12 +1106,22 @@
                 }
               },
               "response": []
+            }
+              ]
             },
+            {
+              "name": "Operação",
+              "item": [
             {
               "name": "GET /operation-section",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/operation-section",
                   "host": [
@@ -709,7 +1138,7 @@
               "response": []
             },
             {
-              "name": "POST /operation-section",
+              "name": "POST /operation-section (json)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -724,7 +1153,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-1.jpg\",\n      \"alt\": \"Primeira imagem operacional\"\n    },\n    {\n      \"url\": \"https://example.com/operation-2.jpg\",\n      \"alt\": \"Segunda imagem operacional\"\n    }\n  ]\n}"
+                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-1.jpg\"\n    },\n    {\n      \"url\": \"https://example.com/operation-2.jpg\"\n    }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/operation-section",
@@ -742,7 +1171,47 @@
               "response": []
             },
             {
-              "name": "PUT /operation-section",
+              "name": "POST /operation-section (multipart)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image_0",
+                      "type": "file",
+                      "src": ""
+                    },
+                    {
+                      "key": "image_1",
+                      "type": "file",
+                      "src": ""
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /operation-section (json)",
               "request": {
                 "method": "PUT",
                 "header": [
@@ -757,7 +1226,42 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-updated.jpg\",\n      \"alt\": \"Imagem operacional atualizada\"\n    }\n  ]\n}"
+                  "raw": "{\n  \"images\": [\n    {\n      \"url\": \"https://example.com/operation-updated.jpg\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PUT /operation-section (multipart)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image_0",
+                      "type": "file",
+                      "src": ""
+                    }
+                  ]
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/operation-section",
@@ -800,10 +1304,47 @@
               "response": []
             },
             {
+              "name": "DELETE /operation-section/images/:imageIndex",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/admin/operation-section/images/0",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "admin",
+                    "operation-section",
+                    "images",
+                    "0"
+                  ]
+                }
+              },
+              "response": []
+            }
+              ]
+            },
+            {
+              "name": "Empresa",
+              "item": [
+            {
               "name": "GET /company-information",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/company-information",
                   "host": [
@@ -910,19 +1451,26 @@
               },
               "response": []
             }
+              ]
+            }
           ]
         },
         {
           "name": "Collections",
           "item": [
             {
-              "name": "NPS",
+              "name": "NPS Config",
               "item": [
                 {
                   "name": "GET /nps",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/nps",
                       "host": [
@@ -989,7 +1537,12 @@
                   "name": "GET /nps/:itemId",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/nps/{{npsItemId}}",
                       "host": [
@@ -1069,13 +1622,196 @@
               ]
             },
             {
+              "name": "Categories",
+              "item": [
+                {
+                  "name": "GET /categories",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "POST /categories",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 201) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('categoryItemId', data.item.id);",
+                          "  pm.collectionVariables.set('categorySlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"Consultoria\",\n  \"slug\": \"consultoria\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GET /categories/:itemId",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories/{{categoryItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories",
+                        "{{categoryItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "PUT /categories/:itemId",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('categorySlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"Consultoria Premium\",\n  \"slug\": \"consultoria-premium\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories/{{categoryItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories",
+                        "{{categoryItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "DELETE /categories/:itemId",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/categories/{{categoryItemId}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "categories",
+                        "{{categoryItemId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
               "name": "Services Pages",
               "item": [
                 {
                   "name": "GET /services-pages",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/services-pages",
                       "host": [
@@ -1121,7 +1857,76 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"slug\": \"servico-premium\",\n  \"title\": \"Servico Premium\",\n  \"category\": \"Consultoria\",\n  \"subtitle\": \"Atendimento especializado\",\n  \"imageUrl\": \"https://example.com/service.jpg\",\n  \"exampleVideoUrl\": \"https://example.com/video.mp4\",\n  \"examples\": [\n    {\n      \"imgUrl\": \"https://example.com/service-example.jpg\"\n    }\n  ]\n}"
+                      "raw": "{\n  \"slug\": \"servico-premium\",\n  \"title\": \"Servico Premium\",\n  \"category\": \"{{categorySlug}}\",\n  \"subtitle\": \"Atendimento especializado\",\n  \"exampleVideoUrl\": \"https://example.com/video.mp4\",\n  \"backgroundImageUrl\": \"https://example.com/service-background.jpg\",\n  \"images\": [\n    {\n      \"imgUrl\": \"https://example.com/service-image-1.jpg\"\n    },\n    {\n      \"imgUrl\": \"https://example.com/service-image-2.jpg\"\n    },\n    {\n      \"imgUrl\": \"https://example.com/service-image-3.jpg\"\n    }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "POST /services-pages (multipart)",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 201) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('servicePageSlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "payload",
+                          "type": "text",
+                          "value": "{\n  \"slug\": \"servico-premium-upload\",\n  \"title\": \"Servico Premium com Upload\",\n  \"category\": \"{{categorySlug}}\",\n  \"subtitle\": \"Atendimento especializado com galeria enviada no request\",\n  \"exampleVideoUrl\": \"https://example.com/video.mp4\"\n}"
+                        },
+                        {
+                          "key": "backgroundImage",
+                          "type": "file",
+                          "src": "/caminho/para/service-background.jpg"
+                        },
+                        {
+                          "key": "image_0",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-1.jpg"
+                        },
+                        {
+                          "key": "image_1",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-2.jpg"
+                        },
+                        {
+                          "key": "image_2",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-3.jpg"
+                        }
+                      ]
                     },
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/services-pages",
@@ -1142,7 +1947,12 @@
                   "name": "GET /services-pages/:slug",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",
                       "host": [
@@ -1189,7 +1999,72 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"slug\": \"servico-premium-atualizado\",\n  \"title\": \"Servico Premium Atualizado\",\n  \"category\": \"Consultoria\",\n  \"subtitle\": \"Atendimento ainda mais especializado\",\n  \"imageUrl\": \"https://example.com/service-updated.jpg\",\n  \"exampleVideoUrl\": \"https://example.com/video-updated.mp4\",\n  \"examples\": [\n    {\n      \"imgUrl\": \"https://example.com/service-example-updated.jpg\"\n    }\n  ]\n}"
+                      "raw": "{\n  \"slug\": \"servico-premium-atualizado\",\n  \"title\": \"Servico Premium Atualizado\",\n  \"category\": \"{{categorySlug}}\",\n  \"subtitle\": \"Atendimento ainda mais especializado\",\n  \"exampleVideoUrl\": \"https://example.com/video-updated.mp4\",\n  \"backgroundImageUrl\": \"https://example.com/service-background-updated.jpg\",\n  \"images\": [\n    {\n      \"imgUrl\": \"https://example.com/service-image-updated-1.jpg\"\n    },\n    {\n      \"imgUrl\": \"https://example.com/service-image-updated-2.jpg\"\n    }\n  ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "services-pages",
+                        "{{servicePageSlug}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "PUT /services-pages/:slug (multipart)",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "  const data = pm.response.json();",
+                          "  pm.collectionVariables.set('servicePageSlug', data.item.slug);",
+                          "}"
+                        ]
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "payload",
+                          "type": "text",
+                          "value": "{\n  \"slug\": \"servico-premium-upload-atualizado\",\n  \"title\": \"Servico Premium com Upload Atualizado\",\n  \"category\": \"{{categorySlug}}\",\n  \"subtitle\": \"Atualizacao mantendo parte da galeria anterior\",\n  \"exampleVideoUrl\": \"https://example.com/video-updated.mp4\",\n  \"images\": [\n    {},\n    {\n      \"imgUrl\": \"https://example.com/service-image-fixed.jpg\"\n    },\n    {}\n  ]\n}"
+                        },
+                        {
+                          "key": "backgroundImage",
+                          "type": "file",
+                          "src": "/caminho/para/service-background-updated.jpg"
+                        },
+                        {
+                          "key": "image_0",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-updated-1.jpg"
+                        },
+                        {
+                          "key": "image_2",
+                          "type": "file",
+                          "src": "/caminho/para/service-image-updated-3.jpg"
+                        }
+                      ]
                     },
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/services-pages/{{servicePageSlug}}",
@@ -1242,7 +2117,12 @@
                   "name": "GET /representants-base",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/representants-base",
                       "host": [
@@ -1309,7 +2189,12 @@
                   "name": "GET /representants-base/:itemId",
                   "request": {
                     "method": "GET",
-                    "header": [],
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/representants-base/{{representantItemId}}",
                       "host": [
@@ -1389,6 +2274,228 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "NPS Responses",
+      "item": [
+        {
+          "name": "GET /api/nps/responses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/responses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "responses"
+              ]
+            },
+            "description": "Lista apenas respostas de NPS aprovadas para consumo publico."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/nps/responses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('npsResponseId', data.response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorName\": \"Maria Souza\",\n  \"authorRole\": \"Engenheira Civil\",\n  \"companyName\": \"Construtora Exemplo\",\n  \"score\": 10,\n  \"comment\": \"Atendimento excelente do inicio ao fim.\",\n  \"question\": \"Como foi sua experiencia com a Tessa?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/responses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "responses"
+              ]
+            },
+            "description": "Cria uma nova resposta de NPS em estado pending."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/nps/admin/responses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses?status=pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Lista respostas para moderacao. Remova o query param status para listar todas."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/nps/admin/responses/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses/{{npsResponseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses",
+                "{{npsResponseId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/nps/admin/responses/:id/moderation (approve)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses/{{npsResponseId}}/moderation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses",
+                "{{npsResponseId}}",
+                "moderation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/nps/admin/responses/:id/moderation (reject)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses/{{npsResponseId}}/moderation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses",
+                "{{npsResponseId}}",
+                "moderation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/nps/admin/responses/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nps/admin/responses/{{npsResponseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nps",
+                "admin",
+                "responses",
+                "{{npsResponseId}}"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     }

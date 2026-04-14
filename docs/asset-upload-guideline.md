@@ -23,7 +23,8 @@ Esta diretriz vale para a `heroSection` e deve servir de base para futuras rotas
 
 4. Imagens são convertidas antes do upload.
    Regra inicial:
-   - imagens: converter para `webp`
+   - imagens em `jpg` e `png`: converter para `webp`
+   - imagens em `webp`: manter em `webp` sem reconversão
    - PDF: manter `pdf`
 
 5. Para seções de conteúdo como Hero, o endpoint de salvar conteúdo e o upload devem funcionar juntos.
@@ -247,9 +248,16 @@ Para novos uploads de seções semelhantes:
 
 Exemplos futuros:
 
-- `PUT /api/content/admin/scenery-section` com `payload` + `image`
 - `PUT /api/content/admin/services-pages/:slug` com `payload` + `image`
 - `PUT /api/content/admin/company-information` com `payload` + `logo`
+- `PUT /api/content/admin/operation-section` com `payload` + `image_0` até `image_19`
+
+Regras específicas já adotadas na `operationSection`:
+
+- até `20` fotos por request
+- cada arquivo deve ter no máximo `3 MB`
+- quando alguma foto ultrapassa o limite, a API retorna erro apontando o campo exato, como `image_7`
+- no multipart, o campo `payload` é opcional quando o request só envia arquivos
 
 ## Plano de Implementação Base
 

@@ -8,6 +8,8 @@ import type {
   DraftContent,
   PublicContentRecord,
   PublicContentResponseDto,
+  ScenerySection,
+  ScenerySectionResponseDto,
   SectionResponseDto,
   ServicePageResponseDto,
   ServicePagesResponseDto,
@@ -59,6 +61,12 @@ export function serializeCollectionItemResponse(
   item: StoredCollectionItem
 ): CollectionItemResponseDto {
   return { item };
+}
+
+export function serializeScenerySectionResponse(
+  scenerySection: ScenerySection
+): ScenerySectionResponseDto {
+  return { scenerySection };
 }
 
 export function serializeServicePageResponse(

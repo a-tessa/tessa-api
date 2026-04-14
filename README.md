@@ -206,14 +206,15 @@ Após o deploy e as migrations:
 
 ### Conteúdo
 
-- Todos os `GET` de `content` são públicos.
-- `POST`, `PUT` e `DELETE` em `/api/content/admin` exigem autenticação com perfil `MASTER` ou `ADMIN`.
+- `GET /api/content/public` é público.
+- Todas as rotas em `/api/content/admin` exigem autenticação com perfil `MASTER` ou `ADMIN`.
 - `GET /api/content/public`
 - `GET /api/content/admin`
 - `POST /api/content/admin/publish`
 - `GET|POST|PUT|DELETE /api/content/admin/hero-section`
-- `GET|POST|PUT|DELETE /api/content/admin/scenery-section`
+- `GET /api/content/admin/scenery-section`
 - `GET|POST|PUT|DELETE /api/content/admin/operation-section`
+- `DELETE /api/content/admin/operation-section/images/:imageIndex`
 - `GET|POST|PUT|DELETE /api/content/admin/company-information`
 - `GET|POST /api/content/admin/nps`
 - `GET|PUT|DELETE /api/content/admin/nps/:itemId`
@@ -221,6 +222,17 @@ Após o deploy e as migrations:
 - `GET|PUT|DELETE /api/content/admin/services-pages/:slug`
 - `GET|POST /api/content/admin/representants-base`
 - `GET|PUT|DELETE /api/content/admin/representants-base/:itemId`
+- `GET|POST /api/content/admin/categories`
+- `GET|PUT|DELETE /api/content/admin/categories/:itemId`
+
+### Respostas de NPS
+
+- `GET /api/nps/responses`
+- `POST /api/nps/responses`
+- `GET /api/nps/admin/responses`
+- `GET /api/nps/admin/responses/:id`
+- `PATCH /api/nps/admin/responses/:id/moderation`
+- `DELETE /api/nps/admin/responses/:id`
 
 ## Exemplo de bootstrap do master
 
@@ -237,14 +249,38 @@ curl -X POST http://localhost:3001/api/auth/bootstrap \
 
 ## Modelo de conteúdo
 
-O conteúdo principal da landing é tratado como um recurso único interno. A API gera um `id` interno para itens de `nps` e `representantsBase`, enquanto `servicesPages` usa `slug` como identificador da rota.
+O conteúdo principal da landing é tratado como um recurso único interno. A API gera um `id` interno para itens de `nps`, `representantsBase` e `categories`, enquanto `servicesPages` usa `slug` como identificador da rota. A `scenerySection` é derivada da lista de `servicesPages`, então não possui CRUD próprio.
+
+As configurações de NPS da landing continuam em `content.nps`, mas as respostas enviadas pelos visitantes agora vivem no recurso separado `NpsResponse`. O fluxo é: visitante envia a resposta em `POST /api/nps/responses`, ela entra como `pending`, um admin revisa em `/api/nps/admin/responses/:id/moderation` e a landing pública recebe apenas as aprovadas no campo `content.npsResponses`.
+
+As `servicesPages` precisam referenciar uma categoria existente em `categories`. A API normaliza e salva o `slug` canônico da categoria no campo `category`.
 
 A seção `heroSection` aceita uma lista com `1` a `3` tópicos, e cada tópico segue a mesma estrutura de `title`, `description`, `image` e `button`.
+
+A `operationSection` aceita um array `images` com `1` a `20` fotos. Cada arquivo enviado por multipart precisa ter menos de `3 MB`. Se alguma foto ultrapassar esse limite, a API responde com erro informando o campo exato, como `image_7`, e o motivo.
+
+A rota `DELETE /api/content/admin/operation-section/images/:imageIndex` remove apenas a imagem selecionada (por índice), atualiza os metadados da seção e também limpa o arquivo correspondente no Blob.
+
+As `servicesPages` aceitam `backgroundImageUrl` e um array `images` com `1` a `15` fotos por serviço.
 
 As rotas `POST` e `PUT` de `heroSection` aceitam:
 
 - `application/json`, quando as imagens já estiverem como URL final
 - `multipart/form-data`, com um campo `payload` contendo o JSON dos tópicos e arquivos opcionais `image_0`, `image_1` e `image_2`
+
+As rotas `POST` e `PUT` de `servicesPages` aceitam:
+
+- `application/json`, quando `backgroundImageUrl` e `images[].imgUrl` já estiverem com as URLs finais
+- `multipart/form-data`, com um campo `payload` contendo o JSON estrutural, um arquivo opcional `backgroundImage` e arquivos opcionais `image_0` até `image_14`
+
+No `multipart/form-data`, o campo `images` pode ser omitido no `payload` quando todas as fotos vierem como arquivo no mesmo request. Em edições parciais, `images` pode ser enviado para preservar URLs já existentes em slots específicos. O `backgroundImageUrl` também pode ser omitido no `payload` quando a imagem vier no campo de arquivo `backgroundImage`.
+
+As rotas `POST` e `PUT` de `operationSection` aceitam:
+
+- `application/json`, quando `images[].url` já estiver com as URLs finais
+- `multipart/form-data`, com arquivos opcionais `image_0` até `image_19` e um campo opcional `payload` para preservar URLs já existentes em slots específicos
+
+No `multipart/form-data`, o `payload` pode ser omitido quando todas as fotos vierem como arquivo no mesmo request. Em edições parciais, `payload.images` pode ser enviado para preservar URLs já existentes em slots específicos, sem precisar usar objetos vazios para os uploads novos.
 
 Uploads de imagem do admin usam Vercel Blob para o binário e Postgres para os metadados. A diretriz completa está em [docs/asset-upload-guideline.md](/home/luisfaf/tessa/tessa-api/docs/asset-upload-guideline.md).
 

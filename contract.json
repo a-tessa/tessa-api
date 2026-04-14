@@ -11,20 +11,18 @@
         }
       }
     ],
-    "scenerySection": [{
-      "title": "string",
-      "images": [
-        {
-          "url": "string",
-          "alt": "string"
-        }
-      ]
-    }],
+    "scenerySection": [
+      {
+        "slug": "string",
+        "title": "string",
+        "category": "string",
+        "image": "string"
+      }
+    ],
     "operationSection": {
       "images": [
         {
-          "url": "string",
-          "alt": "string"
+          "url": "string"
         }
       ]
     },
@@ -40,18 +38,38 @@
         ]
       }
     ],
+    "npsResponses": [
+      {
+        "id": "string",
+        "authorName": "string",
+        "authorRole": "string | null",
+        "companyName": "string | null",
+        "score": "number",
+        "comment": "string",
+        "question": "string | null",
+        "createdAt": "date",
+        "reviewedAt": "date | null"
+      }
+    ],
     "servicesPages": [
       {
+        "slug": "string",
         "title": "string",
         "category": "string",
         "subtitle": "string",
-        "imageUrl": "string",
         "exampleVideoUrl": "string",
-        "examples": [
+        "backgroundImageUrl": "string",
+        "images": [
           {
             "imgUrl": "string"
           }
         ]
+      }
+    ],
+    "categories": [
+      {
+        "name": "string",
+        "slug": "string"
       }
     ],
     "representantsBase": [

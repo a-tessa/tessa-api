@@ -18,18 +18,26 @@ enum LandingPageStatus {
   published
 }
 
+enum NpsResponseStatus {
+  pending
+  approved
+  rejected
+}
+
 model User {
-  id             String        @id @default(cuid())
-  name           String
-  email          String        @unique
-  passwordHash   String
-  role           UserRole
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  pagesUpdated   LandingPage[] @relation("LandingPageUpdatedBy")
-  pagesPublished LandingPage[] @relation("LandingPagePublishedBy")
-  createdAssets  Asset[]
+  id                   String        @id @default(cuid())
+  name                 String
+  email                String        @unique
+  passwordHash         String
+  role                 UserRole
+  isActive             Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  pagesUpdated         LandingPage[] @relation("LandingPageUpdatedBy")
+  pagesPublished       LandingPage[] @relation("LandingPagePublishedBy")
+  createdAssets        Asset[]
+  blogArticles         BlogArticle[] @relation("BlogArticleAuthor")
+  reviewedNpsResponses NpsResponse[] @relation("NpsResponseReviewedBy")
 }
 
 model LandingPage {
@@ -48,6 +56,58 @@ model LandingPage {
   updatedBy        User              @relation("LandingPageUpdatedBy", fields: [updatedById], references: [id])
   publishedById    String?
   publishedBy      User?             @relation("LandingPagePublishedBy", fields: [publishedById], references: [id])
+}
+
+model BlogArticle {
+  id             String    @id @default(cuid())
+  title          String
+  slug           String    @unique
+  content        String
+  categorySlug   String
+  headerImageUrl String?
+  headerImageAlt String?
+  publishedAt    DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  authorId       String
+  author         User      @relation("BlogArticleAuthor", fields: [authorId], references: [id])
+
+  @@index([categorySlug])
+  @@index([publishedAt])
+}
+
+model Contact {
+  id                String   @id @default(cuid())
+  fullName          String
+  email             String
+  phone             String
+  companyName       String
+  city              String
+  state             String
+  service           String?
+  message           String?
+  hasBeenContacted Boolean @default(false)
+  createdAt         DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model NpsResponse {
+  id          String            @id @default(cuid())
+  authorName  String
+  authorRole  String?
+  companyName String?
+  score       Int
+  comment     String
+  question    String?
+  status      NpsResponseStatus @default(pending)
+  createdAt   DateTime          @default(now())
+  reviewedAt  DateTime?
+  reviewedById String?
+  reviewedBy  User?             @relation("NpsResponseReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt])
+  @@index([createdAt])
 }
 
 model Asset {

@@ -1,8 +1,10 @@
 import type { LandingPageStatus } from "@prisma/client";
 import { z, type ZodTypeAny } from "zod";
 import {
+  categorySchema,
   collectionItemParamsSchema,
   companyInformationSchema,
+  draftCategorySchema,
   draftContentSchema,
   draftNpsItemSchema,
   draftRepresentantSchema,
@@ -11,36 +13,48 @@ import {
   heroSectionSchema,
   npsItemSchema,
   operationSectionSchema,
+  operationSectionImageParamsSchema,
+  operationSectionMultipartInputSchema,
   representantSchema,
   servicePageSlugParamsSchema,
+  sceneryItemSchema,
   scenerySectionSchema,
-  servicesPageItemSchema
+  servicesPageItemSchema,
+  servicesPageMultipartInputSchema
 } from "./content.schemas.js";
 
 export type CollectionItemParams = z.infer<typeof collectionItemParamsSchema>;
 export type ServicePageSlugParams = z.infer<typeof servicePageSlugParamsSchema>;
+export type OperationSectionImageParams = z.infer<typeof operationSectionImageParamsSchema>;
 
 export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type HeroSectionInput = z.infer<typeof heroSectionInputSchema>;
+export type SceneryItem = z.infer<typeof sceneryItemSchema>;
 export type ScenerySection = z.infer<typeof scenerySectionSchema>;
 export type OperationSection = z.infer<typeof operationSectionSchema>;
+export type OperationSectionMultipartInput = z.infer<typeof operationSectionMultipartInputSchema>;
 export type NpsItem = z.infer<typeof npsItemSchema>;
 export type ServicesPageItem = z.infer<typeof servicesPageItemSchema>;
+export type ServicePageMultipartInput = z.infer<typeof servicesPageMultipartInputSchema>;
 export type Representant = z.infer<typeof representantSchema>;
+export type Category = z.infer<typeof categorySchema>;
 export type CompanyInformation = z.infer<typeof companyInformationSchema>;
 
 export type DraftNpsItem = z.infer<typeof draftNpsItemSchema>;
 export type DraftServicesPageItem = z.infer<typeof draftServicesPageItemSchema>;
 export type DraftRepresentant = z.infer<typeof draftRepresentantSchema>;
+export type DraftCategory = z.infer<typeof draftCategorySchema>;
 export type DraftContent = z.infer<typeof draftContentSchema> & Record<string, unknown>;
+export type ContentWithScenery<T extends Record<string, unknown>> = T & {
+  scenerySection: ScenerySection;
+};
 
 export type SingularSectionKey =
   | "heroSection"
-  | "scenerySection"
   | "operationSection"
   | "companyInformation";
 
-export type CollectionKey = "nps" | "representantsBase";
+export type CollectionKey = "nps" | "representantsBase" | "categories";
 
 export type SingularSectionConfig = {
   key: SingularSectionKey;
@@ -64,15 +78,15 @@ export type StoredCollectionItem = Record<string, unknown> & {
 export type PublishedContent = Record<string, unknown>;
 
 export type PublicContentRecord = {
-  content: PublishedContent;
+  content: ContentWithScenery<PublishedContent>;
   publishedAt: Date | null;
   updatedAt: Date | null;
 };
 
 export type AdminContentRecord = {
   status: LandingPageStatus;
-  content: DraftContent;
-  publishedContent: PublishedContent | null;
+  content: ContentWithScenery<DraftContent>;
+  publishedContent: ContentWithScenery<PublishedContent> | null;
   publishedAt: Date | null;
   updatedAt: Date | null;
 };
@@ -104,6 +118,10 @@ export type CollectionResponseDto<K extends CollectionKey = CollectionKey> = {
 
 export type CollectionItemResponseDto = {
   item: StoredCollectionItem;
+};
+
+export type ScenerySectionResponseDto = {
+  scenerySection: ScenerySection;
 };
 
 export type ServicePageResponseDto = {
