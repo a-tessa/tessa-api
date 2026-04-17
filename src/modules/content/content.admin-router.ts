@@ -17,11 +17,13 @@ import {
   serializeSectionResponse
 } from "./content.serializers.js";
 import {
+  createClient,
   createHeroSection,
   createOperationSection,
   createCollectionItem,
   createServicePage,
   createSingularSection,
+  deleteClient,
   deleteHeroSection,
   deleteHeroSectionSlide,
   deleteOperationSection,
@@ -30,13 +32,16 @@ import {
   deleteServicePage,
   deleteSingularSection,
   getAdminContent,
+  getClient,
   getCollectionItem,
   getScenerySection,
   getServicePage,
   getSingularSection,
+  listClients,
   listCollectionItems,
   listServicePages,
   publishMainContent,
+  updateClient,
   updateHeroSection,
   updateOperationSection,
   updateCollectionItem,
@@ -44,6 +49,9 @@ import {
   updateSingularSection
 } from "./content.service.js";
 import {
+  CLIENT_LOGO_MAX_BYTES,
+  clientItemInputSchema,
+  clientItemParamsSchema,
   collectionItemParamsSchema,
   heroSectionInputSchema,
   heroSectionSchema,
@@ -57,6 +65,7 @@ import {
   servicesPageMutationSchema
 } from "./content.schemas.js";
 import type {
+  ClientItemInput,
   DraftContent,
   HeroSectionInput,
   OperationSection,
@@ -487,6 +496,88 @@ async function parseServicePageBody(c: Context<AppBindings>): Promise<{
   };
 }
 
+const CLIENT_MULTIPART_BODY_BYTES = CLIENT_LOGO_MAX_BYTES + 1024 * 16;
+
+async function parseClientBody(c: Context<AppBindings>): Promise<{
+  input: ClientItemInput;
+  logoUpload: File | null;
+}> {
+  const contentType = c.req.header("content-type");
+
+  if (!isMultipartRequest(contentType)) {
+    let rawBody: unknown;
+
+    try {
+      rawBody = await c.req.json();
+    } catch {
+      badRequest("Body JSON inválido.");
+    }
+
+    const parsedBody = clientItemInputSchema.safeParse(rawBody);
+    if (!parsedBody.success) {
+      badRequest("Payload do cliente inválido.");
+    }
+
+    return { input: parsedBody.data, logoUpload: null };
+  }
+
+  const contentLength = parseContentLength(c.req.header("content-length"));
+  if (contentLength !== null && contentLength > CLIENT_MULTIPART_BODY_BYTES) {
+    payloadTooLarge(
+      `Multipart maior do que o suportado por este endpoint (${CLIENT_MULTIPART_BODY_BYTES} bytes).`
+    );
+  }
+
+  let formData: FormData;
+
+  try {
+    formData = await c.req.formData();
+  } catch {
+    badRequest("Não foi possível processar o multipart/form-data enviado.");
+  }
+
+  const payload = formData.get("payload");
+  let rawPayload: Record<string, unknown> = {};
+
+  if (typeof payload === "string" && payload.trim().length > 0) {
+    try {
+      rawPayload = JSON.parse(payload);
+    } catch {
+      badRequest("Campo 'payload' precisa conter um JSON válido.");
+    }
+  } else {
+    const name = formData.get("name");
+    const alt = formData.get("alt");
+    const website = formData.get("website");
+    const logoUrl = formData.get("logoUrl");
+
+    if (typeof name === "string") rawPayload.name = name;
+    if (typeof alt === "string") rawPayload.alt = alt;
+    if (typeof website === "string" && website.trim().length > 0) rawPayload.website = website;
+    if (typeof logoUrl === "string" && logoUrl.trim().length > 0) rawPayload.logoUrl = logoUrl;
+  }
+
+  const parsedPayload = clientItemInputSchema.safeParse(rawPayload);
+  if (!parsedPayload.success) {
+    badRequest("Payload do cliente inválido.");
+  }
+
+  const rawLogo = formData.get("logo");
+  let logoUpload: File | null = null;
+
+  if (rawLogo !== null) {
+    if (!(rawLogo instanceof File)) {
+      badRequest("Campo 'logo' inválido.");
+    }
+
+    if (rawLogo.size > 0 || rawLogo.name) {
+      logoUpload = rawLogo;
+    }
+  }
+
+  return { input: parsedPayload.data, logoUpload };
+}
+
 adminContentRouter.get("/", async (c) => {
   const content = await getAdminContent();
   return c.json(serializeAdminContentResponse(content));
@@ -703,6 +794,57 @@ adminContentRouter.delete(
     const { slug } = c.req.valid("param");
     const user = c.get("user");
     await deleteServicePage(slug, user.id);
+
+    return c.body(null, 204);
+  }
+);
+
+adminContentRouter.get("/clients", async (c) => {
+  const clients = await listClients();
+  return c.json({ clients });
+});
+
+adminContentRouter.post("/clients", ...requireAdminWriteAccess, async (c) => {
+  const { input, logoUpload } = await parseClientBody(c);
+  const user = c.get("user");
+  const item = await createClient(input, logoUpload, user.id);
+
+  return c.json({ item }, 201);
+});
+
+adminContentRouter.get(
+  "/clients/:clientId",
+  zValidator("param", clientItemParamsSchema),
+  async (c) => {
+    const { clientId } = c.req.valid("param");
+    const item = await getClient(clientId);
+
+    return c.json({ item });
+  }
+);
+
+adminContentRouter.put(
+  "/clients/:clientId",
+  ...requireAdminWriteAccess,
+  zValidator("param", clientItemParamsSchema),
+  async (c) => {
+    const { clientId } = c.req.valid("param");
+    const { input, logoUpload } = await parseClientBody(c);
+    const user = c.get("user");
+    const item = await updateClient(clientId, input, logoUpload, user.id);
+
+    return c.json({ item });
+  }
+);
+
+adminContentRouter.delete(
+  "/clients/:clientId",
+  ...requireAdminWriteAccess,
+  zValidator("param", clientItemParamsSchema),
+  async (c) => {
+    const { clientId } = c.req.valid("param");
+    const user = c.get("user");
+    await deleteClient(clientId, user.id);
 
     return c.body(null, 204);
   }

@@ -69,6 +69,13 @@ export function buildServicePageBackgroundImagePath(
   );
 }
 
+export function buildClientLogoPath(clientId: string, originalFilename: string): string {
+  return buildTimestampedImagePath(
+    ["landing-page", "home", "clients", clientId],
+    originalFilename
+  );
+}
+
 export function buildServicePageExampleImagePath(
   servicePageSlug: string,
   exampleIndex: number,

@@ -2,9 +2,13 @@ import type { LandingPageStatus } from "@prisma/client";
 import { z, type ZodTypeAny } from "zod";
 import {
   categorySchema,
+  clientItemInputSchema,
+  clientItemParamsSchema,
+  clientItemSchema,
   collectionItemParamsSchema,
   companyInformationSchema,
   draftCategorySchema,
+  draftClientItemSchema,
   draftContentSchema,
   draftNpsItemSchema,
   draftRepresentantSchema,
@@ -26,6 +30,7 @@ import {
 export type CollectionItemParams = z.infer<typeof collectionItemParamsSchema>;
 export type ServicePageSlugParams = z.infer<typeof servicePageSlugParamsSchema>;
 export type OperationSectionImageParams = z.infer<typeof operationSectionImageParamsSchema>;
+export type ClientItemParams = z.infer<typeof clientItemParamsSchema>;
 
 export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type HeroSectionInput = z.infer<typeof heroSectionInputSchema>;
@@ -38,6 +43,9 @@ export type ServicesPageItem = z.infer<typeof servicesPageItemSchema>;
 export type ServicePageMultipartInput = z.infer<typeof servicesPageMultipartInputSchema>;
 export type Representant = z.infer<typeof representantSchema>;
 export type Category = z.infer<typeof categorySchema>;
+export type ClientItem = z.infer<typeof clientItemSchema>;
+export type ClientItemInput = z.infer<typeof clientItemInputSchema>;
+export type DraftClientItem = z.infer<typeof draftClientItemSchema>;
 export type CompanyInformation = z.infer<typeof companyInformationSchema>;
 
 export type DraftNpsItem = z.infer<typeof draftNpsItemSchema>;

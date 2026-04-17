@@ -221,6 +221,37 @@ export const categorySchema = z.object({
   slug: slugString
 });
 
+export const CLIENT_LOGO_MAX_BYTES = 700 * 1024;
+
+export const clientItemParamsSchema = z.object({
+  clientId: nonEmptyString
+});
+
+const clientWebsiteSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(500)
+  .url("Website precisa ser uma URL válida.");
+
+export const clientItemSchema = z.object({
+  name: nonEmptyString.max(120),
+  alt: nonEmptyString.max(255),
+  website: clientWebsiteSchema.optional(),
+  logoUrl: nonEmptyString
+});
+
+export const clientItemInputSchema = z.object({
+  name: nonEmptyString.max(120),
+  alt: nonEmptyString.max(255),
+  website: clientWebsiteSchema.optional(),
+  logoUrl: nonEmptyString.optional()
+});
+
+export const draftClientItemSchema = clientItemSchema.extend({
+  id: nonEmptyString.optional()
+});
+
 export const companyInformationSchema = z.object({
   name: nonEmptyString,
   cnpj: nonEmptyString,
@@ -255,5 +286,6 @@ export const draftContentSchema = z.object({
   servicesPages: z.array(draftServicesPageItemSchema).optional(),
   representantsBase: z.array(draftRepresentantSchema).optional(),
   categories: z.array(draftCategorySchema).optional(),
+  clients: z.array(draftClientItemSchema).optional(),
   companyInformation: companyInformationSchema.optional()
 }).passthrough();

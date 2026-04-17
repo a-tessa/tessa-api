@@ -166,6 +166,14 @@ export function sanitizeContentForPublish(value: unknown): Prisma.InputJsonValue
     publishedContent.categories = content.categories.map(({ id, ...item }) => item);
   }
 
+  if (Array.isArray((content as Record<string, unknown>).clients)) {
+    const clients = (content as Record<string, unknown>).clients as Array<Record<string, unknown>>;
+    publishedContent.clients = clients.map((client) => {
+      const { id: _id, ...rest } = client;
+      return rest;
+    });
+  }
+
   return publishedContent as Prisma.InputJsonValue;
 }
 

@@ -1,0 +1,138 @@
+// Tessa API — Database Schema (DBML)
+// Source: prisma/schema.prisma
+// Paste into https://dbdiagram.io/d to visualize.
+//
+// Note: structured CMS content (heroSection, operationSection, companyInformation,
+// nps, representantsBase, categories, clients, servicesPages) lives inside
+// LandingPage.draftContent / publishedContent as JSON — not as separate tables.
+// See docs/database-schema.md and docs/client-logos-upload.md for details.
+
+Enum UserRole {
+  MASTER
+  ADMIN
+}
+
+Enum LandingPageStatus {
+  draft
+  published
+}
+
+Enum NpsResponseStatus {
+  pending
+  approved
+  rejected
+}
+
+Table User {
+  id           String     [pk, note: 'cuid()']
+  name         String
+  email        String     [unique]
+  passwordHash String
+  role         UserRole
+  isActive     Boolean    [default: true]
+  createdAt    DateTime   [default: `now()`]
+  updatedAt    DateTime
+}
+
+Table LandingPage {
+  id               String            [pk, note: 'cuid()']
+  slug             String            [unique]
+  title            String
+  seoTitle         String
+  seoDescription   String
+  status           LandingPageStatus [default: 'draft']
+  draftContent     Json
+  publishedContent Json
+  publishedAt      DateTime
+  updatedAt        DateTime
+  createdAt        DateTime          [default: `now()`]
+  updatedById      String            [not null]
+  publishedById    String
+}
+
+Table BlogArticle {
+  id             String   [pk, note: 'cuid()']
+  title          String
+  slug           String   [unique]
+  content        String
+  categorySlug   String
+  headerImageUrl String
+  headerImageAlt String
+  publishedAt    DateTime [default: `now()`]
+  createdAt      DateTime [default: `now()`]
+  updatedAt      DateTime
+  authorId       String   [not null]
+
+  Indexes {
+    categorySlug
+    publishedAt
+  }
+}
+
+Table Contact {
+  id               String   [pk, note: 'cuid()']
+  fullName         String
+  email            String
+  phone            String
+  companyName      String
+  city             String
+  state            String
+  service          String
+  message          String
+  hasBeenContacted Boolean  [default: false]
+  createdAt        DateTime [default: `now()`]
+
+  Indexes {
+    createdAt
+  }
+}
+
+Table NpsResponse {
+  id           String            [pk, note: 'cuid()']
+  authorName   String
+  authorRole   String
+  companyName  String
+  score        Int
+  comment      String
+  question     String
+  status       NpsResponseStatus [default: 'pending']
+  createdAt    DateTime          [default: `now()`]
+  reviewedAt   DateTime
+  reviewedById String
+
+  Indexes {
+    (status, createdAt)
+    createdAt
+  }
+}
+
+Table Asset {
+  id               String   [pk, note: 'cuid()']
+  kind             String
+  entityType       String
+  entityId         String
+  sectionKey       String
+  fieldKey         String
+  slot             Int
+  pathname         String
+  url              String
+  mimeType         String
+  sizeBytes        Int
+  originalFilename String
+  alt              String
+  createdAt        DateTime [default: `now()`]
+  updatedAt        DateTime
+  createdById      String   [not null]
+
+  Indexes {
+    pathname
+    url
+    (entityType, entityId, sectionKey, fieldKey, slot)
+  }
+}
+
+Ref: LandingPage.updatedById   > User.id
+Ref: LandingPage.publishedById > User.id
+Ref: BlogArticle.authorId      > User.id
+Ref: NpsResponse.reviewedById  > User.id
+Ref: Asset.createdById         > User.id

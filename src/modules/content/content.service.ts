@@ -5,10 +5,12 @@ import { prisma } from "../../lib/prisma.js";
 import { badRequest, conflict, notFound } from "../../lib/http.js";
 import {
   deleteBlobAsset,
+  prepareClientLogoAsset,
   prepareImageAsset,
   uploadPublicAsset
 } from "../assets/assets.service.js";
 import {
+  buildClientLogoPath,
   buildHeroSectionImagePath,
   buildOperationSectionImagePath,
   buildServicePageBackgroundImagePath,
@@ -27,14 +29,18 @@ import {
 } from "./content.utils.js";
 import { listApprovedNpsResponses } from "../nps/nps.service.js";
 import {
+  CLIENT_LOGO_MAX_BYTES,
+  clientItemSchema,
   heroSectionSchema,
   operationSectionSchema,
   servicesPageMutationSchema
 } from "./content.schemas.js";
 import type {
   AdminContentRecord,
+  ClientItemInput,
   DraftCategory,
   CollectionConfig,
+  DraftClientItem,
   DraftContent,
   DraftServicesPageItem,
   HeroSection,
@@ -60,6 +66,12 @@ const OPERATION_SECTION_ASSET_FILTER = {
   entityId: MAIN_CONTENT_SLUG,
   sectionKey: "operationSection",
   fieldKey: "images"
+} as const;
+const CLIENTS_ASSET_FILTER = {
+  entityType: "landingPage",
+  entityId: MAIN_CONTENT_SLUG,
+  sectionKey: "clients",
+  fieldKey: "logoUrl"
 } as const;
 const SERVICE_PAGE_ASSET_ENTITY_TYPE = "servicePage";
 const SERVICE_PAGE_ASSET_SECTION_KEY = "servicesPages";
@@ -122,6 +134,10 @@ async function getMainDraftContent(page: LandingPage): Promise<DraftContent> {
   const normalizedServicesPages = normalizeServicePageCategories(nextContent);
   nextContent = normalizedServicesPages.content;
   changed = changed || normalizedServicesPages.changed;
+
+  const normalizedClients = ensureClientsCollectionIds(nextContent);
+  nextContent = normalizedClients.content;
+  changed = changed || normalizedClients.changed;
 
   if (!changed) {
     return nextContent;
@@ -1655,4 +1671,300 @@ export async function deleteServicePage(slug: string, userId: string) {
   });
 
   await cleanupBlobUrls(previousAssets.map((asset) => asset.url));
+}
+
+function getClients(content: DraftContent): DraftClientItem[] {
+  return Array.isArray(content.clients) ? content.clients : [];
+}
+
+function ensureClientsCollectionIds(content: DraftContent): {
+  content: DraftContent;
+  changed: boolean;
+  items: DraftClientItem[];
+} {
+  const rawItems = getClients(content);
+
+  if (rawItems.length === 0) {
+    return { content, changed: false, items: [] };
+  }
+
+  let changed = false;
+  const items = rawItems.map((item) => {
+    if (item.id) {
+      return item;
+    }
+
+    changed = true;
+    return { ...item, id: randomUUID() };
+  });
+
+  if (!changed) {
+    return { content, changed: false, items };
+  }
+
+  return {
+    content: { ...content, clients: items } as DraftContent,
+    changed: true,
+    items
+  };
+}
+
+export async function listClients(): Promise<DraftClientItem[]> {
+  const page = await findMainPage();
+
+  if (!page) {
+    return [];
+  }
+
+  const content = await getMainDraftContent(page);
+  return ensureClientsCollectionIds(content).items;
+}
+
+export async function listPublishedClients(): Promise<DraftClientItem[]> {
+  const page = await findMainPage();
+
+  if (!page || !page.publishedContent) {
+    return [];
+  }
+
+  const publishedContent = page.publishedContent as Record<string, unknown>;
+  const rawClients = publishedContent.clients;
+
+  if (!Array.isArray(rawClients)) {
+    return [];
+  }
+
+  const items: DraftClientItem[] = [];
+
+  for (const raw of rawClients) {
+    const parsed = clientItemSchema.safeParse(raw);
+
+    if (parsed.success) {
+      const withId = raw as { id?: unknown };
+      items.push({
+        ...parsed.data,
+        id: typeof withId.id === "string" ? withId.id : undefined
+      });
+    }
+  }
+
+  return items;
+}
+
+export async function getClient(clientId: string): Promise<DraftClientItem> {
+  const clients = await listClients();
+  const client = clients.find((currentItem) => currentItem.id === clientId);
+
+  if (!client) {
+    notFound("Cliente não encontrado.");
+  }
+
+  return client;
+}
+
+export async function createClient(
+  input: ClientItemInput,
+  logoUpload: File | null,
+  userId: string
+): Promise<DraftClientItem> {
+  if (!logoUpload) {
+    badRequest("Logo do cliente é obrigatório.");
+  }
+
+  const page = await ensureMainDraftPageExists(userId);
+  const content = await getMainDraftContent(page);
+  const clients = ensureClientsCollectionIds(content).items;
+  const clientId = randomUUID();
+
+  const preparedLogo = await prepareClientLogoAsset(logoUpload, CLIENT_LOGO_MAX_BYTES);
+  const uploadedLogo = await uploadPublicAsset(
+    buildClientLogoPath(clientId, preparedLogo.originalFilename),
+    preparedLogo
+  );
+
+  const item = clientItemSchema.parse({
+    name: input.name,
+    alt: input.alt,
+    website: input.website,
+    logoUrl: uploadedLogo.url
+  });
+
+  const draftItem: DraftClientItem = { ...item, id: clientId };
+
+  const nextContent = {
+    ...content,
+    clients: [...clients, draftItem]
+  } as DraftContent;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.landingPage.update({
+        where: { id: page.id },
+        data: {
+          draftContent: toDraftContentInput(nextContent),
+          status: "draft",
+          updatedById: userId
+        }
+      });
+
+      await tx.asset.create({
+        data: {
+          kind: "image",
+          entityType: "landingPage",
+          entityId: MAIN_CONTENT_SLUG,
+          sectionKey: "clients",
+          fieldKey: "logoUrl",
+          slot: null,
+          pathname: uploadedLogo.pathname,
+          url: uploadedLogo.url,
+          mimeType: preparedLogo.contentType,
+          sizeBytes: preparedLogo.sizeBytes,
+          originalFilename: preparedLogo.originalFilename,
+          alt: item.alt,
+          createdById: userId
+        }
+      });
+    });
+  } catch (error) {
+    await cleanupBlobUrls([uploadedLogo.url]);
+    throw error;
+  }
+
+  return draftItem;
+}
+
+export async function updateClient(
+  clientId: string,
+  input: ClientItemInput,
+  logoUpload: File | null,
+  userId: string
+): Promise<DraftClientItem> {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const clients = ensureClientsCollectionIds(content).items;
+  const existingItem = clients.find((currentItem) => currentItem.id === clientId);
+
+  if (!existingItem) {
+    notFound("Cliente não encontrado.");
+  }
+
+  let uploadedLogoUrl: string | null = null;
+  let preparedLogo: Awaited<ReturnType<typeof prepareClientLogoAsset>> | null = null;
+  let uploadedLogo: Awaited<ReturnType<typeof uploadPublicAsset>> | null = null;
+  const previousLogoUrl = existingItem.logoUrl;
+
+  if (logoUpload) {
+    preparedLogo = await prepareClientLogoAsset(logoUpload, CLIENT_LOGO_MAX_BYTES);
+    uploadedLogo = await uploadPublicAsset(
+      buildClientLogoPath(clientId, preparedLogo.originalFilename),
+      preparedLogo
+    );
+    uploadedLogoUrl = uploadedLogo.url;
+  }
+
+  const nextLogoUrl = uploadedLogoUrl ?? input.logoUrl ?? previousLogoUrl;
+
+  const item = clientItemSchema.parse({
+    name: input.name,
+    alt: input.alt,
+    website: input.website,
+    logoUrl: nextLogoUrl
+  });
+
+  const updatedItem: DraftClientItem = { ...item, id: clientId };
+
+  const nextContent = {
+    ...content,
+    clients: clients.map((currentItem) =>
+      currentItem.id === clientId ? updatedItem : currentItem
+    )
+  } as DraftContent;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.landingPage.update({
+        where: { id: page.id },
+        data: {
+          draftContent: toDraftContentInput(nextContent),
+          status: "draft",
+          updatedById: userId
+        }
+      });
+
+      if (uploadedLogo && preparedLogo) {
+        await tx.asset.deleteMany({
+          where: { ...CLIENTS_ASSET_FILTER, url: previousLogoUrl }
+        });
+
+        await tx.asset.create({
+          data: {
+            kind: "image",
+            entityType: "landingPage",
+            entityId: MAIN_CONTENT_SLUG,
+            sectionKey: "clients",
+            fieldKey: "logoUrl",
+            slot: null,
+            pathname: uploadedLogo.pathname,
+            url: uploadedLogo.url,
+            mimeType: preparedLogo.contentType,
+            sizeBytes: preparedLogo.sizeBytes,
+            originalFilename: preparedLogo.originalFilename,
+            alt: item.alt,
+            createdById: userId
+          }
+        });
+      } else {
+        await tx.asset.updateMany({
+          where: { ...CLIENTS_ASSET_FILTER, url: nextLogoUrl },
+          data: { alt: item.alt }
+        });
+      }
+    });
+  } catch (error) {
+    if (uploadedLogoUrl) {
+      await cleanupBlobUrls([uploadedLogoUrl]);
+    }
+    throw error;
+  }
+
+  if (uploadedLogoUrl && previousLogoUrl && previousLogoUrl !== uploadedLogoUrl) {
+    await cleanupBlobUrls([previousLogoUrl]);
+  }
+
+  return updatedItem;
+}
+
+export async function deleteClient(clientId: string, userId: string): Promise<void> {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const clients = ensureClientsCollectionIds(content).items;
+  const existingItem = clients.find((currentItem) => currentItem.id === clientId);
+
+  if (!existingItem) {
+    notFound("Cliente não encontrado.");
+  }
+
+  const previousLogoUrl = existingItem.logoUrl;
+
+  const nextContent = {
+    ...content,
+    clients: clients.filter((currentItem) => currentItem.id !== clientId)
+  } as DraftContent;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.landingPage.update({
+      where: { id: page.id },
+      data: {
+        draftContent: toDraftContentInput(nextContent),
+        status: "draft",
+        updatedById: userId
+      }
+    });
+
+    await tx.asset.deleteMany({
+      where: { ...CLIENTS_ASSET_FILTER, url: previousLogoUrl }
+    });
+  });
+
+  await cleanupBlobUrls([previousLogoUrl]);
 }
