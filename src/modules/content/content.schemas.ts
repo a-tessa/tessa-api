@@ -106,17 +106,33 @@ export const npsItemSchema = z.object({
   answers: z.array(npsAnswerSchema)
 });
 
+export const servicePageAssetMetaSchema = z.object({
+  pathname: nonEmptyString,
+  mimeType: nonEmptyString,
+  sizeBytes: z.number().int().positive(),
+  originalFilename: nonEmptyString
+});
+
 export const servicesPageImageSchema = z.object({
   imgUrl: nonEmptyString
 });
 
+export const servicesPageImageMutationSchema = z.object({
+  imgUrl: nonEmptyString,
+  meta: servicePageAssetMetaSchema.optional()
+});
+
 export const servicesPageImageInputSchema = z.object({
-  imgUrl: nonEmptyString.optional()
+  imgUrl: nonEmptyString.optional(),
+  meta: servicePageAssetMetaSchema.optional()
 });
 
 const servicesPageImagesSchema = z.array(servicesPageImageSchema).max(15);
-const servicesPageImagesMutationSchema = servicesPageImagesSchema.min(1);
+const servicesPageImagesMutationSchema = z.array(servicesPageImageMutationSchema).min(1).max(15);
 const servicesPageImagesInputSchema = z.array(servicesPageImageInputSchema).min(1).max(15).optional();
+
+export const servicePageAssetKindSchema = z.enum(["background", "image"]);
+export const servicePageAssetIndexSchema = z.coerce.number().int().min(0).max(14);
 
 function normalizeLegacyServicesPage(value: unknown) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -192,6 +208,10 @@ const servicesPageBaseSchema = z.object({
   backgroundImageUrl: nonEmptyString
 });
 
+const servicesPageMutationBaseSchema = servicesPageBaseSchema.extend({
+  backgroundImageMeta: servicePageAssetMetaSchema.optional()
+});
+
 export const servicesPageItemSchema = z.preprocess(
   normalizeLegacyServicesPage,
   servicesPageBaseSchema.extend({
@@ -199,11 +219,11 @@ export const servicesPageItemSchema = z.preprocess(
   })
 );
 
-export const servicesPageMutationSchema = servicesPageBaseSchema.extend({
+export const servicesPageMutationSchema = servicesPageMutationBaseSchema.extend({
   images: servicesPageImagesMutationSchema
 });
 
-export const servicesPageMultipartInputSchema = servicesPageBaseSchema.extend({
+export const servicesPageMultipartInputSchema = servicesPageMutationBaseSchema.extend({
   backgroundImageUrl: nonEmptyString.optional(),
   images: servicesPageImagesInputSchema
 });

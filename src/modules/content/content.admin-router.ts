@@ -60,10 +60,17 @@ import {
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
   operationSectionSchema,
+  servicePageAssetIndexSchema,
+  servicePageAssetKindSchema,
   servicePageSlugParamsSchema,
   servicesPageMultipartInputSchema,
   servicesPageMutationSchema
 } from "./content.schemas.js";
+import { prepareImageAsset, uploadPublicAsset } from "../assets/assets.service.js";
+import {
+  buildServicePageBackgroundImagePath,
+  buildServicePageExampleImagePath
+} from "../assets/assets.utils.js";
 import type {
   ClientItemInput,
   DraftContent,
@@ -71,7 +78,7 @@ import type {
   OperationSection,
   OperationSectionMultipartInput,
   ServicePageMultipartInput,
-  ServicesPageItem
+  ServicesPageMutationInput
 } from "./content.types.js";
 
 export const adminContentRouter = new Hono<AppBindings>();
@@ -390,7 +397,7 @@ async function parseOperationSectionBody(c: Context<AppBindings>): Promise<{
 }
 
 async function parseServicePageBody(c: Context<AppBindings>): Promise<{
-  input: ServicesPageItem | ServicePageMultipartInput;
+  input: ServicesPageMutationInput | ServicePageMultipartInput;
   backgroundUpload: File | null;
   uploadsByIndex: Map<number, File>;
 }> {
@@ -743,6 +750,85 @@ for (const section of jsonOnlySections) {
     return c.body(null, 204);
   });
 }
+
+adminContentRouter.post(
+  `/${servicesPagesConfig.path}/assets`,
+  ...requireAdminWriteAccess,
+  async (c) => {
+    const contentType = c.req.header("content-type");
+
+    if (!isMultipartRequest(contentType)) {
+      badRequest("Envie o arquivo como multipart/form-data.");
+    }
+
+    const contentLength = parseContentLength(c.req.header("content-length"));
+    const maxSingleAssetBodyBytes = env.ASSET_MAX_UPLOAD_BYTES + 512 * 1024;
+
+    if (contentLength !== null && contentLength > maxSingleAssetBodyBytes) {
+      payloadTooLarge(
+        `Arquivo maior do que o suportado (${maxSingleAssetBodyBytes} bytes).`
+      );
+    }
+
+    let formData: FormData;
+    try {
+      formData = await c.req.formData();
+    } catch {
+      badRequest("Não foi possível processar o multipart/form-data enviado.");
+    }
+
+    const rawSlug = formData.get("slug");
+    const parsedSlug = servicePageSlugParamsSchema.safeParse({ slug: rawSlug });
+    if (!parsedSlug.success) {
+      badRequest("Campo 'slug' inválido.");
+    }
+    const { slug } = parsedSlug.data;
+
+    const rawKind = formData.get("kind");
+    const parsedKind = servicePageAssetKindSchema.safeParse(rawKind);
+    if (!parsedKind.success) {
+      badRequest("Campo 'kind' inválido. Use 'background' ou 'image'.");
+    }
+    const kind = parsedKind.data;
+
+    let index: number | null = null;
+    if (kind === "image") {
+      const rawIndex = formData.get("index");
+      const parsedIndex = servicePageAssetIndexSchema.safeParse(rawIndex);
+      if (!parsedIndex.success) {
+        badRequest("Campo 'index' inválido. Informe um número entre 0 e 14.");
+      }
+      index = parsedIndex.data;
+    }
+
+    const rawFile = formData.get("file");
+    if (!(rawFile instanceof File)) {
+      badRequest("Campo 'file' inválido.");
+    }
+
+    if (rawFile.size === 0 || !rawFile.name) {
+      badRequest("Arquivo inválido.");
+    }
+
+    const preparedAsset = await prepareImageAsset(rawFile);
+    const pathname =
+      kind === "background"
+        ? buildServicePageBackgroundImagePath(slug, preparedAsset.originalFilename)
+        : buildServicePageExampleImagePath(slug, index!, preparedAsset.originalFilename);
+
+    const uploadedAsset = await uploadPublicAsset(pathname, preparedAsset);
+
+    return c.json({
+      url: uploadedAsset.url,
+      pathname: uploadedAsset.pathname,
+      mimeType: preparedAsset.contentType,
+      sizeBytes: preparedAsset.sizeBytes,
+      originalFilename: preparedAsset.originalFilename,
+      kind,
+      index
+    }, 201);
+  }
+);
 
 adminContentRouter.get(`/${servicesPagesConfig.path}`, async (c) => {
   const servicesPages = await listServicePages();

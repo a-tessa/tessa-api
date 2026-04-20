@@ -24,7 +24,8 @@ import {
   sceneryItemSchema,
   scenerySectionSchema,
   servicesPageItemSchema,
-  servicesPageMultipartInputSchema
+  servicesPageMultipartInputSchema,
+  servicesPageMutationSchema
 } from "./content.schemas.js";
 
 export type CollectionItemParams = z.infer<typeof collectionItemParamsSchema>;
@@ -40,6 +41,7 @@ export type OperationSection = z.infer<typeof operationSectionSchema>;
 export type OperationSectionMultipartInput = z.infer<typeof operationSectionMultipartInputSchema>;
 export type NpsItem = z.infer<typeof npsItemSchema>;
 export type ServicesPageItem = z.infer<typeof servicesPageItemSchema>;
+export type ServicesPageMutationInput = z.infer<typeof servicesPageMutationSchema>;
 export type ServicePageMultipartInput = z.infer<typeof servicesPageMultipartInputSchema>;
 export type Representant = z.infer<typeof representantSchema>;
 export type Category = z.infer<typeof categorySchema>;

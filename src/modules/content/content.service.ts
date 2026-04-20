@@ -48,7 +48,7 @@ import type {
   OperationSection,
   OperationSectionMultipartInput,
   ServicePageMultipartInput,
-  ServicesPageItem,
+  ServicesPageMutationInput,
   PublicContentRecord,
   SingularSectionConfig
 } from "./content.types.js";
@@ -343,7 +343,7 @@ async function cleanupBlobUrls(urls: string[]) {
 async function saveServicePageContent(
   mode: "create" | "update",
   currentSlug: string | null,
-  input: ServicesPageItem | ServicePageMultipartInput,
+  input: ServicesPageMutationInput | ServicePageMultipartInput,
   backgroundUpload: File | null,
   uploadsByIndex: Map<number, File>,
   userId: string
@@ -393,7 +393,10 @@ async function saveServicePageContent(
     badRequest("Ao menos uma imagem do serviço é obrigatória.");
   }
 
-  const requestedImages: Array<{ imgUrl?: string }> = Array.isArray(input.images)
+  const requestedImages: Array<{
+    imgUrl?: string;
+    meta?: { pathname: string; mimeType: string; sizeBytes: number; originalFilename: string };
+  }> = Array.isArray(input.images)
     ? input.images
     : Array.from({ length: targetImageCount }, () => ({}));
 
@@ -449,23 +452,27 @@ async function saveServicePageContent(
     category: resolveServicePageCategory(content, input.category),
     backgroundImageUrl:
       uploadedBackground?.url ?? input.backgroundImageUrl ?? existingItem?.backgroundImageUrl ?? "",
+    backgroundImageMeta: input.backgroundImageMeta,
     images: requestedImages.map((image, index) => ({
       imgUrl:
         uploadedImages.get(index)?.url ??
         image.imgUrl ??
         existingImages[index]?.imgUrl ??
-        ""
+        "",
+      meta: image.meta
     }))
   });
 
-  const previousAssets = currentSlug
-    ? await prisma.asset.findMany({
-        where: getServicePageAssetFilter(currentSlug),
-        orderBy: {
-          createdAt: "desc"
-        }
-      })
-    : [];
+  const previousAssets = await prisma.asset.findMany({
+    where: {
+      entityType: SERVICE_PAGE_ASSET_ENTITY_TYPE,
+      entityId: { in: currentSlug && currentSlug !== item.slug ? [currentSlug, item.slug] : [item.slug] },
+      sectionKey: SERVICE_PAGE_ASSET_SECTION_KEY
+    },
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
   const previousAssetByUrl = new Map<string, (typeof previousAssets)[number]>();
   const previousImageAssetBySlot = new Map<number, (typeof previousAssets)[number]>();
   let previousBackgroundAsset: (typeof previousAssets)[number] | undefined;
@@ -475,13 +482,18 @@ async function saveServicePageContent(
       previousAssetByUrl.set(asset.url, asset);
     }
 
-    if (asset.fieldKey === SERVICE_PAGE_BACKGROUND_FIELD_KEY && !previousBackgroundAsset) {
+    if (
+      asset.fieldKey === SERVICE_PAGE_BACKGROUND_FIELD_KEY &&
+      asset.entityId === (currentSlug ?? item.slug) &&
+      !previousBackgroundAsset
+    ) {
       previousBackgroundAsset = asset;
     }
 
     if (
       asset.fieldKey === SERVICE_PAGE_IMAGES_FIELD_KEY &&
       asset.slot !== null &&
+      asset.entityId === (currentSlug ?? item.slug) &&
       !previousImageAssetBySlot.has(asset.slot)
     ) {
       previousImageAssetBySlot.set(asset.slot, asset);
@@ -503,6 +515,22 @@ async function saveServicePageContent(
       mimeType: preparedBackground.contentType,
       sizeBytes: preparedBackground.sizeBytes,
       originalFilename: preparedBackground.originalFilename,
+      alt: null,
+      createdById: userId
+    });
+  } else if (item.backgroundImageMeta) {
+    assetsToPersist.push({
+      kind: "image",
+      entityType: SERVICE_PAGE_ASSET_ENTITY_TYPE,
+      entityId: item.slug,
+      sectionKey: SERVICE_PAGE_ASSET_SECTION_KEY,
+      fieldKey: SERVICE_PAGE_BACKGROUND_FIELD_KEY,
+      slot: null,
+      pathname: item.backgroundImageMeta.pathname,
+      url: item.backgroundImageUrl,
+      mimeType: item.backgroundImageMeta.mimeType,
+      sizeBytes: item.backgroundImageMeta.sizeBytes,
+      originalFilename: item.backgroundImageMeta.originalFilename,
       alt: null,
       createdById: userId
     });
@@ -552,6 +580,25 @@ async function saveServicePageContent(
       continue;
     }
 
+    if (image.meta) {
+      assetsToPersist.push({
+        kind: "image",
+        entityType: SERVICE_PAGE_ASSET_ENTITY_TYPE,
+        entityId: item.slug,
+        sectionKey: SERVICE_PAGE_ASSET_SECTION_KEY,
+        fieldKey: SERVICE_PAGE_IMAGES_FIELD_KEY,
+        slot: index,
+        pathname: image.meta.pathname,
+        url: image.imgUrl,
+        mimeType: image.meta.mimeType,
+        sizeBytes: image.meta.sizeBytes,
+        originalFilename: image.meta.originalFilename,
+        alt: null,
+        createdById: userId
+      });
+      continue;
+    }
+
     const retainedImageAsset =
       previousAssetByUrl.get(image.imgUrl) ?? previousImageAssetBySlot.get(index);
 
@@ -576,18 +623,33 @@ async function saveServicePageContent(
     });
   }
 
+  const storedItem = {
+    slug: item.slug,
+    title: item.title,
+    category: item.category,
+    subtitle: item.subtitle,
+    exampleVideoUrl: item.exampleVideoUrl,
+    backgroundImageUrl: item.backgroundImageUrl,
+    images: item.images.map((image) => ({ imgUrl: image.imgUrl }))
+  };
+
   const nextContent = {
     ...content,
     servicesPages:
       mode === "create"
-        ? [...servicesPages, item]
-        : servicesPages.map((currentItem) => (currentItem.slug === currentSlug ? item : currentItem))
+        ? [...servicesPages, storedItem]
+        : servicesPages.map((currentItem) => (currentItem.slug === currentSlug ? storedItem : currentItem))
   } as DraftContent;
 
   const finalImageUrls = new Set([
     item.backgroundImageUrl,
     ...item.images.map((image) => image.imgUrl)
   ]);
+
+  const slugsToReset = [item.slug];
+  if (currentSlug && currentSlug !== item.slug) {
+    slugsToReset.push(currentSlug);
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -600,11 +662,13 @@ async function saveServicePageContent(
         }
       });
 
-      if (currentSlug) {
-        await tx.asset.deleteMany({
-          where: getServicePageAssetFilter(currentSlug)
-        });
-      }
+      await tx.asset.deleteMany({
+        where: {
+          entityType: SERVICE_PAGE_ASSET_ENTITY_TYPE,
+          entityId: { in: slugsToReset },
+          sectionKey: SERVICE_PAGE_ASSET_SECTION_KEY
+        }
+      });
 
       if (assetsToPersist.length > 0) {
         await tx.asset.createMany({
@@ -623,7 +687,7 @@ async function saveServicePageContent(
 
   await cleanupBlobUrls(previousUrlsToDelete);
 
-  return item;
+  return storedItem;
 }
 
 async function saveOperationSectionContent(
@@ -1528,7 +1592,7 @@ export async function createCollectionItem(
 }
 
 export async function createServicePage(
-  input: ServicesPageItem | ServicePageMultipartInput,
+  input: ServicesPageMutationInput | ServicePageMultipartInput,
   backgroundUpload: File | null,
   uploadsByIndex: Map<number, File>,
   userId: string
@@ -1592,7 +1656,7 @@ export async function updateCollectionItem(
 
 export async function updateServicePage(
   currentSlug: string,
-  input: ServicesPageItem | ServicePageMultipartInput,
+  input: ServicesPageMutationInput | ServicePageMultipartInput,
   backgroundUpload: File | null,
   uploadsByIndex: Map<number, File>,
   userId: string
