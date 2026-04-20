@@ -24,6 +24,12 @@ enum NpsResponseStatus {
   rejected
 }
 
+enum TestimonialStatus {
+  pending
+  approved
+  rejected
+}
+
 model User {
   id                   String        @id @default(cuid())
   name                 String
@@ -38,6 +44,7 @@ model User {
   createdAssets        Asset[]
   blogArticles         BlogArticle[] @relation("BlogArticleAuthor")
   reviewedNpsResponses NpsResponse[] @relation("NpsResponseReviewedBy")
+  reviewedTestimonials Testimonial[] @relation("TestimonialReviewedBy")
 }
 
 model LandingPage {
@@ -59,52 +66,74 @@ model LandingPage {
 }
 
 model BlogArticle {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   title          String
-  slug           String    @unique
+  slug           String   @unique
   content        String
   categorySlug   String
   headerImageUrl String?
   headerImageAlt String?
-  publishedAt    DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  publishedAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   authorId       String
-  author         User      @relation("BlogArticleAuthor", fields: [authorId], references: [id])
+  author         User     @relation("BlogArticleAuthor", fields: [authorId], references: [id])
 
   @@index([categorySlug])
   @@index([publishedAt])
 }
 
 model Contact {
-  id                String   @id @default(cuid())
-  fullName          String
-  email             String
-  phone             String
-  companyName       String
-  city              String
-  state             String
-  service           String?
-  message           String?
-  hasBeenContacted Boolean @default(false)
-  createdAt         DateTime @default(now())
+  id               String   @id @default(cuid())
+  fullName         String
+  email            String
+  phone            String
+  companyName      String
+  city             String
+  state            String
+  service          String?
+  message          String?
+  hasBeenContacted Boolean  @default(false)
+  createdAt        DateTime @default(now())
 
   @@index([createdAt])
 }
 
 model NpsResponse {
-  id          String            @id @default(cuid())
-  authorName  String
-  authorRole  String?
-  companyName String?
-  score       Int
-  comment     String
-  question    String?
-  status      NpsResponseStatus @default(pending)
-  createdAt   DateTime          @default(now())
-  reviewedAt  DateTime?
+  id           String            @id @default(cuid())
+  authorName   String
+  authorRole   String?
+  companyName  String?
+  score        Int
+  comment      String
+  question     String?
+  status       NpsResponseStatus @default(pending)
+  createdAt    DateTime          @default(now())
+  reviewedAt   DateTime?
   reviewedById String?
-  reviewedBy  User?             @relation("NpsResponseReviewedBy", fields: [reviewedById], references: [id])
+  reviewedBy   User?             @relation("NpsResponseReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+}
+
+model Testimonial {
+  id                   String            @id @default(cuid())
+  authorName           String
+  authorRole           String?
+  companyName          String?
+  rating               Int
+  comment              String
+  question             String?
+  profileImageUrl      String?
+  profileImagePathname String?
+  reviewImageUrl       String?
+  reviewImagePathname  String?
+  status               TestimonialStatus @default(pending)
+  createdAt            DateTime          @default(now())
+  reviewedAt           DateTime?
+  reviewedById         String?
+  reviewedBy           User?             @relation("TestimonialReviewedBy", fields: [reviewedById], references: [id])
 
   @@index([status, createdAt])
   @@index([createdAt])

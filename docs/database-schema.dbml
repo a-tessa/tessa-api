@@ -23,6 +23,12 @@ Enum NpsResponseStatus {
   rejected
 }
 
+Enum TestimonialStatus {
+  pending
+  approved
+  rejected
+}
+
 Table User {
   id           String     [pk, note: 'cuid()']
   name         String
@@ -106,6 +112,29 @@ Table NpsResponse {
   }
 }
 
+Table Testimonial {
+  id                   String            [pk, note: 'cuid()']
+  authorName           String
+  authorRole           String
+  companyName          String
+  rating               Int
+  comment              String
+  question             String
+  profileImageUrl      String
+  profileImagePathname String
+  reviewImageUrl       String
+  reviewImagePathname  String
+  status               TestimonialStatus [default: 'pending']
+  createdAt            DateTime          [default: `now()`]
+  reviewedAt           DateTime
+  reviewedById         String
+
+  Indexes {
+    (status, createdAt)
+    createdAt
+  }
+}
+
 Table Asset {
   id               String   [pk, note: 'cuid()']
   kind             String
@@ -135,4 +164,5 @@ Ref: LandingPage.updatedById   > User.id
 Ref: LandingPage.publishedById > User.id
 Ref: BlogArticle.authorId      > User.id
 Ref: NpsResponse.reviewedById  > User.id
+Ref: Testimonial.reviewedById  > User.id
 Ref: Asset.createdById         > User.id

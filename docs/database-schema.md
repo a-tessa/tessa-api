@@ -4,16 +4,17 @@ Banco PostgreSQL gerenciado via Prisma. Arquivo fonte: `prisma/schema.prisma`. D
 
 ## Visão geral
 
-Sete entidades principais:
+Entidades principais:
 
-| Tabela        | Propósito                                                                |
-| ------------- | ------------------------------------------------------------------------ |
-| `User`        | Usuários administrativos (MASTER/ADMIN) que operam o CMS                 |
-| `LandingPage` | Páginas com conteúdo estruturado (rascunho + publicado em JSON)          |
-| `BlogArticle` | Artigos de blog com autor, slug e categoria                              |
-| `Contact`     | Leads capturados via formulário público                                  |
-| `NpsResponse` | Depoimentos/NPS submetidos por terceiros, moderados por admin            |
-| `Asset`       | Metadados de mídia (imagens) hospedadas em `@vercel/blob`                |
+| Tabela        | Propósito                                                                         |
+| ------------- | --------------------------------------------------------------------------------- |
+| `User`        | Usuários administrativos (MASTER/ADMIN) que operam o CMS                          |
+| `LandingPage` | Páginas com conteúdo estruturado (rascunho + publicado em JSON)                   |
+| `BlogArticle` | Artigos de blog com autor, slug e categoria                                       |
+| `Contact`     | Leads capturados via formulário público                                           |
+| `NpsResponse` | Respostas de NPS submetidas por terceiros (nota 0-10), moderadas por admin        |
+| `Testimonial` | Depoimentos submetidos por visitantes (nota 1-5 + fotos opcionais), moderados     |
+| `Asset`       | Metadados de mídia (imagens) hospedadas em `@vercel/blob`                         |
 
 Todos os IDs são `String` `cuid()`. Datas usam `DateTime` com `now()`/`@updatedAt`.
 
@@ -21,7 +22,8 @@ Todos os IDs são `String` `cuid()`. Datas usam `DateTime` com `now()`/`@updated
 
 - **`UserRole`**: `MASTER`, `ADMIN`. Define nível de permissão.
 - **`LandingPageStatus`**: `draft`, `published`. Controla qual conteúdo é servido publicamente (`publishedContent` vs `draftContent`).
-- **`NpsResponseStatus`**: `pending`, `approved`, `rejected`. Fluxo de moderação.
+- **`NpsResponseStatus`**: `pending`, `approved`, `rejected`. Fluxo de moderação das respostas de NPS.
+- **`TestimonialStatus`**: `pending`, `approved`, `rejected`. Fluxo de moderação dos depoimentos.
 
 ## Entidades e campos relevantes
 
@@ -45,7 +47,11 @@ Lead bruto de formulário. Sem relação — entidade isolada. `hasBeenContacted
 
 ### `NpsResponse`
 
-Depoimento submetido publicamente, entra como `pending`. Admin aprova/rejeita preenchendo `reviewedById` + `reviewedAt`. Índice composto `(status, createdAt)` otimiza fila de moderação.
+Resposta de NPS submetida publicamente, entra como `pending`. Nota `score` de `0` a `10` (padrão NPS). Admin aprova/rejeita preenchendo `reviewedById` + `reviewedAt`. Índice composto `(status, createdAt)` otimiza fila de moderação.
+
+### `Testimonial`
+
+Depoimento submetido publicamente pelo formulário da landing. Entra como `pending`. Nota `rating` de `1` a `5` estrelas. Aceita duas imagens opcionais armazenadas no Vercel Blob: `profileImageUrl` (foto de perfil do autor) e `reviewImageUrl` (foto ilustrativa da avaliação do serviço). Os campos `profileImagePathname` e `reviewImagePathname` guardam o caminho interno do blob para facilitar limpeza em `delete`. Admin aprova/rejeita preenchendo `reviewedById` + `reviewedAt`. Índice composto `(status, createdAt)` otimiza fila de moderação.
 
 ### `Asset`
 
@@ -60,6 +66,7 @@ User 1 ───< LandingPage   (updatedBy   — obrigatório)
 User 1 ───< LandingPage   (publishedBy — opcional)
 User 1 ───< BlogArticle   (author      — obrigatório)
 User 1 ───< NpsResponse   (reviewedBy  — opcional)
+User 1 ───< Testimonial   (reviewedBy  — opcional)
 User 1 ───< Asset         (createdBy   — obrigatório)
 ```
 

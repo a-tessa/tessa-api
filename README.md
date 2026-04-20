@@ -234,6 +234,16 @@ Após o deploy e as migrations:
 - `PATCH /api/nps/admin/responses/:id/moderation`
 - `DELETE /api/nps/admin/responses/:id`
 
+### Depoimentos
+
+- `GET /api/testimonials`
+- `POST /api/testimonials`
+- `GET /api/testimonials/admin`
+- `GET /api/testimonials/admin/stats`
+- `GET /api/testimonials/admin/:id`
+- `PATCH /api/testimonials/admin/:id/moderation`
+- `DELETE /api/testimonials/admin/:id`
+
 ## Exemplo de bootstrap do master
 
 ```bash
@@ -252,6 +262,8 @@ curl -X POST http://localhost:3001/api/auth/bootstrap \
 O conteúdo principal da landing é tratado como um recurso único interno. A API gera um `id` interno para itens de `nps`, `representantsBase` e `categories`, enquanto `servicesPages` usa `slug` como identificador da rota. A `scenerySection` é derivada da lista de `servicesPages`, então não possui CRUD próprio.
 
 As configurações de NPS da landing continuam em `content.nps`, mas as respostas enviadas pelos visitantes agora vivem no recurso separado `NpsResponse`. O fluxo é: visitante envia a resposta em `POST /api/nps/responses`, ela entra como `pending`, um admin revisa em `/api/nps/admin/responses/:id/moderation` e a landing pública recebe apenas as aprovadas no campo `content.npsResponses`.
+
+Depoimentos seguem um fluxo parecido no recurso `Testimonial`, mas com nota de `1` a `5`, foto de perfil opcional e foto da avaliação opcional. O visitante envia em `POST /api/testimonials` (JSON para depoimentos sem foto ou `multipart/form-data` quando houver imagens), o registro entra como `pending`, um admin modera em `PATCH /api/testimonials/admin/:id/moderation` e a listagem pública em `GET /api/testimonials` retorna apenas os aprovados. O endpoint público de envio tem rate limit (`10` depoimentos por IP a cada `60` minutos) e aceita arquivos `profileImage` e `reviewImage` seguindo a mesma regra dos demais uploads: JPG, PNG ou WebP convertidos para WebP via `sharp` e armazenados no Vercel Blob.
 
 As `servicesPages` precisam referenciar uma categoria existente em `categories`. A API normaliza e salva o `slug` canônico da categoria no campo `category`.
 

@@ -47,6 +47,10 @@
       "value": ""
     },
     {
+      "key": "testimonialId",
+      "value": ""
+    },
+    {
       "key": "categoryItemId",
       "value": ""
     },
@@ -2492,6 +2496,325 @@
                 "admin",
                 "responses",
                 "{{npsResponseId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Testimonials",
+      "item": [
+        {
+          "name": "GET /api/testimonials",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials"
+              ]
+            },
+            "description": "Lista apenas depoimentos aprovados para consumo publico."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/testimonials (JSON)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('testimonialId', data.testimonial.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorName\": \"Joana Lima\",\n  \"authorRole\": \"Arquiteta\",\n  \"companyName\": \"Estudio Lima\",\n  \"rating\": 5,\n  \"comment\": \"Equipe atenciosa e entrega no prazo combinado, recomendo muito.\",\n  \"question\": \"Como foi sua experiencia com a Tessa?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials"
+              ]
+            },
+            "description": "Cria depoimento via JSON (sem fotos). Entra como pending e espera moderacao."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/testimonials (multipart com fotos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('testimonialId', data.testimonial.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "authorName",
+                  "value": "Joana Lima",
+                  "type": "text"
+                },
+                {
+                  "key": "authorRole",
+                  "value": "Arquiteta",
+                  "type": "text"
+                },
+                {
+                  "key": "companyName",
+                  "value": "Estudio Lima",
+                  "type": "text"
+                },
+                {
+                  "key": "rating",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "comment",
+                  "value": "Equipe atenciosa e entrega no prazo combinado, recomendo muito.",
+                  "type": "text"
+                },
+                {
+                  "key": "question",
+                  "value": "Como foi sua experiencia com a Tessa?",
+                  "type": "text"
+                },
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "reviewImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials"
+              ]
+            },
+            "description": "Cria depoimento via multipart/form-data. profileImage e reviewImage sao opcionais e aceitam JPG, PNG ou WebP."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/testimonials/admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/admin?status=pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Lista depoimentos para moderacao. Remova status para listar todos."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/testimonials/admin/stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "admin",
+                "stats"
+              ]
+            },
+            "description": "Totais por status (pending, approved, rejected) para dashboards do admin."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/testimonials/admin/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/admin/{{testimonialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "admin",
+                "{{testimonialId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/testimonials/admin/:id/moderation (approve)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/admin/{{testimonialId}}/moderation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "admin",
+                "{{testimonialId}}",
+                "moderation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/testimonials/admin/:id/moderation (reject)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/admin/{{testimonialId}}/moderation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "admin",
+                "{{testimonialId}}",
+                "moderation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/testimonials/admin/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/testimonials/admin/{{testimonialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "testimonials",
+                "admin",
+                "{{testimonialId}}"
               ]
             }
           },

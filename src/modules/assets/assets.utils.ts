@@ -86,3 +86,10 @@ export function buildServicePageExampleImagePath(
     originalFilename
   );
 }
+
+export function buildTestimonialImagePath(
+  kind: "profile" | "review",
+  originalFilename: string
+): string {
+  return buildTimestampedImagePath(["testimonials", kind], originalFilename);
+}
