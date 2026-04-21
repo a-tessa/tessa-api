@@ -19,6 +19,7 @@ import {
   operationSectionSchema,
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
+  representantInputSchema,
   representantSchema,
   servicePageSlugParamsSchema,
   sceneryItemSchema,
@@ -44,6 +45,7 @@ export type ServicesPageItem = z.infer<typeof servicesPageItemSchema>;
 export type ServicesPageMutationInput = z.infer<typeof servicesPageMutationSchema>;
 export type ServicePageMultipartInput = z.infer<typeof servicesPageMultipartInputSchema>;
 export type Representant = z.infer<typeof representantSchema>;
+export type RepresentantInput = z.infer<typeof representantInputSchema>;
 export type Category = z.infer<typeof categorySchema>;
 export type ClientItem = z.infer<typeof clientItemSchema>;
 export type ClientItemInput = z.infer<typeof clientItemInputSchema>;

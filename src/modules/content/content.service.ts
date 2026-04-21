@@ -1530,6 +1530,41 @@ export async function listCollectionItems(config: CollectionConfig) {
   return ensureCollectionIds(content, config).items;
 }
 
+export async function listRepresentantSegments(): Promise<string[]> {
+  const config = collectionConfigs.find(
+    (currentConfig) => currentConfig.key === "representantsBase"
+  );
+
+  if (!config) {
+    return [];
+  }
+
+  const items = await listCollectionItems(config);
+  const uniqueSegments = new Map<string, string>();
+
+  for (const item of items) {
+    const rawSegment = (item as Record<string, unknown>).segment;
+
+    if (typeof rawSegment !== "string") {
+      continue;
+    }
+
+    const trimmed = rawSegment.trim();
+    if (trimmed.length === 0) {
+      continue;
+    }
+
+    const key = trimmed.toLocaleLowerCase("pt-BR");
+    if (!uniqueSegments.has(key)) {
+      uniqueSegments.set(key, trimmed);
+    }
+  }
+
+  return Array.from(uniqueSegments.values()).sort((a, b) =>
+    a.localeCompare(b, "pt-BR", { sensitivity: "base" })
+  );
+}
+
 export async function listServicePages() {
   const page = await findMainPage();
 

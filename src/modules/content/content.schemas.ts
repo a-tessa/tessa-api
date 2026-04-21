@@ -228,12 +228,51 @@ export const servicesPageMultipartInputSchema = servicesPageMutationBaseSchema.e
   images: servicesPageImagesInputSchema
 });
 
-export const representantSchema = z.object({
-  name: nonEmptyString,
-  phone: nonEmptyString,
-  email: nonEmptyString,
-  city: nonEmptyString,
-  state: nonEmptyString
+const representantEmailSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(255)
+  .email("Email inválido.");
+
+const representantStoredFieldsSchema = z.object({
+  name: z.string().trim().min(1),
+  companyName: z.string().trim().default(""),
+  segment: z.string().trim().default(""),
+  phone: z.string().trim().min(1),
+  city: z.string().trim().min(1),
+  state: z.string().trim().default(""),
+  email: z.string().trim().min(1)
+});
+
+function normalizeLegacyRepresentant(value: unknown) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return value;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return {
+    companyName: "",
+    segment: "",
+    state: "",
+    ...record
+  };
+}
+
+export const representantSchema = z.preprocess(
+  normalizeLegacyRepresentant,
+  representantStoredFieldsSchema
+);
+
+export const representantInputSchema = z.object({
+  name: nonEmptyString.max(120),
+  companyName: nonEmptyString.max(160),
+  segment: nonEmptyString.max(120),
+  phone: nonEmptyString.max(40),
+  city: nonEmptyString.max(120),
+  state: nonEmptyString.max(120),
+  email: representantEmailSchema
 });
 
 export const categorySchema = z.object({
@@ -291,9 +330,12 @@ export const draftNpsItemSchema = npsItemSchema.extend({
 
 export const draftServicesPageItemSchema = servicesPageItemSchema;
 
-export const draftRepresentantSchema = representantSchema.extend({
-  id: nonEmptyString.optional()
-});
+export const draftRepresentantSchema = z.preprocess(
+  normalizeLegacyRepresentant,
+  representantStoredFieldsSchema.extend({
+    id: nonEmptyString.optional()
+  })
+);
 
 export const draftCategorySchema = categorySchema.extend({
   id: nonEmptyString.optional()

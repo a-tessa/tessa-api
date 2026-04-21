@@ -7,7 +7,7 @@ import {
   heroSectionSchema,
   npsItemSchema,
   operationSectionSchema,
-  representantSchema,
+  representantInputSchema,
   servicesPageItemSchema
 } from "./content.schemas.js";
 import type { CollectionConfig, SingularSectionConfig } from "./content.types.js";
@@ -45,7 +45,7 @@ export const collectionConfigs = [
     key: "representantsBase",
     path: "representants-base",
     label: "Representante",
-    schema: representantSchema,
+    schema: representantInputSchema,
     storedSchema: draftRepresentantSchema
   },
   {

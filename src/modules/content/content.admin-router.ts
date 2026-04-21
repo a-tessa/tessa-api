@@ -39,6 +39,7 @@ import {
   getSingularSection,
   listClients,
   listCollectionItems,
+  listRepresentantSegments,
   listServicePages,
   publishMainContent,
   updateClient,
@@ -933,6 +934,18 @@ adminContentRouter.delete(
     await deleteClient(clientId, user.id);
 
     return c.body(null, 204);
+  }
+);
+
+const representantsCollectionConfig = collectionConfigs.find(
+  (collection) => collection.key === "representantsBase"
+)!;
+
+adminContentRouter.get(
+  `/${representantsCollectionConfig.path}/segments`,
+  async (c) => {
+    const segments = await listRepresentantSegments();
+    return c.json({ segments });
   }
 );
 

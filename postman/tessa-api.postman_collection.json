@@ -2116,6 +2116,7 @@
             },
             {
               "name": "Representants Base",
+              "description": "Gerenciamento dos representantes comerciais. Campos obrigatorios: name, companyName, segment, phone, city, state (UF), email. O campo state aceita a sigla do estado (ex.: SP, RJ) e habilita o filtro por estado no admin. O endpoint /segments retorna a lista de segmentos ja cadastrados para alimentar autocomplete.",
               "item": [
                 {
                   "name": "GET /representants-base",
@@ -2138,7 +2139,35 @@
                         "admin",
                         "representants-base"
                       ]
-                    }
+                    },
+                    "description": "Lista todos os representantes cadastrados."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "GET /representants-base/segments",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/content/admin/representants-base/segments",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "content",
+                        "admin",
+                        "representants-base",
+                        "segments"
+                      ]
+                    },
+                    "description": "Retorna { segments: string[] } com os segmentos ja cadastrados (deduplicados e ordenados). Use no frontend para alimentar combobox/datalist do campo segment."
                   },
                   "response": []
                 },
@@ -2172,7 +2201,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"name\": \"Joao Silva\",\n  \"phone\": \"+55 11 99999-9999\",\n  \"email\": \"joao@tessa.com\",\n  \"city\": \"Sao Paulo\",\n  \"state\": \"SP\"\n}"
+                      "raw": "{\n  \"name\": \"Joao Silva\",\n  \"companyName\": \"Representacoes Silva\",\n  \"segment\": \"Construcao civil\",\n  \"phone\": \"+55 11 99999-9999\",\n  \"city\": \"Sao Paulo\",\n  \"state\": \"SP\",\n  \"email\": \"joao@silva.com.br\"\n}"
                     },
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/representants-base",
@@ -2185,7 +2214,8 @@
                         "admin",
                         "representants-base"
                       ]
-                    }
+                    },
+                    "description": "Cria um novo representante. Todos os campos sao obrigatorios. O campo segment pode ser um valor existente (ver /segments) ou um novo."
                   },
                   "response": []
                 },
@@ -2231,7 +2261,7 @@
                     ],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"name\": \"Joao Silva Atualizado\",\n  \"phone\": \"+55 11 98888-8888\",\n  \"email\": \"joao@tessa.com\",\n  \"city\": \"Campinas\",\n  \"state\": \"SP\"\n}"
+                      "raw": "{\n  \"name\": \"Joao Silva Atualizado\",\n  \"companyName\": \"Representacoes Silva LTDA\",\n  \"segment\": \"Construcao civil\",\n  \"phone\": \"+55 11 98888-8888\",\n  \"city\": \"Campinas\",\n  \"state\": \"SP\",\n  \"email\": \"joao@silva.com.br\"\n}"
                     },
                     "url": {
                       "raw": "{{baseUrl}}/api/content/admin/representants-base/{{representantItemId}}",
@@ -2245,7 +2275,8 @@
                         "representants-base",
                         "{{representantItemId}}"
                       ]
-                    }
+                    },
+                    "description": "Atualiza representante. O payload completo e necessario (todos os campos obrigatorios)."
                   },
                   "response": []
                 },
@@ -2505,6 +2536,7 @@
     },
     {
       "name": "Testimonials",
+      "description": "Fluxo de depoimentos: envio publico (POST /api/testimonials) e moderacao em /api/testimonials/admin. Todo envio entra como pending ate ser aprovado ou rejeitado por um admin.",
       "item": [
         {
           "name": "GET /api/testimonials",
@@ -2668,11 +2700,24 @@
               "query": [
                 {
                   "key": "status",
-                  "value": "pending"
+                  "value": "pending",
+                  "description": "pending | approved | rejected. Omita para listar todos."
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Pagina atual (>= 1). Default 1.",
+                  "disabled": true
+                },
+                {
+                  "key": "perPage",
+                  "value": "20",
+                  "description": "Itens por pagina (1..100). Default 20.",
+                  "disabled": true
                 }
               ]
             },
-            "description": "Lista depoimentos para moderacao. Remova status para listar todos."
+            "description": "Lista depoimentos para moderacao. Suporta filtros opcionais: status, page e perPage."
           },
           "response": []
         },
