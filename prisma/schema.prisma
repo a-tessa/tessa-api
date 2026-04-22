@@ -18,6 +18,11 @@ enum LandingPageStatus {
   published
 }
 
+enum BlogArticleStatus {
+  draft
+  published
+}
+
 enum NpsResponseStatus {
   pending
   approved
@@ -66,21 +71,23 @@ model LandingPage {
 }
 
 model BlogArticle {
-  id             String   @id @default(cuid())
+  id             String            @id @default(cuid())
   title          String
-  slug           String   @unique
+  slug           String            @unique
   content        String
   categorySlug   String
   headerImageUrl String?
   headerImageAlt String?
-  publishedAt    DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  status         BlogArticleStatus @default(draft)
+  publishedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   authorId       String
-  author         User     @relation("BlogArticleAuthor", fields: [authorId], references: [id])
+  author         User              @relation("BlogArticleAuthor", fields: [authorId], references: [id])
 
   @@index([categorySlug])
   @@index([publishedAt])
+  @@index([status])
 }
 
 model Contact {
