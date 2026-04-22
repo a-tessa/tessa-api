@@ -6,7 +6,6 @@ import {
   uploadPublicAsset
 } from "../assets/assets.service.js";
 import type {
-  BlogArticleListItem,
   BlogArticleRecord,
   BlogArticlesListResult,
   BlogListQuery,
@@ -22,6 +21,7 @@ const articleSelect = {
   categorySlug: true,
   headerImageUrl: true,
   headerImageAlt: true,
+  status: true,
   publishedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -32,9 +32,11 @@ const articleListSelect = {
   id: true,
   title: true,
   slug: true,
+  content: true,
   categorySlug: true,
   headerImageUrl: true,
   headerImageAlt: true,
+  status: true,
   publishedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -124,6 +126,33 @@ async function handleHeaderImage(
   return { headerImageUrl: blob.url, assetId: asset.id };
 }
 
+export async function uploadBlogBodyImage(
+  file: File,
+  userId: string
+): Promise<{ url: string }> {
+  const prepared = await prepareImageAsset(file);
+  const uniqueId = `${String(Date.now())}-${Math.random().toString(36).slice(2, 10)}`;
+  const pathname = `blog/body/${userId}/${uniqueId}.webp`;
+  const blob = await uploadPublicAsset(pathname, prepared);
+
+  await prisma.asset.create({
+    data: {
+      kind: "image",
+      entityType: "blogArticle",
+      entityId: "_body",
+      fieldKey: "bodyImage",
+      pathname,
+      url: blob.url,
+      mimeType: "image/webp",
+      sizeBytes: prepared.sizeBytes,
+      originalFilename: prepared.originalFilename,
+      createdById: userId
+    }
+  });
+
+  return { url: blob.url };
+}
+
 export async function createBlogArticle(
   input: CreateBlogArticleInput,
   authorId: string,
@@ -144,6 +173,8 @@ export async function createBlogArticle(
       categorySlug: input.categorySlug,
       headerImageUrl,
       headerImageAlt: input.headerImageAlt ?? null,
+      status: input.status,
+      publishedAt: input.status === "published" ? new Date() : null,
       authorId
     },
     select: articleSelect
@@ -152,14 +183,45 @@ export async function createBlogArticle(
 
 export async function listBlogArticles(query: BlogListQuery): Promise<BlogArticlesListResult> {
   const skip = (query.page - 1) * query.perPage;
-  const where = query.categorySlug ? { categorySlug: query.categorySlug } : {};
+  const where = {
+    ...(query.categorySlug ? { categorySlug: query.categorySlug } : {}),
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.q ? { title: { contains: query.q, mode: "insensitive" as const } } : {})
+  };
 
   const [articles, total] = await Promise.all([
     prisma.blogArticle.findMany({
       where,
       skip,
       take: query.perPage,
-      orderBy: { publishedAt: "desc" },
+      orderBy: [
+        { publishedAt: { sort: query.order, nulls: "last" } },
+        { updatedAt: query.order }
+      ],
+      select: articleListSelect
+    }),
+    prisma.blogArticle.count({ where })
+  ]);
+
+  return {
+    articles,
+    pagination: { page: query.page, perPage: query.perPage, total }
+  };
+}
+
+export async function listAdminBlogArticles(query: BlogListQuery): Promise<BlogArticlesListResult> {
+  const skip = (query.page - 1) * query.perPage;
+  const where = {
+    ...(query.categorySlug ? { categorySlug: query.categorySlug } : {}),
+    ...(query.status ? { status: query.status } : {})
+  };
+
+  const [articles, total] = await Promise.all([
+    prisma.blogArticle.findMany({
+      where,
+      skip,
+      take: query.perPage,
+      orderBy: { updatedAt: "desc" },
       select: articleListSelect
     }),
     prisma.blogArticle.count({ where })
@@ -181,6 +243,16 @@ export async function getBlogArticleBySlug(slug: string): Promise<BlogArticleRec
   return article;
 }
 
+export async function getPublishedBlogArticleBySlug(slug: string): Promise<BlogArticleRecord> {
+  const article = await prisma.blogArticle.findFirst({
+    where: { slug, status: "published" },
+    select: articleSelect
+  });
+
+  if (!article) notFound("Artigo não encontrado.");
+  return article;
+}
+
 export async function updateBlogArticle(
   slug: string,
   input: UpdateBlogArticleInput,
@@ -189,7 +261,14 @@ export async function updateBlogArticle(
 ): Promise<BlogArticleRecord> {
   const existing = await prisma.blogArticle.findUnique({
     where: { slug },
-    select: { id: true, slug: true, headerImageUrl: true }
+    select: {
+      id: true,
+      slug: true,
+      headerImageUrl: true,
+      status: true,
+      publishedAt: true,
+      content: true
+    }
   });
 
   if (!existing) notFound("Artigo não encontrado.");
@@ -214,14 +293,35 @@ export async function updateBlogArticle(
     headerImageUrl = result.headerImageUrl;
   }
 
+  const nextStatus = input.status ?? existing.status;
+  const nextContent = input.content ?? existing.content;
+
+  if (
+    nextStatus === "published" &&
+    (!nextContent || nextContent.trim().length === 0)
+  ) {
+    badRequest("Conteúdo é obrigatório para publicar o artigo.");
+  }
+
+  let publishedAt: Date | null | undefined;
+  if (input.status !== undefined) {
+    if (input.status === "published" && existing.status !== "published") {
+      publishedAt = new Date();
+    } else if (input.status === "draft" && existing.status === "published") {
+      publishedAt = existing.publishedAt;
+    }
+  }
+
   return prisma.blogArticle.update({
     where: { slug },
     data: {
       ...(input.title && { title: input.title }),
       ...(input.title && { slug: newSlug }),
-      ...(input.content && { content: input.content }),
+      ...(input.content !== undefined && { content: input.content }),
       ...(input.categorySlug && { categorySlug: input.categorySlug }),
       ...(input.headerImageAlt !== undefined && { headerImageAlt: input.headerImageAlt ?? null }),
+      ...(input.status !== undefined && { status: input.status }),
+      ...(publishedAt !== undefined && { publishedAt }),
       headerImageUrl
     },
     select: articleSelect

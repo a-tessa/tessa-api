@@ -363,10 +363,22 @@
                   "key": "categorySlug",
                   "value": "{{categorySlug}}",
                   "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Busca case-insensitive no titulo.",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "asc | desc (por publishedAt, default desc)",
+                  "disabled": true
                 }
               ]
             },
-            "description": "Lista artigos do blog com paginacao. Filtro opcional por categorySlug."
+            "description": "Lista artigos publicados do blog com paginacao. Filtros opcionais: categorySlug, q (titulo), order."
           },
           "response": []
         },
@@ -386,7 +398,7 @@
                 "{{blogArticleSlug}}"
               ]
             },
-            "description": "Retorna um artigo completo pelo slug."
+            "description": "Retorna um artigo publicado pelo slug. Rascunhos nao sao retornados nessa rota publica."
           },
           "response": []
         },
@@ -443,6 +455,12 @@
                   "type": "text",
                   "value": "Imagem de capa do artigo",
                   "disabled": true
+                },
+                {
+                  "key": "status",
+                  "type": "text",
+                  "value": "draft",
+                  "description": "draft | published. Default: draft."
                 }
               ]
             },
@@ -456,7 +474,7 @@
                 "blog"
               ]
             },
-            "description": "Cria um novo artigo. Aceita multipart/form-data. headerImage e headerImageAlt sao opcionais."
+            "description": "Cria um novo artigo. Aceita multipart/form-data. headerImage, headerImageAlt e status sao opcionais (default draft)."
           },
           "response": []
         },
@@ -520,6 +538,13 @@
                   "type": "text",
                   "value": "true",
                   "disabled": true
+                },
+                {
+                  "key": "status",
+                  "type": "text",
+                  "value": "published",
+                  "description": "draft | published",
+                  "disabled": true
                 }
               ]
             },
@@ -534,7 +559,120 @@
                 "{{blogArticleSlug}}"
               ]
             },
-            "description": "Atualiza um artigo existente. Todos os campos sao opcionais. removeHeaderImage=true remove a imagem de capa."
+            "description": "Atualiza um artigo existente. Todos os campos sao opcionais. removeHeaderImage=true remove a imagem de capa. status alterna entre draft e published."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/blog/admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/admin?page=1&perPage=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "perPage",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "draft",
+                  "description": "draft | published",
+                  "disabled": true
+                },
+                {
+                  "key": "categorySlug",
+                  "value": "{{categorySlug}}",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Busca case-insensitive no titulo.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista artigos para o admin, incluindo rascunhos. Ordena pelo mais recentemente atualizado. Requer autenticacao."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/blog/admin/:slug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/admin/{{blogArticleSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "admin",
+                "{{blogArticleSlug}}"
+              ]
+            },
+            "description": "Retorna um artigo pelo slug, incluindo rascunhos. Usado pelo admin para edicao. Requer autenticacao."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/blog/body-images",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/blog/body-images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "blog",
+                "body-images"
+              ]
+            },
+            "description": "Upload de imagem para o corpo de um artigo. Retorna { url } para inserir no editor. Aceita multipart/form-data com campo image."
           },
           "response": []
         },

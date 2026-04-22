@@ -2,11 +2,13 @@ import type { z } from "zod";
 import type { PaginationMetaDto, PaginationState } from "../shared/pagination.types.js";
 import type {
   blogArticleSlugParamsSchema,
+  blogArticleStatusSchema,
   blogListQuerySchema,
   createBlogArticleSchema,
   updateBlogArticleSchema
 } from "./blog.schemas.js";
 
+export type BlogArticleStatus = z.infer<typeof blogArticleStatusSchema>;
 export type BlogArticleSlugParams = z.infer<typeof blogArticleSlugParamsSchema>;
 export type BlogListQuery = z.infer<typeof blogListQuerySchema>;
 export type CreateBlogArticleInput = z.infer<typeof createBlogArticleSchema>;
@@ -20,7 +22,8 @@ export type BlogArticleRecord = {
   categorySlug: string;
   headerImageUrl: string | null;
   headerImageAlt: string | null;
-  publishedAt: Date;
+  status: BlogArticleStatus;
+  publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   author: {
@@ -33,7 +36,7 @@ export type BlogArticleDto = Omit<BlogArticleRecord, "author"> & {
   author: { id: string; name: string };
 };
 
-export type BlogArticleListItem = Omit<BlogArticleRecord, "content">;
+export type BlogArticleListItem = BlogArticleRecord;
 
 export type BlogArticlesListResult = {
   articles: BlogArticleListItem[];
@@ -47,4 +50,8 @@ export type BlogArticlesListResponseDto = {
 
 export type BlogArticleResponseDto = {
   article: BlogArticleDto;
+};
+
+export type BlogBodyImageUploadResponseDto = {
+  url: string;
 };

@@ -5,7 +5,8 @@ import type {
   BlogArticleRecord,
   BlogArticleResponseDto,
   BlogArticlesListResponseDto,
-  BlogArticlesListResult
+  BlogArticlesListResult,
+  BlogBodyImageUploadResponseDto
 } from "./blog.types.js";
 
 export function serializeBlogArticle(record: BlogArticleRecord): BlogArticleDto {
@@ -17,6 +18,7 @@ export function serializeBlogArticle(record: BlogArticleRecord): BlogArticleDto 
     categorySlug: record.categorySlug,
     headerImageUrl: record.headerImageUrl,
     headerImageAlt: record.headerImageAlt,
+    status: record.status,
     publishedAt: record.publishedAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -29,9 +31,11 @@ export function serializeBlogArticleListItem(record: BlogArticleListItem): BlogA
     id: record.id,
     title: record.title,
     slug: record.slug,
+    content: record.content,
     categorySlug: record.categorySlug,
     headerImageUrl: record.headerImageUrl,
     headerImageAlt: record.headerImageAlt,
+    status: record.status,
     publishedAt: record.publishedAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -50,4 +54,10 @@ export function serializeBlogArticlesListResponse(
     articles: result.articles.map(serializeBlogArticleListItem),
     pagination: serializePagination(result.pagination)
   };
+}
+
+export function serializeBlogBodyImageUploadResponse(
+  url: string
+): BlogBodyImageUploadResponseDto {
+  return { url };
 }
