@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/dev.ts",
+    "dev:homolog": "dotenv -e .env.local -- tsx watch src/dev.ts",
     "build": "prisma generate && tsc --noEmit",
     "lint": "tsc --noEmit",
     "postinstall": "prisma generate",
@@ -18,10 +19,10 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
-    "@vercel/blob": "^1.1.1",
     "@hono/node-server": "^1.14.1",
     "@hono/zod-validator": "^0.7.6",
     "@prisma/client": "^6.6.0",
+    "@vercel/blob": "^1.1.1",
     "bcryptjs": "^3.0.2",
     "hono": "^4.7.4",
     "sharp": "^0.34.2",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@types/node": "^22.13.14",
     "dotenv": "^16.4.7",
+    "dotenv-cli": "^11.0.0",
     "prisma": "^6.6.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
