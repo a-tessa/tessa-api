@@ -29,7 +29,14 @@ JWT_SECRET="change-me-min-16-chars"
 MASTER_SETUP_KEY="change-me-min-8"
 BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token"
 ASSET_MAX_UPLOAD_BYTES="4194304"
+OPENAI_API_KEY="sk-..."
+OPENAI_TRANSLATION_MODEL="gpt-5.1-mini"
+TRANSLATION_ENABLED="true"
+TRANSLATION_WORKER_SECRET="change-me-translation-worker"
+CRON_SECRET="change-me-cron-secret"
 ```
+
+As variáveis de tradução são opcionais para subir a API: sem `OPENAI_API_KEY` (ou com `TRANSLATION_ENABLED="false"`) o conteúdo simplesmente continua só em pt-BR, sem enfileirar traduções.
 
 ## Scripts
 
@@ -102,6 +109,10 @@ JWT_SECRET="uma-chave-bem-grande-e-segura"
 MASTER_SETUP_KEY="uma-chave-secreta-para-bootstrap"
 BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token"
 ASSET_MAX_UPLOAD_BYTES="4194304"
+OPENAI_API_KEY="sk-..."
+OPENAI_TRANSLATION_MODEL="gpt-5.1-mini"
+TRANSLATION_ENABLED="true"
+CRON_SECRET="uma-chave-secreta-para-o-cron"
 ```
 
 Importante:
@@ -112,6 +123,7 @@ Importante:
 - não use a `DATABASE_URL` local do Docker na Vercel
 - a Vercel não vai hospedar seu Postgres local
 - o Docker deste projeto é apenas para desenvolvimento
+- `CRON_SECRET` é injetado pela Vercel nas chamadas de Cron e também autentica o worker de tradução; defina-o para proteger `GET /api/internal/translations/run`
 
 ### O que já está adequado neste repositório
 
@@ -244,6 +256,11 @@ Após o deploy e as migrations:
 - `PATCH /api/testimonials/admin/:id/moderation`
 - `DELETE /api/testimonials/admin/:id`
 
+### Tradução (interno)
+
+- `GET|POST /api/internal/translations/run` — worker/cron de tradução (autenticado por `CRON_SECRET`/`TRANSLATION_WORKER_SECRET`)
+- `GET /api/content/public?locale=en|es` e `GET /api/blog?locale=en|es` — leitura localizada com fallback para pt-BR
+
 ## Exemplo de bootstrap do master
 
 ```bash
@@ -297,3 +314,31 @@ No `multipart/form-data`, o `payload` pode ser omitido quando todas as fotos vie
 Uploads de imagem do admin usam Vercel Blob para o binário e Postgres para os metadados. A diretriz completa está em [docs/asset-upload-guideline.md](/home/luisfaf/tessa/tessa-api/docs/asset-upload-guideline.md).
 
 Isso mantém a edição do painel simples para a landing principal, enquanto `servicesPages` continua como a única parte com múltiplas páginas dentro da estrutura de conteúdo.
+
+## Tradução automática (pt-BR → en, es)
+
+Todo conteúdo é escrito em português do Brasil (idioma canônico) e traduzido automaticamente para inglês (`en`) e espanhol (`es`) em segundo plano, sem alterar o original.
+
+### O que é traduzido
+
+- Landing (`LandingPage`), ao **publicar**: títulos/descrições/botões do hero, `alt` das imagens de operação, perguntas e respostas de NPS, `title`/`subtitle` das `servicesPages`, `name` das `categories` e `alt` dos `clients`.
+- Blog (`BlogArticle`), ao salvar como **publicado**: `title`, `content` (HTML) e `headerImageAlt`.
+
+Ficam de fora (por decisão de produto/correção): slugs, URLs, e-mails, telefones, CNPJ, vídeos, dados de representantes, `companyInformation` (endereço/CNPJ/contatos) e depoimentos/respostas de NPS enviados por visitantes.
+
+A tradução preserva termos técnicos do setor via um glossário em `src/modules/translation/translation.config.ts` (revise e estenda com os termos do time) e busca um texto natural, não literal.
+
+### Como funciona
+
+1. Ao publicar, a API extrai os campos traduzíveis, calcula um `sourceHash` e enfileira um registro por idioma na tabela `Translation` (status `pending`). Se o conteúdo não mudou (mesmo hash), nada é reprocessado.
+2. O processamento imediato roda em segundo plano via `waitUntil` (Vercel), logo após a resposta da publicação.
+3. Um **Cron** (`vercel.json`, 1x/dia às 03:00 UTC — compatível com o plano Hobby) chama `GET /api/internal/translations/run` como rede de segurança para reprocessar pendências, falhas (até 4 tentativas) e jobs presos. Ajuste o `schedule` para algo mais frequente (ex.: `*/5 * * * *`) se estiver no plano Pro.
+4. Na leitura pública, `GET /api/content/public?locale=en|es` e `GET /api/blog?locale=...` mesclam a tradução concluída sobre o conteúdo pt-BR. Sem tradução pronta, faz fallback transparente para pt-BR.
+
+### Endpoint interno (worker)
+
+- `GET|POST /api/internal/translations/run` — protegido por `Authorization: Bearer <CRON_SECRET|TRANSLATION_WORKER_SECRET>` (ou header `x-translation-secret`). Aceita `?limit=` (padrão 10).
+
+> A tradução real acontece a cada publicação (via `waitUntil`); o Cron é apenas rede de segurança para timeouts/falhas. A frequência mínima de Cron na Vercel depende do plano (Hobby permite 1x/dia); ajuste o `schedule` em `vercel.json` conforme o seu plano.
+
+Após editar o schema, rode a migration `add_translation_table` (`pnpm prisma:migrate` em dev ou `pnpm prisma:migrate:deploy` em produção).
