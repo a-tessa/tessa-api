@@ -5,6 +5,12 @@ import {
   prepareImageAsset,
   uploadPublicAsset
 } from "../assets/assets.service.js";
+import { BLOG_ENTITY_TYPE } from "../translation/translation.config.js";
+import {
+  enqueueBlogTranslations,
+  processEntityTranslations,
+  runTranslationsInBackground
+} from "../translation/translation.service.js";
 import type {
   BlogArticleRecord,
   BlogArticlesListResult,
@@ -165,7 +171,7 @@ export async function createBlogArticle(
 
   const { headerImageUrl } = await handleHeaderImage(headerImageFile, slug, authorId);
 
-  return prisma.blogArticle.create({
+  const article = await prisma.blogArticle.create({
     data: {
       title: input.title,
       slug,
@@ -179,6 +185,19 @@ export async function createBlogArticle(
     },
     select: articleSelect
   });
+
+  await triggerBlogTranslations(article);
+
+  return article;
+}
+
+async function triggerBlogTranslations(article: BlogArticleRecord): Promise<void> {
+  if (article.status !== "published") {
+    return;
+  }
+
+  await enqueueBlogTranslations(article);
+  runTranslationsInBackground(processEntityTranslations(BLOG_ENTITY_TYPE, article.id));
 }
 
 export async function listBlogArticles(query: BlogListQuery): Promise<BlogArticlesListResult> {
@@ -312,7 +331,7 @@ export async function updateBlogArticle(
     }
   }
 
-  return prisma.blogArticle.update({
+  const article = await prisma.blogArticle.update({
     where: { slug },
     data: {
       ...(input.title && { title: input.title }),
@@ -326,6 +345,10 @@ export async function updateBlogArticle(
     },
     select: articleSelect
   });
+
+  await triggerBlogTranslations(article);
+
+  return article;
 }
 
 export async function deleteBlogArticle(slug: string): Promise<void> {
@@ -342,6 +365,10 @@ export async function deleteBlogArticle(slug: string): Promise<void> {
 
   await prisma.asset.deleteMany({
     where: { entityType: "blogArticle", entityId: slug }
+  });
+
+  await prisma.translation.deleteMany({
+    where: { entityType: BLOG_ENTITY_TYPE, entityId: article.id }
   });
 
   await prisma.blogArticle.delete({ where: { slug } });

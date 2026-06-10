@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/dev.ts",
     "dev:homolog": "dotenv -e .env.local -- tsx watch src/dev.ts",
+    "dev:development": "dotenv -e .env.development -- tsx watch src/dev.ts",
     "build": "prisma generate && tsc --noEmit",
     "lint": "tsc --noEmit",
     "postinstall": "prisma generate",
@@ -14,15 +15,18 @@
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate": "npx dotenv -e .env.development -- npx prisma migrate dev",
+    "prisma:migrate:deploy": "npx dotenv -e .env.production.local -- npx prisma migrate deploy",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.68",
     "@hono/node-server": "^1.14.1",
     "@hono/zod-validator": "^0.7.6",
     "@prisma/client": "^6.6.0",
     "@vercel/blob": "^1.1.1",
+    "@vercel/functions": "^3.6.3",
+    "ai": "^6.0.198",
     "bcryptjs": "^3.0.2",
     "hono": "^4.7.4",
     "sharp": "^0.34.2",

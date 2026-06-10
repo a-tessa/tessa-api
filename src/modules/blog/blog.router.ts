@@ -15,6 +15,11 @@ import {
   updateBlogArticleSchema
 } from "./blog.schemas.js";
 import {
+  localizeBlogArticle,
+  localizeBlogArticles,
+  normalizeLocale
+} from "../translation/translation.service.js";
+import {
   createBlogArticle,
   deleteBlogArticle,
   getBlogArticleBySlug,
@@ -32,8 +37,10 @@ blogRouter.get(
   zValidator("query", blogListQuerySchema),
   async (c) => {
     const query = c.req.valid("query");
+    const locale = normalizeLocale(c.req.query("locale"));
     const result = await listBlogArticles({ ...query, status: "published" });
-    return c.json(serializeBlogArticlesListResponse(result));
+    const articles = await localizeBlogArticles(result.articles, locale);
+    return c.json(serializeBlogArticlesListResponse({ ...result, articles }));
   }
 );
 
@@ -81,8 +88,10 @@ blogRouter.get(
   zValidator("param", blogArticleSlugParamsSchema),
   async (c) => {
     const { slug } = c.req.valid("param");
+    const locale = normalizeLocale(c.req.query("locale"));
     const article = await getPublishedBlogArticleBySlug(slug);
-    return c.json(serializeBlogArticleResponse(article));
+    const localized = await localizeBlogArticle(article, locale);
+    return c.json(serializeBlogArticleResponse(localized));
   }
 );
 

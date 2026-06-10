@@ -28,6 +28,14 @@ import {
   withDerivedScenery
 } from "./content.utils.js";
 import { listApprovedNpsResponses } from "../nps/nps.service.js";
+import { LANDING_ENTITY_TYPE } from "../translation/translation.config.js";
+import {
+  enqueueLandingTranslations,
+  localizeLandingContent,
+  processEntityTranslations,
+  runTranslationsInBackground
+} from "../translation/translation.service.js";
+import type { TargetLocale } from "../translation/translation.types.js";
 import {
   CLIENT_LOGO_MAX_BYTES,
   clientItemSchema,
@@ -1047,7 +1055,9 @@ async function saveHeroSectionContent(
   return validatedHeroSection;
 }
 
-export async function getPublicContent(): Promise<PublicContentRecord> {
+export async function getPublicContent(
+  locale?: TargetLocale | null
+): Promise<PublicContentRecord> {
   const [page, approvedNpsResponses] = await Promise.all([
     findMainPage(),
     listApprovedNpsResponses()
@@ -1058,10 +1068,11 @@ export async function getPublicContent(): Promise<PublicContentRecord> {
   }
 
   const publishedContent = sanitizeContentForPublish(page.publishedContent) as PublicContentRecord["content"];
+  const localizedContent = await localizeLandingContent(publishedContent, page.id, locale ?? null);
 
   return {
     content: {
-      ...publishedContent,
+      ...localizedContent,
       npsResponses: approvedNpsResponses
     } as PublicContentRecord["content"],
     publishedAt: page.publishedAt,
@@ -1105,6 +1116,9 @@ export async function publishMainContent(userId: string): Promise<AdminContentRe
       updatedById: userId
     }
   });
+
+  await enqueueLandingTranslations(page.id, publishedContent);
+  runTranslationsInBackground(processEntityTranslations(LANDING_ENTITY_TYPE, page.id));
 
   return {
     status: page.status,
@@ -1819,7 +1833,9 @@ export async function listClients(): Promise<DraftClientItem[]> {
   return ensureClientsCollectionIds(content).items;
 }
 
-export async function listPublishedClients(): Promise<DraftClientItem[]> {
+export async function listPublishedClients(
+  locale?: TargetLocale | null
+): Promise<DraftClientItem[]> {
   const page = await findMainPage();
 
   if (!page || !page.publishedContent) {
@@ -1847,7 +1863,14 @@ export async function listPublishedClients(): Promise<DraftClientItem[]> {
     }
   }
 
-  return items;
+  if (!locale) {
+    return items;
+  }
+
+  const localized = await localizeLandingContent({ clients: items }, page.id, locale);
+  const localizedClients = (localized as { clients?: DraftClientItem[] }).clients;
+
+  return Array.isArray(localizedClients) ? localizedClients : items;
 }
 
 export async function getClient(clientId: string): Promise<DraftClientItem> {

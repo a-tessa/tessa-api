@@ -35,6 +35,18 @@ enum TestimonialStatus {
   rejected
 }
 
+enum TranslationLocale {
+  en
+  es
+}
+
+enum TranslationStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
 model User {
   id                   String        @id @default(cuid())
   name                 String
@@ -168,4 +180,24 @@ model Asset {
   @@index([pathname])
   @@index([url])
   @@index([entityType, entityId, sectionKey, fieldKey, slot])
+}
+
+model Translation {
+  id           String            @id @default(cuid())
+  entityType   String
+  entityId     String
+  locale       TranslationLocale
+  status       TranslationStatus @default(pending)
+  content      Json?
+  sourceHash   String
+  model        String?
+  error        String?
+  attempts     Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  translatedAt DateTime?
+
+  @@unique([entityType, entityId, locale])
+  @@index([status])
+  @@index([entityType, entityId])
 }

@@ -6,7 +6,15 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, "JWT_SECRET precisa ter ao menos 16 caracteres."),
   MASTER_SETUP_KEY: z.string().min(8, "MASTER_SETUP_KEY precisa ter ao menos 8 caracteres."),
   BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
-  ASSET_MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(4 * 1024 * 1024)
+  ASSET_MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(4 * 1024 * 1024),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_TRANSLATION_MODEL: z.string().min(1).default("gpt-5.4-nano"),
+  TRANSLATION_WORKER_SECRET: z.string().min(1).optional(),
+  CRON_SECRET: z.string().min(1).optional(),
+  TRANSLATION_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true")
 });
 
 export const env = envSchema.parse(process.env);
