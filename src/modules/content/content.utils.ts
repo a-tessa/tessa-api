@@ -53,14 +53,19 @@ export function buildScenerySection(content: DraftContent): ScenerySection {
 
   return scenerySectionSchema.parse(
     servicesPages
-      .filter((servicePage) => servicePage.images[0]?.imgUrl)
+      .filter(
+        (servicePage) =>
+          servicePage.backgroundImageUrl?.trim() || servicePage.images[0]?.imgUrl
+      )
       .map((servicePage) => ({
         slug: servicePage.slug,
         title: servicePage.title,
         category:
           resolveCategorySlugFromCategories(categories, servicePage.category) ??
           servicePage.category,
-        image: servicePage.images[0]!.imgUrl
+        image:
+          servicePage.backgroundImageUrl?.trim() ||
+          servicePage.images[0]!.imgUrl
       }))
   );
 }
