@@ -14,7 +14,13 @@ const envSchema = z.object({
   TRANSLATION_ENABLED: z
     .enum(["true", "false"])
     .default("true")
-    .transform((value) => value === "true")
+    .transform((value) => value === "true"),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  CONTACT_NOTIFICATION_EMAIL: z
+    .string()
+    .email()
+    .default("contato.tessa.estruturas@gmail.com"),
+  CONTACT_EMAIL_FROM: z.string().min(1).optional()
 });
 
 export const env = envSchema.parse(process.env);

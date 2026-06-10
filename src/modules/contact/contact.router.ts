@@ -1,7 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { requireAuth, requireRole } from "../../middlewares/auth.js";
+import { rateLimiter } from "../../middlewares/rate-limit.js";
 import type { AppBindings } from "../../types.js";
+import { sendContactNotificationEmail } from "./contact.email.js";
 import {
   serializeContactListResponse,
   serializeContactResponse,
@@ -24,9 +26,20 @@ import {
 
 export const contactRouter = new Hono<AppBindings>();
 
-contactRouter.post("/", zValidator("json", createContactSchema), async (c) => {
+const submitRateLimit = rateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5
+});
+
+contactRouter.post("/", submitRateLimit, zValidator("json", createContactSchema), async (c) => {
   const input = c.req.valid("json");
   const contact = await createContact(input);
+
+  try {
+    await sendContactNotificationEmail(contact);
+  } catch (error) {
+    console.error("[contact-email] Falha ao enviar notificação:", error);
+  }
 
   return c.json(serializeContactResponse(contact), 201);
 });

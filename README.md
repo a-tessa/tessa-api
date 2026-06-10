@@ -34,9 +34,14 @@ OPENAI_TRANSLATION_MODEL="gpt-5.1-mini"
 TRANSLATION_ENABLED="true"
 TRANSLATION_WORKER_SECRET="change-me-translation-worker"
 CRON_SECRET="change-me-cron-secret"
+RESEND_API_KEY="re_..."
+CONTACT_NOTIFICATION_EMAIL="contato.tessa.estruturas@gmail.com"
+CONTACT_EMAIL_FROM="Tessa Site <onboarding@resend.dev>"
 ```
 
 As variáveis de tradução são opcionais para subir a API: sem `OPENAI_API_KEY` (ou com `TRANSLATION_ENABLED="false"`) o conteúdo simplesmente continua só em pt-BR, sem enfileirar traduções.
+
+As variáveis de e-mail de contato também são opcionais: sem `RESEND_API_KEY` (ou sem `CONTACT_EMAIL_FROM`) o formulário continua sendo salvo no banco, mas nenhuma notificação é enviada. Em produção, verifique o domínio no Resend e use um remetente desse domínio (ex.: `contato@seudominio.com.br`).
 
 ## Scripts
 
