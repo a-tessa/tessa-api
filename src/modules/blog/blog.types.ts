@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { ContentLocale } from "../translation/translation.types.js";
 import type { PaginationMetaDto, PaginationState } from "../shared/pagination.types.js";
 import type {
   blogArticleSlugParamsSchema,
@@ -38,13 +39,27 @@ export type BlogArticleDto = Omit<BlogArticleRecord, "author"> & {
 
 export type BlogArticleListItem = BlogArticleRecord;
 
+export type BlogArticleAdminListItem = BlogArticleListItem & {
+  availableLocales: ContentLocale[];
+};
+
 export type BlogArticlesListResult = {
   articles: BlogArticleListItem[];
   pagination: PaginationState;
 };
 
+export type BlogArticlesAdminListResult = {
+  articles: BlogArticleAdminListItem[];
+  pagination: PaginationState;
+};
+
 export type BlogArticlesListResponseDto = {
   articles: BlogArticleListItem[];
+  pagination: PaginationMetaDto;
+};
+
+export type BlogArticlesAdminListResponseDto = {
+  articles: BlogArticleAdminListItem[];
   pagination: PaginationMetaDto;
 };
 

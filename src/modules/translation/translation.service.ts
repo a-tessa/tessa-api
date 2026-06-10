@@ -19,7 +19,9 @@ import {
 } from "./translation.extract.js";
 import { translateContent } from "./translation.openai.js";
 import {
+  SOURCE_LOCALE,
   TARGET_LOCALES,
+  type ContentLocale,
   type TargetLocale,
   type TranslatableItem,
   type TranslationEntityType,
@@ -292,6 +294,58 @@ export async function runPendingTranslations(
   }
 
   return { processed };
+}
+
+export async function findCompletedLocalesByEntityIds(
+  entityType: TranslationEntityType,
+  entityIds: string[]
+): Promise<Map<string, ContentLocale[]>> {
+  const result = new Map<string, ContentLocale[]>();
+
+  for (const entityId of entityIds) {
+    result.set(entityId, [SOURCE_LOCALE]);
+  }
+
+  if (entityIds.length === 0) {
+    return result;
+  }
+
+  const rows = await prisma.translation.findMany({
+    where: {
+      entityType,
+      entityId: { in: entityIds },
+      status: "completed"
+    },
+    select: { entityId: true, locale: true, content: true }
+  });
+
+  const translatedLocalesByEntityId = new Map<string, Set<TargetLocale>>();
+
+  for (const row of rows) {
+    if (!row.content) {
+      continue;
+    }
+    const locales = translatedLocalesByEntityId.get(row.entityId) ?? new Set<TargetLocale>();
+    locales.add(row.locale);
+    translatedLocalesByEntityId.set(row.entityId, locales);
+  }
+
+  for (const entityId of entityIds) {
+    const translated = translatedLocalesByEntityId.get(entityId);
+    if (!translated) {
+      continue;
+    }
+
+    const locales: ContentLocale[] = [SOURCE_LOCALE];
+    for (const locale of TARGET_LOCALES) {
+      if (translated.has(locale)) {
+        locales.push(locale);
+      }
+    }
+    result.set(entityId, locales);
+  }
+
+  return result;
 }
 
 async function findCompletedTranslation(

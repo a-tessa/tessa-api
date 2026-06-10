@@ -5,6 +5,7 @@ import { requireAuth } from "../../middlewares/auth.js";
 import type { AppBindings } from "../../types.js";
 import {
   serializeBlogArticleResponse,
+  serializeBlogArticlesAdminListResponse,
   serializeBlogArticlesListResponse,
   serializeBlogBodyImageUploadResponse
 } from "./blog.serializers.js";
@@ -51,7 +52,7 @@ blogRouter.get(
   async (c) => {
     const query = c.req.valid("query");
     const result = await listAdminBlogArticles(query);
-    return c.json(serializeBlogArticlesListResponse(result));
+    return c.json(serializeBlogArticlesAdminListResponse(result));
   }
 );
 

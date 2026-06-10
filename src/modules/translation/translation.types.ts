@@ -4,6 +4,10 @@ export type TargetLocale = TranslationLocale;
 
 export const TARGET_LOCALES: readonly TargetLocale[] = ["en", "es"] as const;
 
+export const SOURCE_LOCALE = "pt-BR" as const;
+
+export type ContentLocale = typeof SOURCE_LOCALE | TargetLocale;
+
 export type TranslationEntityType = "landingPage" | "blogArticle";
 
 export type TextFormat = "plain" | "html";

@@ -8,11 +8,13 @@ import {
 import { BLOG_ENTITY_TYPE } from "../translation/translation.config.js";
 import {
   enqueueBlogTranslations,
+  findCompletedLocalesByEntityIds,
   processEntityTranslations,
   runTranslationsInBackground
 } from "../translation/translation.service.js";
 import type {
   BlogArticleRecord,
+  BlogArticlesAdminListResult,
   BlogArticlesListResult,
   BlogListQuery,
   CreateBlogArticleInput,
@@ -228,7 +230,9 @@ export async function listBlogArticles(query: BlogListQuery): Promise<BlogArticl
   };
 }
 
-export async function listAdminBlogArticles(query: BlogListQuery): Promise<BlogArticlesListResult> {
+export async function listAdminBlogArticles(
+  query: BlogListQuery
+): Promise<BlogArticlesAdminListResult> {
   const skip = (query.page - 1) * query.perPage;
   const where = {
     ...(query.categorySlug ? { categorySlug: query.categorySlug } : {}),
@@ -246,8 +250,16 @@ export async function listAdminBlogArticles(query: BlogListQuery): Promise<BlogA
     prisma.blogArticle.count({ where })
   ]);
 
+  const localesByEntityId = await findCompletedLocalesByEntityIds(
+    BLOG_ENTITY_TYPE,
+    articles.map((article) => article.id)
+  );
+
   return {
-    articles,
+    articles: articles.map((article) => ({
+      ...article,
+      availableLocales: localesByEntityId.get(article.id) ?? ["pt-BR"]
+    })),
     pagination: { page: query.page, perPage: query.perPage, total }
   };
 }
