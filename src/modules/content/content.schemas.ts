@@ -16,9 +16,13 @@ export const operationSectionImageParamsSchema = z.object({
   imageIndex: z.coerce.number().int().min(0).max(MAX_OPERATION_SECTION_IMAGES - 1)
 });
 
+export const MAX_HERO_SLIDES = 3;
+export const MAX_HERO_TITLE_LENGTH = 25;
+export const MAX_HERO_DESCRIPTION_LENGTH = 60;
+
 const heroTopicBaseSchema = z.object({
-  title: nonEmptyString,
-  description: nonEmptyString,
+  title: nonEmptyString.max(MAX_HERO_TITLE_LENGTH),
+  description: nonEmptyString.max(MAX_HERO_DESCRIPTION_LENGTH),
   button: z.object({
     text: nonEmptyString,
     url: nonEmptyString
@@ -32,8 +36,6 @@ export const heroTopicSchema = heroTopicBaseSchema.extend({
 export const heroTopicInputSchema = heroTopicBaseSchema.extend({
   image: nonEmptyString.optional()
 });
-
-export const MAX_HERO_SLIDES = 3;
 
 const heroSectionArraySchema = z.array(heroTopicSchema).min(1).max(MAX_HERO_SLIDES);
 const heroSectionInputArraySchema = z.array(heroTopicInputSchema).min(1).max(MAX_HERO_SLIDES);
