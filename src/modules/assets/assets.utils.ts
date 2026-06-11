@@ -93,3 +93,7 @@ export function buildTestimonialImagePath(
 ): string {
   return buildTimestampedImagePath(["testimonials", kind], originalFilename);
 }
+
+export function buildUserAvatarPath(userId: string, originalFilename: string): string {
+  return buildTimestampedImagePath(["users", userId, "avatar"], originalFilename);
+}

@@ -37,7 +37,21 @@ export const heroTopicInputSchema = heroTopicBaseSchema.extend({
   image: nonEmptyString.optional()
 });
 
+const heroTopicStoredBaseSchema = z.object({
+  title: nonEmptyString,
+  description: nonEmptyString,
+  button: z.object({
+    text: nonEmptyString,
+    url: nonEmptyString
+  })
+});
+
+export const heroTopicStoredSchema = heroTopicStoredBaseSchema.extend({
+  image: nonEmptyString
+});
+
 const heroSectionArraySchema = z.array(heroTopicSchema).min(1).max(MAX_HERO_SLIDES);
+const heroSectionStoredArraySchema = z.array(heroTopicStoredSchema).min(1).max(MAX_HERO_SLIDES);
 const heroSectionInputArraySchema = z.array(heroTopicInputSchema).min(1).max(MAX_HERO_SLIDES);
 
 export const heroSectionSlideParamsSchema = z.object({
@@ -59,6 +73,14 @@ export const heroSectionInputSchema = z.preprocess((value) => {
 
   return value;
 }, heroSectionInputArraySchema);
+
+export const heroSectionStoredSchema = z.preprocess((value) => {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return [value];
+  }
+
+  return value;
+}, heroSectionStoredArraySchema);
 
 export const sceneryItemSchema = z.object({
   slug: slugString,
@@ -344,7 +366,7 @@ export const draftCategorySchema = categorySchema.extend({
 });
 
 export const draftContentSchema = z.object({
-  heroSection: heroSectionSchema.optional(),
+  heroSection: heroSectionStoredSchema.optional(),
   operationSection: operationSectionSchema.optional(),
   nps: z.array(draftNpsItemSchema).optional(),
   servicesPages: z.array(draftServicesPageItemSchema).optional(),

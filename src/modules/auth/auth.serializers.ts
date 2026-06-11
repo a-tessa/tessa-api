@@ -31,6 +31,7 @@ export function serializeCurrentUser(user: CurrentUserRecord): CurrentUserDto {
     name: user.name,
     email: user.email,
     role: user.role,
+    avatarUrl: user.avatarUrl,
     isActive: user.isActive,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt

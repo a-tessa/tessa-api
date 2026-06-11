@@ -13,6 +13,7 @@ export type AuthSessionUserRecord = {
 };
 
 export type CurrentUserRecord = AuthSessionUserRecord & {
+  avatarUrl: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

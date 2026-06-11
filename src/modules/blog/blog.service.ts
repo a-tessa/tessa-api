@@ -33,7 +33,7 @@ const articleSelect = {
   publishedAt: true,
   createdAt: true,
   updatedAt: true,
-  author: { select: { id: true, name: true } }
+  author: { select: { id: true, name: true, avatarUrl: true } }
 } as const;
 
 const articleListSelect = {
@@ -48,7 +48,7 @@ const articleListSelect = {
   publishedAt: true,
   createdAt: true,
   updatedAt: true,
-  author: { select: { id: true, name: true } }
+  author: { select: { id: true, name: true, avatarUrl: true } }
 } as const;
 
 function generateSlug(title: string): string {

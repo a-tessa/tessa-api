@@ -30,11 +30,12 @@ export type BlogArticleRecord = {
   author: {
     id: string;
     name: string;
+    avatarUrl: string | null;
   };
 };
 
 export type BlogArticleDto = Omit<BlogArticleRecord, "author"> & {
-  author: { id: string; name: string };
+  author: { id: string; name: string; avatarUrl: string | null };
 };
 
 export type BlogArticleListItem = BlogArticleRecord;

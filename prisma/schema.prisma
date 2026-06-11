@@ -53,6 +53,8 @@ model User {
   email                String        @unique
   passwordHash         String
   role                 UserRole
+  avatarUrl            String?
+  avatarPathname       String?
   isActive             Boolean       @default(true)
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt

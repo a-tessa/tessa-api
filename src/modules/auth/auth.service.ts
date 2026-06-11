@@ -100,6 +100,7 @@ export async function getCurrentUser(userId: string): Promise<CurrentUserRecord>
       name: true,
       email: true,
       role: true,
+      avatarUrl: true,
       isActive: true,
       createdAt: true,
       updatedAt: true

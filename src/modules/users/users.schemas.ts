@@ -20,3 +20,9 @@ export const createAdminSchema = z.object({
 export const updateStatusSchema = z.object({
   isActive: z.boolean()
 });
+
+export const updateUserProfileSchema = z.object({
+  name: z.string().min(2).optional(),
+  email: z.string().email().optional(),
+  removeAvatar: z.boolean().optional()
+});

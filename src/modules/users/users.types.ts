@@ -5,6 +5,7 @@ import {
   createAdminSchema,
   pageListQuerySchema,
   updateStatusSchema,
+  updateUserProfileSchema,
   userIdParamsSchema
 } from "./users.schemas.js";
 
@@ -12,12 +13,14 @@ export type UserIdParams = z.infer<typeof userIdParamsSchema>;
 export type PageListQuery = z.infer<typeof pageListQuerySchema>;
 export type CreateAdminInput = z.infer<typeof createAdminSchema>;
 export type UpdateUserStatusInput = z.infer<typeof updateStatusSchema>;
+export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;
 
 export type ManagedUserRecord = {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  avatarUrl: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
