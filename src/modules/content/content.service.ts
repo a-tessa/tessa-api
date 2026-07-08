@@ -40,6 +40,7 @@ import {
   CLIENT_LOGO_MAX_BYTES,
   clientItemSchema,
   heroSectionSchema,
+  heroSectionStoredSchema,
   operationSectionSchema,
   servicesPageMutationSchema
 } from "./content.schemas.js";
@@ -915,7 +916,7 @@ async function saveHeroSectionContent(
     const hasCurrentImage = Boolean(currentHeroSection[index]?.image);
 
     if (!uploadsByIndex.has(index) && !topic.image && !hasCurrentImage) {
-      badRequest(`Imagem do tópico ${index} é obrigatória.`);
+      badRequest(`Imagem do tópico ${topic.title} é obrigatória.`);
     }
   }
 
@@ -943,7 +944,10 @@ async function saveHeroSectionContent(
     image: uploadedAssets.get(index)?.url ?? topic.image ?? currentHeroSection[index]?.image ?? ""
   }));
 
-  const validatedHeroSection = heroSectionSchema.parse(nextHeroSection);
+  const validatedHeroSection =
+    mode === "create"
+      ? heroSectionSchema.parse(nextHeroSection)
+      : heroSectionStoredSchema.parse(nextHeroSection);
   const previousAssets = await prisma.asset.findMany({
     where: HERO_ASSET_FILTER,
     orderBy: {
@@ -1304,7 +1308,7 @@ export async function deleteHeroSectionSlide(
     return null;
   }
 
-  const validatedHeroSection = heroSectionSchema.parse(nextTopics);
+  const validatedHeroSection = heroSectionStoredSchema.parse(nextTopics);
 
   const previousAssets = await prisma.asset.findMany({
     where: HERO_ASSET_FILTER,

@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 const nonEmptyString = z.string().trim().min(1);
+const optionalNonEmptyString = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  nonEmptyString.optional()
+);
 const slugString = z.string().trim().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 export const MAX_OPERATION_SECTION_IMAGES = 20;
 
@@ -18,7 +22,7 @@ export const operationSectionImageParamsSchema = z.object({
 
 export const MAX_HERO_SLIDES = 3;
 export const MAX_HERO_TITLE_LENGTH = 25;
-export const MAX_HERO_DESCRIPTION_LENGTH = 60;
+export const MAX_HERO_DESCRIPTION_LENGTH = 200;
 
 const heroTopicBaseSchema = z.object({
   title: nonEmptyString.max(MAX_HERO_TITLE_LENGTH),
@@ -34,7 +38,7 @@ export const heroTopicSchema = heroTopicBaseSchema.extend({
 });
 
 export const heroTopicInputSchema = heroTopicBaseSchema.extend({
-  image: nonEmptyString.optional()
+  image: optionalNonEmptyString
 });
 
 const heroTopicStoredBaseSchema = z.object({
@@ -46,6 +50,10 @@ const heroTopicStoredBaseSchema = z.object({
   })
 });
 
+export const heroTopicUpdateInputSchema = heroTopicStoredBaseSchema.extend({
+  image: optionalNonEmptyString
+});
+
 export const heroTopicStoredSchema = heroTopicStoredBaseSchema.extend({
   image: nonEmptyString
 });
@@ -53,6 +61,10 @@ export const heroTopicStoredSchema = heroTopicStoredBaseSchema.extend({
 const heroSectionArraySchema = z.array(heroTopicSchema).min(1).max(MAX_HERO_SLIDES);
 const heroSectionStoredArraySchema = z.array(heroTopicStoredSchema).min(1).max(MAX_HERO_SLIDES);
 const heroSectionInputArraySchema = z.array(heroTopicInputSchema).min(1).max(MAX_HERO_SLIDES);
+const heroSectionUpdateInputArraySchema = z
+  .array(heroTopicUpdateInputSchema)
+  .min(1)
+  .max(MAX_HERO_SLIDES);
 
 export const heroSectionSlideParamsSchema = z.object({
   slideIndex: z.coerce.number().int().min(0).max(MAX_HERO_SLIDES - 1)
@@ -73,6 +85,14 @@ export const heroSectionInputSchema = z.preprocess((value) => {
 
   return value;
 }, heroSectionInputArraySchema);
+
+export const heroSectionUpdateInputSchema = z.preprocess((value) => {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return [value];
+  }
+
+  return value;
+}, heroSectionUpdateInputArraySchema);
 
 export const heroSectionStoredSchema = z.preprocess((value) => {
   if (typeof value === "object" && value !== null && !Array.isArray(value)) {

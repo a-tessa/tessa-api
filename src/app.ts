@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
+import { ZodError } from "zod";
 import { structuredLogger } from "./middlewares/logger.js";
 import { authRouter } from "./routes/auth.js";
 import { blogRouter } from "./routes/blog.js";
@@ -61,6 +62,15 @@ app.onError((error, c) => {
       },
       error.status
     );
+  }
+
+  if (error instanceof ZodError) {
+    const issue = error.issues[0];
+    const message = issue
+      ? `Dados inválidos: ${issue.path.join(".")} — ${issue.message}`
+      : "Dados inválidos.";
+
+    return c.json({ error: message }, 400);
   }
 
   console.error(error);

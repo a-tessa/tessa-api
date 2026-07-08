@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono, type Context } from "hono";
+import { z } from "zod";
 import { env } from "../../env.js";
 import { requireAuth, requireRole } from "../../middlewares/auth.js";
 import { badRequest, payloadTooLarge } from "../../lib/http.js";
@@ -55,8 +56,8 @@ import {
   clientItemParamsSchema,
   collectionItemParamsSchema,
   heroSectionInputSchema,
-  heroSectionSchema,
   heroSectionSlideParamsSchema,
+  heroSectionUpdateInputSchema,
   MAX_OPERATION_SECTION_IMAGES,
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
@@ -114,11 +115,26 @@ function parseContentLength(value: string | undefined) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
-async function parseHeroSectionBody(c: Context<AppBindings>): Promise<{
+function formatHeroSectionPayloadError(error: z.ZodError) {
+  const issue = error.issues[0];
+
+  if (!issue) {
+    return "Payload da seção hero inválido.";
+  }
+
+  const field = issue.path.length > 0 ? issue.path.join(".") : "payload";
+  return `Payload da seção hero inválido: ${field} — ${issue.message}`;
+}
+
+async function parseHeroSectionBody(
+  c: Context<AppBindings>,
+  mode: "create" | "update"
+): Promise<{
   input: HeroSectionInput;
   uploadsByIndex: Map<number, File>;
   altsByIndex: Map<number, string>;
 }> {
+  const payloadSchema = mode === "create" ? heroSectionInputSchema : heroSectionUpdateInputSchema;
   const contentType = c.req.header("content-type");
 
   if (!isMultipartRequest(contentType)) {
@@ -130,9 +146,9 @@ async function parseHeroSectionBody(c: Context<AppBindings>): Promise<{
       badRequest("Body JSON inválido.");
     }
 
-    const parsedBody = heroSectionSchema.safeParse(rawBody);
+    const parsedBody = payloadSchema.safeParse(rawBody);
     if (!parsedBody.success) {
-      badRequest("Payload da seção hero inválido.");
+      badRequest(formatHeroSectionPayloadError(parsedBody.error));
     }
 
     return {
@@ -190,9 +206,9 @@ async function parseHeroSectionBody(c: Context<AppBindings>): Promise<{
     badRequest("Campo 'payload' precisa conter um JSON válido.");
   }
 
-  const parsedPayload = heroSectionInputSchema.safeParse(rawPayload);
+  const parsedPayload = payloadSchema.safeParse(rawPayload);
   if (!parsedPayload.success) {
-    badRequest("Payload da seção hero inválido.");
+    badRequest(formatHeroSectionPayloadError(parsedPayload.error));
   }
 
   const uploadsByIndex = new Map<number, File>();
@@ -609,7 +625,7 @@ adminContentRouter.get("/scenery-section", async (c) => {
 });
 
 adminContentRouter.post("/hero-section", ...requireAdminWriteAccess, async (c) => {
-  const { input, uploadsByIndex, altsByIndex } = await parseHeroSectionBody(c);
+  const { input, uploadsByIndex, altsByIndex } = await parseHeroSectionBody(c, "create");
   const user = c.get("user");
   const value = await createHeroSection(input, uploadsByIndex, altsByIndex, user.id);
 
@@ -617,7 +633,7 @@ adminContentRouter.post("/hero-section", ...requireAdminWriteAccess, async (c) =
 });
 
 adminContentRouter.put("/hero-section", ...requireAdminWriteAccess, async (c) => {
-  const { input, uploadsByIndex, altsByIndex } = await parseHeroSectionBody(c);
+  const { input, uploadsByIndex, altsByIndex } = await parseHeroSectionBody(c, "update");
   const user = c.get("user");
   const value = await updateHeroSection(input, uploadsByIndex, altsByIndex, user.id);
 
