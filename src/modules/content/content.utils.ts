@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
+import { badRequest } from "../../lib/http.js";
+import { prisma } from "../../lib/prisma.js";
 import { collectionConfigs } from "./content.config.js";
 import { draftContentSchema, scenerySectionSchema } from "./content.schemas.js";
 import type {
@@ -45,6 +47,34 @@ export function resolveCategorySlugFromCategories(
   });
 
   return category?.slug ?? null;
+}
+
+/**
+ * Ensures `categorySlug` exists among published landing-page categories.
+ * Shared by blog articles, documents, and any other entity that references categories by slug.
+ */
+export async function validateCategorySlug(categorySlug: string): Promise<void> {
+  const page = await prisma.landingPage.findUnique({
+    where: { slug: "home" },
+    select: { status: true, publishedContent: true }
+  });
+
+  if (!page || page.status !== "published" || !page.publishedContent) {
+    badRequest("Nenhuma categoria disponível. Publique o conteúdo da landing page primeiro.");
+  }
+
+  const content = page.publishedContent as Record<string, unknown>;
+  const categories = content.categories as Array<{ slug: string }> | undefined;
+
+  if (!categories?.length) {
+    badRequest("Nenhuma categoria cadastrada no conteúdo publicado.");
+  }
+
+  const found = categories.some((c) => c.slug === categorySlug);
+  if (!found) {
+    const available = categories.map((c) => c.slug).join(", ");
+    badRequest(`Categoria "${categorySlug}" não encontrada. Disponíveis: ${available}`);
+  }
 }
 
 export function buildScenerySection(content: DraftContent): ScenerySection {

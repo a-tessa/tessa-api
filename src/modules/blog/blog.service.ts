@@ -5,6 +5,7 @@ import {
   prepareImageAsset,
   uploadPublicAsset
 } from "../assets/assets.service.js";
+import { validateCategorySlug } from "../content/content.utils.js";
 import { BLOG_ENTITY_TYPE } from "../translation/translation.config.js";
 import {
   enqueueBlogTranslations,
@@ -73,30 +74,6 @@ async function ensureUniqueSlug(base: string, excludeId?: string): Promise<strin
     if (!existing || existing.id === excludeId) return slug;
     suffix++;
     slug = `${base}-${suffix}`;
-  }
-}
-
-async function validateCategorySlug(categorySlug: string): Promise<void> {
-  const page = await prisma.landingPage.findUnique({
-    where: { slug: "home" },
-    select: { status: true, publishedContent: true }
-  });
-
-  if (!page || page.status !== "published" || !page.publishedContent) {
-    badRequest("Nenhuma categoria disponível. Publique o conteúdo da landing page primeiro.");
-  }
-
-  const content = page.publishedContent as Record<string, unknown>;
-  const categories = content.categories as Array<{ slug: string }> | undefined;
-
-  if (!categories?.length) {
-    badRequest("Nenhuma categoria cadastrada no conteúdo publicado.");
-  }
-
-  const found = categories.some((c) => c.slug === categorySlug);
-  if (!found) {
-    const available = categories.map((c) => c.slug).join(", ");
-    badRequest(`Categoria "${categorySlug}" não encontrada. Disponíveis: ${available}`);
   }
 }
 

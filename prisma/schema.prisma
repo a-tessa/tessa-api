@@ -47,6 +47,12 @@ enum TranslationStatus {
   failed
 }
 
+enum DocumentLocale {
+  pt_BR
+  en
+  es
+}
+
 model User {
   id                   String        @id @default(cuid())
   name                 String
@@ -62,6 +68,7 @@ model User {
   pagesPublished       LandingPage[] @relation("LandingPagePublishedBy")
   createdAssets        Asset[]
   blogArticles         BlogArticle[] @relation("BlogArticleAuthor")
+  documents            Document[]    @relation("DocumentCreatedBy")
   reviewedNpsResponses NpsResponse[] @relation("NpsResponseReviewedBy")
   reviewedTestimonials Testimonial[] @relation("TestimonialReviewedBy")
 }
@@ -202,4 +209,43 @@ model Translation {
   @@unique([entityType, entityId, locale])
   @@index([status])
   @@index([entityType, entityId])
+}
+
+model Document {
+  id             String         @id @default(cuid())
+  title          String
+  titleEn        String?
+  titleEs        String?
+  description    String?
+  descriptionEn  String?
+  descriptionEs  String?
+  categorySlug   String
+  order          Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  createdById    String
+  createdBy      User           @relation("DocumentCreatedBy", fields: [createdById], references: [id])
+  files          DocumentFile[]
+
+  @@index([categorySlug])
+  @@index([order])
+}
+
+model DocumentFile {
+  id                 String         @id @default(cuid())
+  documentId         String
+  document           Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  locale             DocumentLocale
+  url                String
+  pathname           String
+  mimeType           String
+  sizeBytes          Int
+  originalFilename   String?
+  coverImageUrl      String?
+  coverImagePathname String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([documentId, locale])
+  @@index([locale])
 }

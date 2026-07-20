@@ -8,6 +8,7 @@ import { blogRouter } from "./routes/blog.js";
 import { contentRouter } from "./routes/content.js";
 import { healthRouter } from "./routes/health.js";
 import { contactRouter } from "./routes/contact.js";
+import { documentsRouter } from "./routes/documents.js";
 import { npsRouter } from "./routes/nps.js";
 import { testimonialRouter } from "./routes/testimonial.js";
 import { translationRouter } from "./routes/translations.js";
@@ -43,6 +44,7 @@ app.route("/api/contacts", contactRouter);
 app.route("/api/nps", npsRouter);
 app.route("/api/testimonials", testimonialRouter);
 app.route("/api/content", contentRouter);
+app.route("/api/documents", documentsRouter);
 app.route("/api/internal/translations", translationRouter);
 
 app.notFound((c) =>

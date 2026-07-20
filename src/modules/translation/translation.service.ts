@@ -5,16 +5,20 @@ import { prisma } from "../../lib/prisma.js";
 import { isTranslationConfigured } from "../../lib/ai.js";
 import { env } from "../../env.js";
 import type { BlogArticleRecord } from "../blog/blog.types.js";
+import type { DocumentRecord } from "../documents/documents.types.js";
 import {
   BLOG_ENTITY_TYPE,
+  DOCUMENT_ENTITY_TYPE,
   LANDING_ENTITY_TYPE,
   MAX_TRANSLATION_ATTEMPTS,
   WORKER_BATCH_SIZE
 } from "./translation.config.js";
 import {
   applyBlogItems,
+  applyDocumentItems,
   applyLandingItems,
   extractBlogItems,
+  extractDocumentItems,
   extractLandingItems
 } from "./translation.extract.js";
 import { translateContent } from "./translation.openai.js";
@@ -123,6 +127,16 @@ export async function enqueueBlogTranslations(
   return enqueueTranslations(BLOG_ENTITY_TYPE, article.id, extractBlogItems(article));
 }
 
+export async function enqueueDocumentTranslations(
+  document: Pick<DocumentRecord, "id" | "title" | "description">
+): Promise<boolean> {
+  return enqueueTranslations(
+    DOCUMENT_ENTITY_TYPE,
+    document.id,
+    extractDocumentItems(document)
+  );
+}
+
 async function loadSourceItems(
   entityType: string,
   entityId: string
@@ -151,6 +165,19 @@ async function loadSourceItems(
     }
 
     return extractBlogItems(article);
+  }
+
+  if (entityType === DOCUMENT_ENTITY_TYPE) {
+    const document = await prisma.document.findUnique({
+      where: { id: entityId },
+      select: { title: true, description: true }
+    });
+
+    if (!document) {
+      return null;
+    }
+
+    return extractDocumentItems(document);
   }
 
   return null;
@@ -423,5 +450,69 @@ export async function localizeBlogArticles<T extends BlogArticleRecord>(
   return articles.map((article) => {
     const map = mapByEntityId.get(article.id);
     return map ? applyBlogItems(article, map) : article;
+  });
+}
+
+function applyDocumentOverrides<T extends DocumentRecord>(
+  document: T,
+  locale: TargetLocale
+): T {
+  if (locale === "en") {
+    return {
+      ...document,
+      title: document.titleEn?.trim() || document.title,
+      description:
+        document.descriptionEn?.trim() || document.description
+    };
+  }
+
+  return {
+    ...document,
+    title: document.titleEs?.trim() || document.title,
+    description:
+      document.descriptionEs?.trim() || document.description
+  };
+}
+
+export async function localizeDocument<T extends DocumentRecord>(
+  document: T,
+  locale: TargetLocale | null
+): Promise<T> {
+  if (!locale) {
+    return document;
+  }
+
+  const map = await findCompletedTranslation(DOCUMENT_ENTITY_TYPE, document.id, locale);
+  const withAi = map ? applyDocumentItems(document, map) : document;
+  return applyDocumentOverrides(withAi, locale);
+}
+
+export async function localizeDocuments<T extends DocumentRecord>(
+  documents: T[],
+  locale: TargetLocale | null
+): Promise<T[]> {
+  if (!locale || documents.length === 0) {
+    return documents;
+  }
+
+  const rows = await prisma.translation.findMany({
+    where: {
+      entityType: DOCUMENT_ENTITY_TYPE,
+      entityId: { in: documents.map((document) => document.id) },
+      locale,
+      status: "completed"
+    }
+  });
+
+  const mapByEntityId = new Map<string, TranslationMap>(
+    rows
+      .filter((row) => row.content)
+      .map((row) => [row.entityId, row.content as TranslationMap])
+  );
+
+  return documents.map((document) => {
+    const map = mapByEntityId.get(document.id);
+    const withAi = map ? applyDocumentItems(document, map) : document;
+    return applyDocumentOverrides(withAi, locale);
   });
 }

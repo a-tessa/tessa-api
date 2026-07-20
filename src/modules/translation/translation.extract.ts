@@ -1,6 +1,7 @@
 import { buildScenerySection } from "../content/content.utils.js";
 import type { DraftContent } from "../content/content.types.js";
 import type { BlogArticleRecord } from "../blog/blog.types.js";
+import type { DocumentRecord } from "../documents/documents.types.js";
 import type { TextFormat, TranslatableItem, TranslationMap } from "./translation.types.js";
 
 type Json = Record<string, unknown>;
@@ -142,5 +143,37 @@ export function applyBlogItems<T extends BlogTranslatable>(article: T, map: Tran
     headerImageAlt: article.headerImageAlt
       ? map["blog.headerImageAlt"] ?? article.headerImageAlt
       : article.headerImageAlt
+  };
+}
+
+type DocumentTranslatable = Pick<DocumentRecord, "title" | "description">;
+
+export function extractDocumentItems(document: DocumentTranslatable): TranslatableItem[] {
+  const items: TranslatableItem[] = [];
+
+  if (nonEmpty(document.title)) {
+    items.push({ id: "document.title", text: document.title, format: "plain" });
+  }
+  if (nonEmpty(document.description)) {
+    items.push({
+      id: "document.description",
+      text: document.description,
+      format: "plain"
+    });
+  }
+
+  return items;
+}
+
+export function applyDocumentItems<T extends DocumentTranslatable>(
+  document: T,
+  map: TranslationMap
+): T {
+  return {
+    ...document,
+    title: map["document.title"] ?? document.title,
+    description: document.description
+      ? map["document.description"] ?? document.description
+      : document.description
   };
 }
