@@ -217,7 +217,7 @@ export const operationSectionMultipartInputSchema = z.object({
 
 export const MAX_INDUSTRY_TITLE_PREFIX_LENGTH = 60;
 export const MAX_INDUSTRY_TITLE_LENGTH = 100;
-export const MAX_INDUSTRY_SUBTITLE_LENGTH = 300;
+export const MAX_INDUSTRY_SUBTITLE_LENGTH = 700;
 
 export const industryVideoSchema = z.object({
   url: nonEmptyString.refine(
