@@ -20,6 +20,7 @@ import {
   npsItemSchema,
   operationSectionSchema,
   operationSectionWriteSchema,
+  operationSectionMutationSchema,
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
   representantInputSchema,
@@ -44,6 +45,7 @@ export type SceneryItem = z.infer<typeof sceneryItemSchema>;
 export type ScenerySection = z.infer<typeof scenerySectionSchema>;
 export type OperationSection = z.infer<typeof operationSectionSchema>;
 export type OperationSectionWrite = z.infer<typeof operationSectionWriteSchema>;
+export type OperationSectionMutationInput = z.infer<typeof operationSectionMutationSchema>;
 export type OperationSectionMultipartInput = z.infer<typeof operationSectionMultipartInputSchema>;
 export type NpsItem = z.infer<typeof npsItemSchema>;
 export type ServicesPageItem = z.infer<typeof servicesPageItemSchema>;

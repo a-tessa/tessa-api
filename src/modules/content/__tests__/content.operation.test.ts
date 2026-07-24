@@ -7,7 +7,8 @@ import {
   MAX_OPERATION_SECTION_IMAGES,
   MIN_OPERATION_SECTION_IMAGES_FOR_PUBLISH,
   operationSectionSchema,
-  operationSectionWriteSchema
+  operationSectionWriteSchema,
+  operationSectionMutationSchema
 } from "../content.schemas.js";
 import {
   assertOperationSectionReadyForPublish,
@@ -92,6 +93,37 @@ describe("operation section content", () => {
       images: [makeImage(0, { caption: "   " })]
     });
     assert.equal(emptyCaption.images[0]?.caption, undefined);
+  });
+
+  it("accepts optional asset meta on mutation payloads for unit-upload staging", () => {
+    const withMeta = operationSectionMutationSchema.parse({
+      images: [
+        {
+          url: "https://cdn.example.com/0.webp",
+          alt: "Alt 0",
+          meta: {
+            pathname: "landing-page/home/operation-section/image-0/foto.webp",
+            mimeType: "image/webp",
+            sizeBytes: 12,
+            originalFilename: "foto.jpg"
+          }
+        }
+      ]
+    });
+
+    assert.equal(
+      withMeta.images[0]?.meta?.pathname.includes("operation-section"),
+      true
+    );
+    assert.equal(
+      Object.hasOwn(
+        operationSectionWriteSchema.parse({
+          images: [{ url: "https://cdn.example.com/0.webp", alt: "Alt 0" }]
+        }).images[0] ?? {},
+        "meta"
+      ),
+      false
+    );
   });
 
   it("keeps legacy published items without alt readable in stored content", () => {
@@ -221,5 +253,58 @@ describe("operation section content", () => {
         }
       ]
     });
+  });
+
+  it("requires authentication for the unit asset upload route", async () => {
+    process.env.DATABASE_URL ??= "postgresql://test:test@localhost:5432/test";
+    process.env.DATABASE_URL_UNPOOLED ??= process.env.DATABASE_URL;
+    process.env.JWT_SECRET ??= "test-jwt-secret-with-16-characters";
+    process.env.MASTER_SETUP_KEY ??= "test-setup-key";
+
+    const { adminContentRouter } = await import("../content.admin-router.js");
+    const response = await adminContentRouter.request("/operation-section/assets", {
+      method: "POST"
+    });
+    assert.equal(response.status, 401);
+  });
+
+  it("rejects non-multipart bodies on the unit asset upload route", async () => {
+    process.env.DATABASE_URL ??= "postgresql://test:test@localhost:5432/test";
+    process.env.DATABASE_URL_UNPOOLED ??= process.env.DATABASE_URL;
+    process.env.JWT_SECRET ??= "test-jwt-secret-with-16-characters";
+    process.env.MASTER_SETUP_KEY ??= "test-setup-key";
+
+    const [{ adminContentRouter }, { createAccessToken }, { prisma }] = await Promise.all([
+      import("../content.admin-router.js"),
+      import("../../../lib/auth.js"),
+      import("../../../lib/prisma.js")
+    ]);
+
+    Object.defineProperty(prisma.user, "findUnique", {
+      configurable: true,
+      value: async () => ({
+        id: "user-1",
+        email: "admin@tessa.com.br",
+        role: "ADMIN",
+        isActive: true
+      })
+    });
+
+    const token = await createAccessToken({
+      id: "user-1",
+      email: "admin@tessa.com.br",
+      role: "ADMIN"
+    });
+
+    const response = await adminContentRouter.request("/operation-section/assets", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({})
+    });
+
+    assert.equal(response.status, 400);
   });
 });

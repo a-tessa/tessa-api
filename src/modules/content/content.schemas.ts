@@ -142,6 +142,13 @@ function refineCaptionDiffersFromAlt(
   }
 }
 
+export const servicePageAssetMetaSchema = z.object({
+  pathname: nonEmptyString,
+  mimeType: nonEmptyString,
+  sizeBytes: z.number().int().positive(),
+  originalFilename: nonEmptyString
+});
+
 /** Stored/draft read shape: legacy items may omit `alt` and `caption`. */
 export const operationSectionImageSchema = z
   .object({
@@ -160,6 +167,16 @@ export const operationSectionImageWriteSchema = z
   })
   .superRefine(refineCaptionDiffersFromAlt);
 
+/** Mutation shape accepts optional asset meta from unit uploads (not stored in draft). */
+export const operationSectionImageMutationSchema = z
+  .object({
+    url: nonEmptyString,
+    alt: nonEmptyString.max(MAX_OPERATION_ALT_LENGTH),
+    caption: operationCaptionSchema,
+    meta: servicePageAssetMetaSchema.optional()
+  })
+  .superRefine(refineCaptionDiffersFromAlt);
+
 export const operationSectionImageInputSchema = z
   .object({
     url: nonEmptyString.optional(),
@@ -174,6 +191,9 @@ const operationSectionImagesSchema = z
 const operationSectionImagesWriteSchema = z
   .array(operationSectionImageWriteSchema)
   .max(MAX_OPERATION_SECTION_IMAGES);
+const operationSectionImagesMutationSchema = z
+  .array(operationSectionImageMutationSchema)
+  .max(MAX_OPERATION_SECTION_IMAGES);
 const operationSectionImagesInputSchema = z
   .array(operationSectionImageInputSchema)
   .max(MAX_OPERATION_SECTION_IMAGES)
@@ -185,6 +205,10 @@ export const operationSectionSchema = z.object({
 
 export const operationSectionWriteSchema = z.object({
   images: operationSectionImagesWriteSchema
+});
+
+export const operationSectionMutationSchema = z.object({
+  images: operationSectionImagesMutationSchema
 });
 
 export const operationSectionMultipartInputSchema = z.object({
@@ -223,13 +247,6 @@ export const npsAnswerSchema = z.object({
 export const npsItemSchema = z.object({
   question: nonEmptyString,
   answers: z.array(npsAnswerSchema)
-});
-
-export const servicePageAssetMetaSchema = z.object({
-  pathname: nonEmptyString,
-  mimeType: nonEmptyString,
-  sizeBytes: z.number().int().positive(),
-  originalFilename: nonEmptyString
 });
 
 export const servicesPageImageSchema = z.object({

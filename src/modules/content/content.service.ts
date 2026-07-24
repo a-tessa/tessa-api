@@ -59,6 +59,7 @@ import type {
   HeroSectionInput,
   OperationSection,
   OperationSectionMultipartInput,
+  OperationSectionMutationInput,
   ServicePageMultipartInput,
   ServicesPageMutationInput,
   PublicContentRecord,
@@ -704,7 +705,7 @@ async function saveServicePageContent(
 
 async function saveOperationSectionContent(
   mode: "create" | "update",
-  input: OperationSection | OperationSectionMultipartInput,
+  input: OperationSectionMutationInput | OperationSectionMultipartInput,
   uploadsByIndex: Map<number, File>,
   userId: string
 ): Promise<OperationSection> {
@@ -732,7 +733,17 @@ async function saveOperationSectionContent(
       ? Math.max(0, maxUploadedIndex + 1)
       : Math.max(currentImages.length, maxUploadedIndex + 1);
 
-  const requestedImages: Array<{ url?: string; alt?: string; caption?: string }> =
+  const requestedImages: Array<{
+    url?: string;
+    alt?: string;
+    caption?: string;
+    meta?: {
+      pathname: string;
+      mimeType: string;
+      sizeBytes: number;
+      originalFilename: string;
+    };
+  }> =
     Array.isArray(input.images)
       ? input.images
       : Array.from({ length: targetImageCount }, () => ({}));
@@ -826,6 +837,26 @@ async function saveOperationSectionContent(
         sizeBytes: preparedAsset.sizeBytes,
         originalFilename: preparedAsset.originalFilename,
         alt: image.alt ?? previousAsset?.alt ?? null,
+        createdById: userId
+      });
+      continue;
+    }
+
+    const stagedMeta = requestedImages[index]?.meta;
+    if (stagedMeta) {
+      assetsToPersist.push({
+        kind: "image",
+        entityType: "landingPage",
+        entityId: MAIN_CONTENT_SLUG,
+        sectionKey: "operationSection",
+        fieldKey: "images",
+        slot: index,
+        pathname: stagedMeta.pathname,
+        url: image.url,
+        mimeType: stagedMeta.mimeType,
+        sizeBytes: stagedMeta.sizeBytes,
+        originalFilename: stagedMeta.originalFilename,
+        alt: image.alt ?? null,
         createdById: userId
       });
       continue;
@@ -1199,7 +1230,7 @@ export async function createHeroSection(
 }
 
 export async function createOperationSection(
-  input: OperationSection | OperationSectionMultipartInput,
+  input: OperationSectionMutationInput | OperationSectionMultipartInput,
   uploadsByIndex: Map<number, File>,
   userId: string
 ) {
@@ -1238,7 +1269,7 @@ export async function updateHeroSection(
 }
 
 export async function updateOperationSection(
-  input: OperationSection | OperationSectionMultipartInput,
+  input: OperationSectionMutationInput | OperationSectionMultipartInput,
   uploadsByIndex: Map<number, File>,
   userId: string
 ) {

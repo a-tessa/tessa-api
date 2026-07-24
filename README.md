@@ -239,6 +239,7 @@ Após o deploy e as migrations:
 - `GET|POST|PUT|DELETE /api/content/admin/hero-section`
 - `GET /api/content/admin/scenery-section`
 - `GET|POST|PUT|DELETE /api/content/admin/operation-section`
+- `POST /api/content/admin/operation-section/assets`
 - `DELETE /api/content/admin/operation-section/images/:imageIndex`
 - `GET|POST|PUT|DELETE /api/content/admin/company-information`
 - `GET|POST /api/content/admin/nps`
@@ -314,6 +315,8 @@ A seção `heroSection` aceita uma lista com `1` a `3` tópicos, e cada tópico 
 A `operationSection` aceita um array `images` com `0` a `40` fotos no rascunho (`6` a `40` para publicação quando a seção estiver presente). Cada item inclui `url`, `alt` obrigatório (`1..100`) e `caption` opcional (`0..300`, diferente do `alt`). Cada arquivo enviado por multipart precisa ter menos de `3 MB`. Se alguma foto ultrapassar esse limite, a API responde com erro informando o campo exato, como `image_7`, e o motivo.
 
 A rota `DELETE /api/content/admin/operation-section/images/:imageIndex` remove apenas a imagem selecionada (por índice), atualiza os metadados da seção e também limpa o arquivo correspondente no Blob.
+
+A rota `POST /api/content/admin/operation-section/assets` aceita um único arquivo (`file`) em `multipart/form-data`, com `index` opcional (`0..39`), converte JPEG/PNG para WebP e devolve a URL pública para montar o array `images` em lotes pequenos antes do `POST`/`PUT` JSON da seção.
 
 As `servicesPages` aceitam `backgroundImageUrl` e um array `images` com `1` a `15` fotos por serviço.
 

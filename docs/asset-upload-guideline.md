@@ -251,10 +251,12 @@ Exemplos futuros:
 - `PUT /api/content/admin/services-pages/:slug` com `payload` + `image`
 - `PUT /api/content/admin/company-information` com `payload` + `logo`
 - `PUT /api/content/admin/operation-section` com `payload` + `image_0` até `image_39`
+- `POST /api/content/admin/operation-section/assets` com `file` (+ `index` opcional) para upload unitário
 
 Regras específicas já adotadas na `operationSection`:
 
 - até `40` fotos por request
+- upload unitário recomendado para lotes com concorrência limitada (evita um multipart de ~120 MB)
 - cada arquivo deve ter no máximo `3 MB`
 - quando alguma foto ultrapassa o limite, a API retorna erro apontando o campo exato, como `image_7`
 - no multipart, o campo `payload` é opcional quando o request só envia arquivos

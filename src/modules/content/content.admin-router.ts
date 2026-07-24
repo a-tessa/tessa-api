@@ -61,7 +61,7 @@ import {
   MAX_OPERATION_SECTION_IMAGES,
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
-  operationSectionWriteSchema,
+  operationSectionMutationSchema,
   servicePageAssetIndexSchema,
   servicePageAssetKindSchema,
   servicePageSlugParamsSchema,
@@ -70,6 +70,7 @@ import {
 } from "./content.schemas.js";
 import { prepareImageAsset, uploadPublicAsset } from "../assets/assets.service.js";
 import {
+  buildOperationSectionImagePath,
   buildServicePageBackgroundImagePath,
   buildServicePageExampleImagePath
 } from "../assets/assets.utils.js";
@@ -77,8 +78,8 @@ import type {
   ClientItemInput,
   DraftContent,
   HeroSectionInput,
-  OperationSection,
   OperationSectionMultipartInput,
+  OperationSectionMutationInput,
   ServicePageMultipartInput,
   ServicesPageMutationInput
 } from "./content.types.js";
@@ -287,7 +288,7 @@ function assertOperationSectionFileSizes(uploadsByIndex: Map<number, File>) {
 }
 
 async function parseOperationSectionBody(c: Context<AppBindings>): Promise<{
-  input: OperationSection | OperationSectionMultipartInput;
+  input: OperationSectionMutationInput | OperationSectionMultipartInput;
   uploadsByIndex: Map<number, File>;
 }> {
   const contentType = c.req.header("content-type");
@@ -301,7 +302,7 @@ async function parseOperationSectionBody(c: Context<AppBindings>): Promise<{
       badRequest("Body JSON inválido.");
     }
 
-    const parsedBody = operationSectionWriteSchema.safeParse(rawBody);
+    const parsedBody = operationSectionMutationSchema.safeParse(rawBody);
     if (!parsedBody.success) {
       badRequest("Payload da seção de operação inválido.");
     }
@@ -707,6 +708,79 @@ adminContentRouter.delete(
     const value = await deleteOperationSectionImage(imageIndex, user.id);
 
     return c.json(serializeSectionResponse("operationSection", value));
+  }
+);
+
+adminContentRouter.post(
+  "/operation-section/assets",
+  ...requireAdminWriteAccess,
+  async (c) => {
+    const contentType = c.req.header("content-type");
+
+    if (!isMultipartRequest(contentType)) {
+      badRequest("Envie o arquivo como multipart/form-data.");
+    }
+
+    const contentLength = parseContentLength(c.req.header("content-length"));
+    const maxSingleAssetBodyBytes = MAX_OPERATION_SECTION_IMAGE_BYTES + 512 * 1024;
+
+    if (contentLength !== null && contentLength > maxSingleAssetBodyBytes) {
+      payloadTooLarge(
+        `Arquivo maior do que o suportado (${maxSingleAssetBodyBytes} bytes).`
+      );
+    }
+
+    let formData: FormData;
+    try {
+      formData = await c.req.formData();
+    } catch {
+      badRequest("Não foi possível processar o multipart/form-data enviado.");
+    }
+
+    let index = 0;
+    const rawIndex = formData.get("index");
+    if (rawIndex !== null) {
+      const parsedIndex = operationSectionImageParamsSchema.safeParse({
+        imageIndex: rawIndex
+      });
+      if (!parsedIndex.success) {
+        badRequest(
+          `Campo 'index' inválido. Informe um número entre 0 e ${MAX_OPERATION_SECTION_IMAGES - 1}.`
+        );
+      }
+      index = parsedIndex.data.imageIndex;
+    }
+
+    const rawFile = formData.get("file");
+    if (!(rawFile instanceof File)) {
+      badRequest("Campo 'file' inválido.");
+    }
+
+    if (rawFile.size === 0 || !rawFile.name) {
+      badRequest("Arquivo inválido.");
+    }
+
+    if (rawFile.size > MAX_OPERATION_SECTION_IMAGE_BYTES) {
+      payloadTooLarge(buildOperationSectionOversizeMessage(index, rawFile));
+    }
+
+    const preparedAsset = await prepareImageAsset(rawFile);
+    const uploadedAsset = await uploadPublicAsset(
+      buildOperationSectionImagePath(index, preparedAsset.originalFilename),
+      preparedAsset
+    );
+
+    return c.json(
+      {
+        url: uploadedAsset.url,
+        pathname: uploadedAsset.pathname,
+        mimeType: preparedAsset.contentType,
+        sizeBytes: preparedAsset.sizeBytes,
+        originalFilename: preparedAsset.originalFilename,
+        index
+      },
+      201
+    );
   }
 );
 
