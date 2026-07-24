@@ -34,9 +34,12 @@ OPENAI_TRANSLATION_MODEL="gpt-5.1-mini"
 TRANSLATION_ENABLED="true"
 TRANSLATION_WORKER_SECRET="change-me-translation-worker"
 CRON_SECRET="change-me-cron-secret"
-RESEND_API_KEY="re_..."
+SMTP_HOST="smtp.runket.com.br"
+SMTP_PORT="587"
+SMTP_USER="noreplytessa@runket.com.br"
+SMTP_PASSWORD="change-me"
 CONTACT_NOTIFICATION_EMAIL="contato.tessa.estruturas@gmail.com"
-CONTACT_EMAIL_FROM="Tessa Site <onboarding@resend.dev>"
+CONTACT_EMAIL_FROM="Tessa Site <noreplytessa@runket.com.br>"
 INSTAGRAM_APP_ID="your-instagram-app-id"
 INSTAGRAM_APP_SECRET="your-instagram-app-secret"
 INSTAGRAM_REDIRECT_URI="https://api.example.com/api/instagram/oauth/callback"
@@ -48,7 +51,7 @@ ADMIN_APP_URL="http://localhost:5173"
 
 As variáveis de tradução são opcionais para subir a API: sem `OPENAI_API_KEY` (ou com `TRANSLATION_ENABLED="false"`) o conteúdo simplesmente continua só em pt-BR, sem enfileirar traduções.
 
-As variáveis de e-mail de contato também são opcionais: sem `RESEND_API_KEY` (ou sem `CONTACT_EMAIL_FROM`) o formulário continua sendo salvo no banco, mas nenhuma notificação é enviada. Em produção, verifique o domínio no Resend e use um remetente desse domínio (ex.: `contato@seudominio.com.br`).
+As variáveis de e-mail de contato também são opcionais: sem as credenciais SMTP (ou sem `CONTACT_EMAIL_FROM`) o formulário continua sendo salvo no banco, mas nenhuma notificação é enviada. Use a porta `587` para STARTTLS ou `465` para TLS implícito e mantenha o remetente autorizado pelo servidor SMTP.
 
 As variáveis do Instagram são opcionais para subir a API, mas obrigatórias para conectar a conta no painel. Sem elas, a página **Conteúdo → Instagram** indica que a integração não está configurada. O guia completo está em [docs/instagram-integration.md](./docs/instagram-integration.md).
 ## Scripts

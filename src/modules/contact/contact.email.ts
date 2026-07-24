@@ -1,16 +1,26 @@
-import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 import { env } from "../../env.js";
 import type { ContactRecord } from "./contact.types.js";
 
-let cachedClient: Resend | null = null;
+let cachedTransporter: Transporter | null = null;
 
-function getResendClient(): Resend | null {
-  if (!env.RESEND_API_KEY) {
+function getSmtpTransporter(): Transporter | null {
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD) {
     return null;
   }
 
-  cachedClient ??= new Resend(env.RESEND_API_KEY);
-  return cachedClient;
+  cachedTransporter ??= nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_PORT === 465,
+    requireTLS: env.SMTP_PORT === 587,
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASSWORD
+    }
+  });
+
+  return cachedTransporter;
 }
 
 function escapeHtml(value: string): string {
@@ -100,19 +110,25 @@ function buildContactEmailText(contact: ContactRecord): string {
 }
 
 export function isContactEmailConfigured(): boolean {
-  return Boolean(env.RESEND_API_KEY && env.CONTACT_NOTIFICATION_EMAIL && env.CONTACT_EMAIL_FROM);
+  return Boolean(
+    env.SMTP_HOST &&
+      env.SMTP_USER &&
+      env.SMTP_PASSWORD &&
+      env.CONTACT_NOTIFICATION_EMAIL &&
+      env.CONTACT_EMAIL_FROM
+  );
 }
 
 export async function sendContactNotificationEmail(contact: ContactRecord): Promise<void> {
-  const client = getResendClient();
+  const transporter = getSmtpTransporter();
 
-  if (!client || !env.CONTACT_NOTIFICATION_EMAIL || !env.CONTACT_EMAIL_FROM) {
+  if (!transporter || !env.CONTACT_NOTIFICATION_EMAIL || !env.CONTACT_EMAIL_FROM) {
     return;
   }
 
   const subject = `[Site Tessa] Novo contato — ${contact.fullName} / ${contact.companyName}`;
 
-  const { error } = await client.emails.send({
+  await transporter.sendMail({
     from: env.CONTACT_EMAIL_FROM,
     to: env.CONTACT_NOTIFICATION_EMAIL,
     replyTo: contact.email,
@@ -120,8 +136,4 @@ export async function sendContactNotificationEmail(contact: ContactRecord): Prom
     html: buildContactEmailHtml(contact),
     text: buildContactEmailText(contact)
   });
-
-  if (error) {
-    throw new Error(error.message);
-  }
 }
