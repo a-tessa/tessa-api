@@ -6,9 +6,11 @@ import { isTranslationConfigured } from "../../lib/ai.js";
 import { env } from "../../env.js";
 import type { BlogArticleRecord } from "../blog/blog.types.js";
 import type { DocumentRecord } from "../documents/documents.types.js";
+import type { InstagramMediaRecord } from "../instagram/instagram.types.js";
 import {
   BLOG_ENTITY_TYPE,
   DOCUMENT_ENTITY_TYPE,
+  INSTAGRAM_ENTITY_TYPE,
   LANDING_ENTITY_TYPE,
   MAX_TRANSLATION_ATTEMPTS,
   WORKER_BATCH_SIZE
@@ -16,9 +18,11 @@ import {
 import {
   applyBlogItems,
   applyDocumentItems,
+  applyInstagramItems,
   applyLandingItems,
   extractBlogItems,
   extractDocumentItems,
+  extractInstagramItems,
   extractLandingItems
 } from "./translation.extract.js";
 import { translateContent } from "./translation.openai.js";
@@ -105,7 +109,13 @@ async function enqueueTranslations(
     await prisma.translation.upsert({
       where: { entityType_entityId_locale: { entityType, entityId, locale } },
       create: { entityType, entityId, locale, status: "pending", sourceHash },
-      update: { status: "pending", sourceHash, error: null, attempts: 0 }
+      update: {
+        status: "pending",
+        previousContent: existing?.content ?? undefined,
+        sourceHash,
+        error: null,
+        attempts: 0
+      }
     });
 
     queued = true;
@@ -135,6 +145,57 @@ export async function enqueueDocumentTranslations(
     document.id,
     extractDocumentItems(document)
   );
+}
+
+export async function enqueueInstagramMediaTranslations(
+  media: Pick<InstagramMediaRecord, "id" | "caption" | "altText">
+): Promise<boolean> {
+  return enqueueTranslations(
+    INSTAGRAM_ENTITY_TYPE,
+    media.id,
+    extractInstagramItems(media)
+  );
+}
+
+export async function findLocalizedInstagramMediaIds(
+  mediaItems: Array<Pick<InstagramMediaRecord, "id" | "caption">>
+): Promise<Set<string>> {
+  const captionedMedia = mediaItems.filter((media) => media.caption?.trim());
+  const localizedIds = new Set(
+    mediaItems
+      .filter((media) => !media.caption?.trim())
+      .map((media) => media.id)
+  );
+
+  if (captionedMedia.length === 0) {
+    return localizedIds;
+  }
+
+  const rows = await prisma.translation.findMany({
+    where: {
+      entityType: INSTAGRAM_ENTITY_TYPE,
+      entityId: { in: captionedMedia.map((media) => media.id) },
+      locale: { in: [...TARGET_LOCALES] },
+      status: "completed"
+    },
+    select: { entityId: true, locale: true }
+  });
+
+  const localesByMediaId = new Map<string, Set<TargetLocale>>();
+  for (const row of rows) {
+    const locales = localesByMediaId.get(row.entityId) ?? new Set<TargetLocale>();
+    locales.add(row.locale);
+    localesByMediaId.set(row.entityId, locales);
+  }
+
+  for (const media of captionedMedia) {
+    const locales = localesByMediaId.get(media.id);
+    if (TARGET_LOCALES.every((locale) => locales?.has(locale))) {
+      localizedIds.add(media.id);
+    }
+  }
+
+  return localizedIds;
 }
 
 async function loadSourceItems(
@@ -178,6 +239,19 @@ async function loadSourceItems(
     }
 
     return extractDocumentItems(document);
+  }
+
+  if (entityType === INSTAGRAM_ENTITY_TYPE) {
+    const media = await prisma.instagramMedia.findUnique({
+      where: { id: entityId },
+      select: { caption: true, altText: true }
+    });
+
+    if (!media) {
+      return null;
+    }
+
+    return extractInstagramItems(media);
   }
 
   return null;
@@ -514,5 +588,57 @@ export async function localizeDocuments<T extends DocumentRecord>(
     const map = mapByEntityId.get(document.id);
     const withAi = map ? applyDocumentItems(document, map) : document;
     return applyDocumentOverrides(withAi, locale);
+  });
+}
+
+export async function localizeInstagramMedia<T extends InstagramMediaRecord>(
+  media: T,
+  locale: TargetLocale | null
+): Promise<T> {
+  const [localized] = await localizeInstagramMediaList([media], locale);
+  return localized ?? media;
+}
+
+export async function localizeInstagramMediaList<T extends InstagramMediaRecord>(
+  mediaItems: T[],
+  locale: TargetLocale | null
+): Promise<T[]> {
+  if (!locale || mediaItems.length === 0) {
+    return mediaItems;
+  }
+
+  const rows = await prisma.translation.findMany({
+    where: {
+      entityType: INSTAGRAM_ENTITY_TYPE,
+      entityId: { in: mediaItems.map((media) => media.id) },
+      locale: { in: [...TARGET_LOCALES] }
+    }
+  });
+
+  const rowsByEntityId = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const entityRows = rowsByEntityId.get(row.entityId) ?? [];
+    entityRows.push(row);
+    rowsByEntityId.set(row.entityId, entityRows);
+  }
+
+  return mediaItems.map((media) => {
+    const entityRows = rowsByEntityId.get(media.id) ?? [];
+    const allLocalesReady = TARGET_LOCALES.every((targetLocale) =>
+      entityRows.some(
+        (row) =>
+          row.locale === targetLocale &&
+          row.status === "completed" &&
+          row.content
+      )
+    );
+    const localizedRow = entityRows.find((row) => row.locale === locale);
+    const map = allLocalesReady
+      ? localizedRow?.content
+      : localizedRow?.previousContent;
+
+    return map
+      ? applyInstagramItems(media, map as TranslationMap)
+      : media;
   });
 }

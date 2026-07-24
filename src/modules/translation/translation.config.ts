@@ -3,6 +3,7 @@ import type { GlossaryEntry, TranslationEntityType } from "./translation.types.j
 export const LANDING_ENTITY_TYPE: TranslationEntityType = "landingPage";
 export const BLOG_ENTITY_TYPE: TranslationEntityType = "blogArticle";
 export const DOCUMENT_ENTITY_TYPE: TranslationEntityType = "document";
+export const INSTAGRAM_ENTITY_TYPE: TranslationEntityType = "instagramMedia";
 
 /** Max processing attempts before a translation row is left as `failed`. */
 export const MAX_TRANSLATION_ATTEMPTS = 4;

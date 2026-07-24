@@ -53,24 +53,31 @@ enum DocumentLocale {
   es
 }
 
+enum InstagramMediaType {
+  IMAGE
+  VIDEO
+  CAROUSEL_ALBUM
+}
+
 model User {
-  id                   String        @id @default(cuid())
+  id                   String                @id @default(cuid())
   name                 String
-  email                String        @unique
+  email                String                @unique
   passwordHash         String
   role                 UserRole
   avatarUrl            String?
   avatarPathname       String?
-  isActive             Boolean       @default(true)
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  pagesUpdated         LandingPage[] @relation("LandingPageUpdatedBy")
-  pagesPublished       LandingPage[] @relation("LandingPagePublishedBy")
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  pagesUpdated         LandingPage[]         @relation("LandingPageUpdatedBy")
+  pagesPublished       LandingPage[]         @relation("LandingPagePublishedBy")
   createdAssets        Asset[]
-  blogArticles         BlogArticle[] @relation("BlogArticleAuthor")
-  documents            Document[]    @relation("DocumentCreatedBy")
-  reviewedNpsResponses NpsResponse[] @relation("NpsResponseReviewedBy")
-  reviewedTestimonials Testimonial[] @relation("TestimonialReviewedBy")
+  blogArticles         BlogArticle[]         @relation("BlogArticleAuthor")
+  documents            Document[]            @relation("DocumentCreatedBy")
+  reviewedNpsResponses NpsResponse[]         @relation("NpsResponseReviewedBy")
+  reviewedTestimonials Testimonial[]         @relation("TestimonialReviewedBy")
+  instagramConnections InstagramConnection[] @relation("InstagramConnectionConnectedBy")
 }
 
 model LandingPage {
@@ -192,19 +199,20 @@ model Asset {
 }
 
 model Translation {
-  id           String            @id @default(cuid())
-  entityType   String
-  entityId     String
-  locale       TranslationLocale
-  status       TranslationStatus @default(pending)
-  content      Json?
-  sourceHash   String
-  model        String?
-  error        String?
-  attempts     Int               @default(0)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  translatedAt DateTime?
+  id              String            @id @default(cuid())
+  entityType      String
+  entityId        String
+  locale          TranslationLocale
+  status          TranslationStatus @default(pending)
+  content         Json?
+  previousContent Json?
+  sourceHash      String
+  model           String?
+  error           String?
+  attempts        Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  translatedAt    DateTime?
 
   @@unique([entityType, entityId, locale])
   @@index([status])
@@ -212,20 +220,20 @@ model Translation {
 }
 
 model Document {
-  id             String         @id @default(cuid())
-  title          String
-  titleEn        String?
-  titleEs        String?
-  description    String?
-  descriptionEn  String?
-  descriptionEs  String?
-  categorySlug   String
-  order          Int            @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  createdById    String
-  createdBy      User           @relation("DocumentCreatedBy", fields: [createdById], references: [id])
-  files          DocumentFile[]
+  id            String         @id @default(cuid())
+  title         String
+  titleEn       String?
+  titleEs       String?
+  description   String?
+  descriptionEn String?
+  descriptionEs String?
+  categorySlug  String
+  order         Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  createdById   String
+  createdBy     User           @relation("DocumentCreatedBy", fields: [createdById], references: [id])
+  files         DocumentFile[]
 
   @@index([categorySlug])
   @@index([order])
@@ -248,4 +256,47 @@ model DocumentFile {
 
   @@unique([documentId, locale])
   @@index([locale])
+}
+
+model InstagramConnection {
+  id                   String           @id @default(cuid())
+  instagramUserId      String           @unique
+  facebookPageId       String           @unique
+  facebookPageName     String
+  username             String
+  accountType          String?
+  encryptedAccessToken String
+  tokenExpiresAt       DateTime
+  scopes               String
+  lastSyncedAt         DateTime?
+  lastSyncError        String?
+  connectedById        String
+  connectedBy          User             @relation("InstagramConnectionConnectedBy", fields: [connectedById], references: [id])
+  media                InstagramMedia[]
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([tokenExpiresAt])
+}
+
+model InstagramMedia {
+  id               String              @id @default(cuid())
+  connectionId     String
+  connection       InstagramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  instagramMediaId String              @unique
+  mediaType        InstagramMediaType
+  caption          String?
+  altText          String?
+  permalink        String
+  imageUrl         String
+  isCollaborative  Boolean             @default(false)
+  publishedAt      DateTime
+  isAvailable      Boolean             @default(true)
+  unavailableAt    DateTime?
+  syncedAt         DateTime            @default(now())
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([connectionId, publishedAt])
+  @@index([isAvailable, publishedAt])
 }

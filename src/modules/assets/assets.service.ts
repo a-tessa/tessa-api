@@ -1,5 +1,6 @@
 import { extname } from "node:path";
 import { del, put } from "@vercel/blob";
+import { HTTPException } from "hono/http-exception";
 import sharp from "sharp";
 import { env } from "../../env.js";
 import { badRequest, internalServerError, payloadTooLarge } from "../../lib/http.js";
@@ -75,6 +76,30 @@ export async function prepareImageAsset(file: File): Promise<PreparedImageAsset>
       };
     }
 
+    return await prepareImageBuffer(inputBuffer, file.name);
+  } catch (error) {
+    if (error instanceof HTTPException) {
+      throw error;
+    }
+    badRequest("Não foi possível processar a imagem enviada.");
+  }
+}
+
+export async function prepareImageBuffer(
+  inputBuffer: Buffer,
+  originalFilename: string
+): Promise<PreparedImageAsset> {
+  if (inputBuffer.byteLength === 0) {
+    badRequest("Arquivo vazio.");
+  }
+
+  if (inputBuffer.byteLength > env.ASSET_MAX_UPLOAD_BYTES) {
+    payloadTooLarge(
+      `Arquivo maior do que o permitido. Limite atual: ${env.ASSET_MAX_UPLOAD_BYTES} bytes.`
+    );
+  }
+
+  try {
     const outputBuffer = await sharp(inputBuffer)
       .rotate()
       .webp({ quality: 82 })
@@ -84,7 +109,7 @@ export async function prepareImageAsset(file: File): Promise<PreparedImageAsset>
       contentType: "image/webp",
       body: new Blob([new Uint8Array(outputBuffer)], { type: "image/webp" }),
       sizeBytes: outputBuffer.byteLength,
-      originalFilename: file.name
+      originalFilename
     };
   } catch {
     badRequest("Não foi possível processar a imagem enviada.");

@@ -385,6 +385,28 @@ export const draftCategorySchema = categorySchema.extend({
   id: nonEmptyString.optional()
 });
 
+export const instagramSelectionSchema = z
+  .object({
+    version: z.number().int().nonnegative(),
+    primary: nonEmptyString,
+    upperRight: nonEmptyString,
+    lowerRight: nonEmptyString
+  })
+  .superRefine((selection, context) => {
+    const mediaIds = [
+      selection.primary,
+      selection.upperRight,
+      selection.lowerRight
+    ];
+
+    if (new Set(mediaIds).size !== mediaIds.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "As três posições precisam usar publicações distintas."
+      });
+    }
+  });
+
 export const draftContentSchema = z.object({
   heroSection: heroSectionStoredSchema.optional(),
   operationSection: operationSectionSchema.optional(),
@@ -393,5 +415,6 @@ export const draftContentSchema = z.object({
   representantsBase: z.array(draftRepresentantSchema).optional(),
   categories: z.array(draftCategorySchema).optional(),
   clients: z.array(draftClientItemSchema).optional(),
-  companyInformation: companyInformationSchema.optional()
+  companyInformation: companyInformationSchema.optional(),
+  instagramSelection: instagramSelectionSchema.optional()
 }).passthrough();

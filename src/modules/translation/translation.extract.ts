@@ -2,6 +2,7 @@ import { buildScenerySection } from "../content/content.utils.js";
 import type { DraftContent } from "../content/content.types.js";
 import type { BlogArticleRecord } from "../blog/blog.types.js";
 import type { DocumentRecord } from "../documents/documents.types.js";
+import type { InstagramMediaRecord } from "../instagram/instagram.types.js";
 import type { TextFormat, TranslatableItem, TranslationMap } from "./translation.types.js";
 
 type Json = Record<string, unknown>;
@@ -175,5 +176,31 @@ export function applyDocumentItems<T extends DocumentTranslatable>(
     description: document.description
       ? map["document.description"] ?? document.description
       : document.description
+  };
+}
+
+type InstagramTranslatable = Pick<InstagramMediaRecord, "caption" | "altText">;
+
+export function extractInstagramItems(post: InstagramTranslatable): TranslatableItem[] {
+  const items: TranslatableItem[] = [];
+
+  if (nonEmpty(post.caption)) {
+    items.push({ id: "instagram.caption", text: post.caption, format: "plain" });
+  }
+  if (nonEmpty(post.altText)) {
+    items.push({ id: "instagram.altText", text: post.altText, format: "plain" });
+  }
+
+  return items;
+}
+
+export function applyInstagramItems<T extends InstagramTranslatable>(
+  post: T,
+  map: TranslationMap
+): T {
+  return {
+    ...post,
+    caption: post.caption ? map["instagram.caption"] ?? post.caption : post.caption,
+    altText: post.altText ? map["instagram.altText"] ?? post.altText : post.altText
   };
 }

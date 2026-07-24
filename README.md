@@ -37,12 +37,20 @@ CRON_SECRET="change-me-cron-secret"
 RESEND_API_KEY="re_..."
 CONTACT_NOTIFICATION_EMAIL="contato.tessa.estruturas@gmail.com"
 CONTACT_EMAIL_FROM="Tessa Site <onboarding@resend.dev>"
+INSTAGRAM_APP_ID="your-instagram-app-id"
+INSTAGRAM_APP_SECRET="your-instagram-app-secret"
+INSTAGRAM_REDIRECT_URI="https://api.example.com/api/instagram/oauth/callback"
+INSTAGRAM_FACEBOOK_PAGE_ID="your-facebook-page-id"
+INSTAGRAM_TOKEN_ENCRYPTION_KEY="change-me-instagram-token-encryption-key-32+"
+INSTAGRAM_CONTENT_ENABLED="false"
+ADMIN_APP_URL="http://localhost:5173"
 ```
 
 As variáveis de tradução são opcionais para subir a API: sem `OPENAI_API_KEY` (ou com `TRANSLATION_ENABLED="false"`) o conteúdo simplesmente continua só em pt-BR, sem enfileirar traduções.
 
 As variáveis de e-mail de contato também são opcionais: sem `RESEND_API_KEY` (ou sem `CONTACT_EMAIL_FROM`) o formulário continua sendo salvo no banco, mas nenhuma notificação é enviada. Em produção, verifique o domínio no Resend e use um remetente desse domínio (ex.: `contato@seudominio.com.br`).
 
+As variáveis do Instagram são opcionais para subir a API, mas obrigatórias para conectar a conta no painel. Sem elas, a página **Conteúdo → Instagram** indica que a integração não está configurada. O guia completo está em [docs/instagram-integration.md](./docs/instagram-integration.md).
 ## Scripts
 
 ```bash
@@ -266,6 +274,18 @@ Após o deploy e as migrations:
 - `GET|POST /api/internal/translations/run` — worker/cron de tradução (autenticado por `CRON_SECRET`/`TRANSLATION_WORKER_SECRET`)
 - `GET /api/content/public?locale=en|es` e `GET /api/blog?locale=en|es` — leitura localizada com fallback para pt-BR
 
+### Instagram
+
+- `GET /api/instagram` — publicações espelhadas (aceita `limit` e `locale`)
+- `GET /api/instagram/admin/status` — status da conexão (auth)
+- `GET /api/instagram/admin/oauth/start` — inicia OAuth (auth)
+- `GET /api/instagram/oauth/callback` — callback OAuth da Meta
+- `POST /api/instagram/admin/sync` — sincronização manual (auth)
+- `DELETE /api/instagram/admin/connection` — desconecta a conta (auth)
+- `GET|POST /api/internal/instagram/sync` — cron diário (Bearer `CRON_SECRET`)
+
+Detalhes de setup do Meta App: [docs/instagram-integration.md](./docs/instagram-integration.md).
+
 ## Exemplo de bootstrap do master
 
 ```bash
@@ -328,6 +348,7 @@ Todo conteúdo é escrito em português do Brasil (idioma canônico) e traduzido
 
 - Landing (`LandingPage`), ao **publicar**: títulos/descrições/botões do hero, `alt` das imagens de operação, perguntas e respostas de NPS, `title`/`subtitle` das `servicesPages`, `name` das `categories` e `alt` dos `clients`.
 - Blog (`BlogArticle`), ao salvar como **publicado**: `title`, `content` (HTML) e `headerImageAlt`.
+- Instagram (`InstagramPost`), ao sincronizar mídia nova ou com legenda/alt alterados: `caption` e `altText`.
 
 Ficam de fora (por decisão de produto/correção): slugs, URLs, e-mails, telefones, CNPJ, vídeos, dados de representantes, `companyInformation` (endereço/CNPJ/contatos) e depoimentos/respostas de NPS enviados por visitantes.
 
@@ -338,7 +359,7 @@ A tradução preserva termos técnicos do setor via um glossário em `src/module
 1. Ao publicar, a API extrai os campos traduzíveis, calcula um `sourceHash` e enfileira um registro por idioma na tabela `Translation` (status `pending`). Se o conteúdo não mudou (mesmo hash), nada é reprocessado.
 2. O processamento imediato roda em segundo plano via `waitUntil` (Vercel), logo após a resposta da publicação.
 3. Um **Cron** (`vercel.json`, 1x/dia às 03:00 UTC — compatível com o plano Hobby) chama `GET /api/internal/translations/run` como rede de segurança para reprocessar pendências, falhas (até 4 tentativas) e jobs presos. Ajuste o `schedule` para algo mais frequente (ex.: `*/5 * * * *`) se estiver no plano Pro.
-4. Na leitura pública, `GET /api/content/public?locale=en|es` e `GET /api/blog?locale=...` mesclam a tradução concluída sobre o conteúdo pt-BR. Sem tradução pronta, faz fallback transparente para pt-BR.
+4. Na leitura pública, `GET /api/content/public?locale=en|es`, `GET /api/blog?locale=...` e `GET /api/instagram?locale=...` mesclam a tradução concluída sobre o conteúdo pt-BR. Sem tradução pronta, faz fallback transparente para pt-BR.
 
 ### Endpoint interno (worker)
 

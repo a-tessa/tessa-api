@@ -11,6 +11,7 @@ import { contactRouter } from "./routes/contact.js";
 import { documentsRouter } from "./routes/documents.js";
 import { npsRouter } from "./routes/nps.js";
 import { testimonialRouter } from "./routes/testimonial.js";
+import { instagramInternalRouter, instagramRouter } from "./routes/instagram.js";
 import { translationRouter } from "./routes/translations.js";
 import { usersRouter } from "./routes/users.js";
 
@@ -45,7 +46,9 @@ app.route("/api/nps", npsRouter);
 app.route("/api/testimonials", testimonialRouter);
 app.route("/api/content", contentRouter);
 app.route("/api/documents", documentsRouter);
+app.route("/api/instagram", instagramRouter);
 app.route("/api/internal/translations", translationRouter);
+app.route("/api/internal/instagram", instagramInternalRouter);
 
 app.notFound((c) =>
   c.json(

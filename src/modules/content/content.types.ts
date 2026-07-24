@@ -15,6 +15,7 @@ import {
   draftServicesPageItemSchema,
   heroSectionInputSchema,
   heroSectionSchema,
+  instagramSelectionSchema,
   npsItemSchema,
   operationSectionSchema,
   operationSectionImageParamsSchema,
@@ -56,6 +57,7 @@ export type DraftNpsItem = z.infer<typeof draftNpsItemSchema>;
 export type DraftServicesPageItem = z.infer<typeof draftServicesPageItemSchema>;
 export type DraftRepresentant = z.infer<typeof draftRepresentantSchema>;
 export type DraftCategory = z.infer<typeof draftCategorySchema>;
+export type InstagramSelection = z.infer<typeof instagramSelectionSchema>;
 export type DraftContent = z.infer<typeof draftContentSchema> & Record<string, unknown>;
 export type ContentWithScenery<T extends Record<string, unknown>> = T & {
   scenerySection: ScenerySection;

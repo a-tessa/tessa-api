@@ -8,7 +8,11 @@ export const SOURCE_LOCALE = "pt-BR" as const;
 
 export type ContentLocale = typeof SOURCE_LOCALE | TargetLocale;
 
-export type TranslationEntityType = "landingPage" | "blogArticle" | "document";
+export type TranslationEntityType =
+  | "landingPage"
+  | "blogArticle"
+  | "document"
+  | "instagramMedia";
 
 export type TextFormat = "plain" | "html";
 

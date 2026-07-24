@@ -28,6 +28,7 @@ import {
   withDerivedScenery
 } from "./content.utils.js";
 import { listApprovedNpsResponses } from "../nps/nps.service.js";
+import { validateInstagramSelectionForPublish } from "../instagram/instagram.service.js";
 import { LANDING_ENTITY_TYPE } from "../translation/translation.config.js";
 import {
   enqueueLandingTranslations,
@@ -1107,6 +1108,10 @@ export async function getAdminContent(): Promise<AdminContentRecord> {
 export async function publishMainContent(userId: string): Promise<AdminContentRecord> {
   const existingPage = await getMainPageOrThrow();
   const content = await getMainDraftContent(existingPage);
+  await validateInstagramSelectionForPublish(
+    content,
+    existingPage.publishedContent
+  );
   const publishedContent = sanitizeContentForPublish(content);
 
   const page = await prisma.landingPage.update({

@@ -15,6 +15,8 @@ Entidades principais:
 | `NpsResponse` | Respostas de NPS submetidas por terceiros (nota 0-10), moderadas por admin        |
 | `Testimonial` | Depoimentos submetidos por visitantes (nota 1-5 + fotos opcionais), moderados     |
 | `Asset`       | Metadados de mídia (imagens) hospedadas em `@vercel/blob`                         |
+| `InstagramConnection` | Página do Facebook e Instagram profissional conectados via OAuth             |
+| `InstagramMedia` | Catálogo de mídias próprias e colaborativas com URLs da CDN da Meta             |
 
 Todos os IDs são `String` `cuid()`. Datas usam `DateTime` com `now()`/`@updatedAt`.
 
@@ -24,6 +26,7 @@ Todos os IDs são `String` `cuid()`. Datas usam `DateTime` com `now()`/`@updated
 - **`LandingPageStatus`**: `draft`, `published`. Controla qual conteúdo é servido publicamente (`publishedContent` vs `draftContent`).
 - **`NpsResponseStatus`**: `pending`, `approved`, `rejected`. Fluxo de moderação das respostas de NPS.
 - **`TestimonialStatus`**: `pending`, `approved`, `rejected`. Fluxo de moderação dos depoimentos.
+- **`InstagramMediaType`**: `IMAGE`, `VIDEO`, `CAROUSEL_ALBUM`. Tipos de mídia sincronizados da Meta.
 
 ## Entidades e campos relevantes
 
@@ -55,7 +58,15 @@ Depoimento submetido publicamente pelo formulário da landing. Entra como `pendi
 
 ### `Asset`
 
-Tabela polimórfica de mídia. Em vez de FK direta, usa `entityType` + `entityId` (+ `sectionKey`/`fieldKey`/`slot` opcionais) para apontar para qualquer dono — `LandingPage`, `BlogArticle`, etc. URL e `pathname` apontam para o blob no Vercel Blob Storage. Detalhes do fluxo: `docs/asset-upload-guideline.md`.
+Tabela polimórfica de mídia. Em vez de FK direta, usa `entityType` + `entityId` (+ `sectionKey`/`fieldKey`/`slot` opcionais) para apontar para qualquer dono, como `LandingPage` e `BlogArticle`. URL e `pathname` apontam para o blob no Vercel Blob Storage. Detalhes do fluxo: `docs/asset-upload-guideline.md`.
+
+### `InstagramConnection`
+
+Conexão via Facebook Login for Business. Guarda Página vinculada, conta profissional, `encryptedAccessToken` (AES-256-GCM), expiração e metadados do último sync. Em geral há no máximo uma conexão ativa por ambiente. Guia: `docs/instagram-integration.md`.
+
+### `InstagramMedia`
+
+Metadados atualizados de uma mídia do Instagram. `instagramMediaId` é único, `isCollaborative` identifica colaborações aceitas e `isAvailable`/`unavailableAt` registram disponibilidade. `imageUrl` aponta para a CDN da Meta e é renovada pelo sync; legendas/alts são traduzidos via `Translation` (`entityType = instagramMedia`).
 
 ## Relações
 
@@ -68,8 +79,9 @@ User 1 ───< BlogArticle   (author      — obrigatório)
 User 1 ───< NpsResponse   (reviewedBy  — opcional)
 User 1 ───< Testimonial   (reviewedBy  — opcional)
 User 1 ───< Asset         (createdBy   — obrigatório)
+User 1 ───< InstagramConnection (connectedBy — obrigatório)
+InstagramConnection 1 ───< InstagramMedia
 ```
-
 `Contact` não tem relação. `Asset` não usa FK para o dono do recurso — vínculo é feito por par `(entityType, entityId)` em consulta na aplicação.
 
 ### Comportamento de delete
