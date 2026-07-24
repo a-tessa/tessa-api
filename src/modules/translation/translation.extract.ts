@@ -42,6 +42,21 @@ function walkLanding(content: Json, resolve: Resolver): Json {
     }
   }
 
+  if (isObject(clone.industrySection)) {
+    const industry = clone.industrySection;
+    if (nonEmpty(industry.titlePrefix)) {
+      industry.titlePrefix = resolve("industry.titlePrefix", industry.titlePrefix, "plain");
+    }
+    if (nonEmpty(industry.title)) {
+      industry.title = resolve("industry.title", industry.title, "plain");
+    }
+    if (nonEmpty(industry.subtitle)) {
+      industry.subtitle = resolve("industry.subtitle", industry.subtitle, "plain");
+    }
+    // `industry.videos` (URLs and start seconds) is intentionally left untouched: it
+    // must never be sent to translation.
+  }
+
   if (isObject(clone.operationSection)) {
     for (const [index, image] of asObjectArray(clone.operationSection.images).entries()) {
       if (nonEmpty(image.alt)) {

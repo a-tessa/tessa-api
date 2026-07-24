@@ -157,7 +157,9 @@ export const industrySectionSchema = z.object({
   title: nonEmptyString.max(MAX_INDUSTRY_TITLE_LENGTH),
   subtitle: nonEmptyString.max(MAX_INDUSTRY_SUBTITLE_LENGTH),
   videos: z.object({
-    "pt-BR": industryVideoSchema
+    "pt-BR": industryVideoSchema,
+    en: industryVideoSchema.optional(),
+    es: industryVideoSchema.optional()
   })
 });
 

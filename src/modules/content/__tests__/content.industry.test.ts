@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { describe, it } from "node:test";
 import {
   draftContentSchema,
@@ -10,6 +11,11 @@ import {
   extractLandingItems
 } from "../../translation/translation.extract.js";
 
+// These tests assert deterministic, untranslated pt-BR fallback behavior and must
+// never trigger a real background translation call, even if this machine's local
+// environment happens to have real translation credentials configured.
+process.env.TRANSLATION_ENABLED = "false";
+
 const industrySection = {
   titlePrefix: "A força da",
   title: "indústria brasileira",
@@ -18,6 +24,10 @@ const industrySection = {
     "pt-BR": {
       url: "https://www.youtube.com/watch?v=EeLYcZsdYrw",
       startSeconds: 8
+    },
+    es: {
+      url: "https://www.youtube.com/watch?v=eGdFPCZYNYQ",
+      startSeconds: 6
     }
   }
 };
@@ -26,6 +36,47 @@ describe("industry section content", () => {
   it("accepts a valid section and keeps the section optional", () => {
     assert.equal(draftContentSchema.parse({}).industrySection, undefined);
     assert.deepEqual(industrySectionSchema.parse(industrySection), industrySection);
+  });
+
+  it("accepts optional English and Spanish videos without requiring them", () => {
+    assert.deepEqual(
+      industrySectionSchema.parse(industrySection).videos,
+      industrySection.videos
+    );
+
+    const withLocalizedVideos = {
+      ...industrySection,
+      videos: {
+        ...industrySection.videos,
+        en: { url: "https://youtu.be/EeLYcZsdYrw" },
+        es: { url: "https://www.youtube.com/watch?v=eGdFPCZYNYQ", startSeconds: 6 }
+      }
+    };
+    assert.deepEqual(
+      industrySectionSchema.parse(withLocalizedVideos),
+      withLocalizedVideos
+    );
+
+    assert.equal(
+      industrySectionSchema.safeParse({
+        ...industrySection,
+        videos: {
+          ...industrySection.videos,
+          en: { url: "https://example.com/not-youtube" }
+        }
+      }).success,
+      false
+    );
+    assert.equal(
+      industrySectionSchema.safeParse({
+        ...industrySection,
+        videos: {
+          ...industrySection.videos,
+          es: { url: "https://youtu.be/eGdFPCZYNYQ", startSeconds: -1 }
+        }
+      }).success,
+      false
+    );
   });
 
   it("enforces text limits and the current YouTube URL formats", () => {
@@ -91,15 +142,23 @@ describe("industry section content", () => {
     );
   });
 
-  it("publishes the Portuguese section without starting localization yet", () => {
+  it("publishes the Portuguese section as-is", () => {
     const published = sanitizeContentForPublish({ industrySection });
     assert.deepEqual(
       (published as Record<string, unknown>).industrySection,
       industrySection
     );
+  });
 
-    assert.deepEqual(extractLandingItems({ industrySection }), []);
+  it("extracts the Portuguese texts for translation but never the video configuration", () => {
+    assert.deepEqual(extractLandingItems({ industrySection }), [
+      { id: "industry.titlePrefix", text: industrySection.titlePrefix, format: "plain" },
+      { id: "industry.title", text: industrySection.title, format: "plain" },
+      { id: "industry.subtitle", text: industrySection.subtitle, format: "plain" }
+    ]);
+  });
 
+  it("applies translated texts while keeping the source videos untouched", () => {
     const localized = applyLandingItems(
       { industrySection },
       {
@@ -109,7 +168,24 @@ describe("industry section content", () => {
       }
     );
 
-    assert.deepEqual(localized.industrySection, industrySection);
+    assert.deepEqual(localized.industrySection, {
+      ...industrySection,
+      titlePrefix: "The strength of",
+      title: "Brazilian industry",
+      subtitle: "Localized subtitle"
+    });
+  });
+
+  it("keeps the Portuguese text when a translation is missing for a locale", () => {
+    const localized = applyLandingItems(
+      { industrySection },
+      { "industry.title": "Brazilian industry" }
+    );
+
+    assert.deepEqual(localized.industrySection, {
+      ...industrySection,
+      title: "Brazilian industry"
+    });
   });
 
   it("requires authentication for every CRUD operation", async () => {
@@ -192,7 +268,9 @@ describe("industry section content", () => {
         };
         const now = new Date();
         page = {
-          id: "home-page-1",
+          // A fresh id per run avoids ever colliding with a real completed
+          // translation row from a previous run against a real database.
+          id: randomUUID(),
           slug: args.data.slug,
           title: args.data.title,
           seoTitle: null,
@@ -291,6 +369,16 @@ describe("industry section content", () => {
         content: { industrySection: typeof updatedSection };
       };
       assert.deepEqual(publicPayload.content.industrySection, updatedSection);
+
+      // Without translation configured, a locale without a completed translation row
+      // still gets the published content: pt-BR text as a safe fallback, and every
+      // locale's video configuration untouched (video selection is the client's job).
+      const publicEsResponse = await publicContentRouter.request("/?locale=es");
+      assert.equal(publicEsResponse.status, 200);
+      const publicEsPayload = (await publicEsResponse.json()) as {
+        content: { industrySection: typeof updatedSection };
+      };
+      assert.deepEqual(publicEsPayload.content.industrySection, updatedSection);
 
       const deleteResponse = await adminContentRouter.request("/industry-section", {
         method: "DELETE",
