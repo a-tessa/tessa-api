@@ -6,10 +6,12 @@ import { isTranslationConfigured } from "../../lib/ai.js";
 import { env } from "../../env.js";
 import type { BlogArticleRecord } from "../blog/blog.types.js";
 import type { DocumentRecord } from "../documents/documents.types.js";
+import type { GalleryMediaItemRecord } from "../gallery/gallery.types.js";
 import type { InstagramMediaRecord } from "../instagram/instagram.types.js";
 import {
   BLOG_ENTITY_TYPE,
   DOCUMENT_ENTITY_TYPE,
+  GALLERY_MEDIA_ENTITY_TYPE,
   INSTAGRAM_ENTITY_TYPE,
   LANDING_ENTITY_TYPE,
   MAX_TRANSLATION_ATTEMPTS,
@@ -18,10 +20,12 @@ import {
 import {
   applyBlogItems,
   applyDocumentItems,
+  applyGalleryMediaItems,
   applyInstagramItems,
   applyLandingItems,
   extractBlogItems,
   extractDocumentItems,
+  extractGalleryMediaItems,
   extractInstagramItems,
   extractLandingItems
 } from "./translation.extract.js";
@@ -157,6 +161,16 @@ export async function enqueueInstagramMediaTranslations(
   );
 }
 
+export async function enqueueGalleryMediaTranslations(
+  item: Pick<GalleryMediaItemRecord, "id" | "alt" | "caption">
+): Promise<boolean> {
+  return enqueueTranslations(
+    GALLERY_MEDIA_ENTITY_TYPE,
+    item.id,
+    extractGalleryMediaItems(item)
+  );
+}
+
 export async function findLocalizedInstagramMediaIds(
   mediaItems: Array<Pick<InstagramMediaRecord, "id" | "caption">>
 ): Promise<Set<string>> {
@@ -252,6 +266,19 @@ async function loadSourceItems(
     }
 
     return extractInstagramItems(media);
+  }
+
+  if (entityType === GALLERY_MEDIA_ENTITY_TYPE) {
+    const item = await prisma.galleryMediaItem.findUnique({
+      where: { id: entityId },
+      select: { alt: true, caption: true }
+    });
+
+    if (!item) {
+      return null;
+    }
+
+    return extractGalleryMediaItems(item);
   }
 
   return null;
@@ -640,5 +667,34 @@ export async function localizeInstagramMediaList<T extends InstagramMediaRecord>
     return map
       ? applyInstagramItems(media, map as TranslationMap)
       : media;
+  });
+}
+
+export async function localizeGalleryMediaItems<T extends GalleryMediaItemRecord>(
+  items: T[],
+  locale: TargetLocale | null
+): Promise<T[]> {
+  if (!locale || items.length === 0) {
+    return items;
+  }
+
+  const rows = await prisma.translation.findMany({
+    where: {
+      entityType: GALLERY_MEDIA_ENTITY_TYPE,
+      entityId: { in: items.map((item) => item.id) },
+      locale,
+      status: "completed"
+    }
+  });
+
+  const mapByEntityId = new Map<string, TranslationMap>(
+    rows
+      .filter((row) => row.content)
+      .map((row) => [row.entityId, row.content as TranslationMap])
+  );
+
+  return items.map((item) => {
+    const map = mapByEntityId.get(item.id);
+    return map ? applyGalleryMediaItems(item, map) : item;
   });
 }

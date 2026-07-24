@@ -2,6 +2,7 @@ import { buildScenerySection } from "../content/content.utils.js";
 import type { DraftContent } from "../content/content.types.js";
 import type { BlogArticleRecord } from "../blog/blog.types.js";
 import type { DocumentRecord } from "../documents/documents.types.js";
+import type { GalleryMediaItemRecord } from "../gallery/gallery.types.js";
 import type { InstagramMediaRecord } from "../instagram/instagram.types.js";
 import type { TextFormat, TranslatableItem, TranslationMap } from "./translation.types.js";
 
@@ -224,5 +225,33 @@ export function applyInstagramItems<T extends InstagramTranslatable>(
     ...post,
     caption: post.caption ? map["instagram.caption"] ?? post.caption : post.caption,
     altText: post.altText ? map["instagram.altText"] ?? post.altText : post.altText
+  };
+}
+
+type GalleryMediaTranslatable = Pick<GalleryMediaItemRecord, "alt" | "caption">;
+
+export function extractGalleryMediaItems(
+  item: GalleryMediaTranslatable
+): TranslatableItem[] {
+  const items: TranslatableItem[] = [];
+
+  if (nonEmpty(item.alt)) {
+    items.push({ id: "gallery.alt", text: item.alt, format: "plain" });
+  }
+  if (nonEmpty(item.caption)) {
+    items.push({ id: "gallery.caption", text: item.caption, format: "plain" });
+  }
+
+  return items;
+}
+
+export function applyGalleryMediaItems<T extends GalleryMediaTranslatable>(
+  item: T,
+  map: TranslationMap
+): T {
+  return {
+    ...item,
+    alt: map["gallery.alt"] ?? item.alt,
+    caption: item.caption ? map["gallery.caption"] ?? item.caption : item.caption
   };
 }

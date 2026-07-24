@@ -59,6 +59,11 @@ enum InstagramMediaType {
   CAROUSEL_ALBUM
 }
 
+enum GalleryMediaKind {
+  photo
+  video
+}
+
 model User {
   id                   String                @id @default(cuid())
   name                 String
@@ -75,6 +80,7 @@ model User {
   createdAssets        Asset[]
   blogArticles         BlogArticle[]         @relation("BlogArticleAuthor")
   documents            Document[]            @relation("DocumentCreatedBy")
+  galleryMediaItems    GalleryMediaItem[]    @relation("GalleryMediaItemCreatedBy")
   reviewedNpsResponses NpsResponse[]         @relation("NpsResponseReviewedBy")
   reviewedTestimonials Testimonial[]         @relation("TestimonialReviewedBy")
   instagramConnections InstagramConnection[] @relation("InstagramConnectionConnectedBy")
@@ -299,4 +305,27 @@ model InstagramMedia {
 
   @@index([connectionId, publishedAt])
   @@index([isAvailable, publishedAt])
+}
+
+model GalleryMediaItem {
+  id                    String           @id @default(cuid())
+  kind                  GalleryMediaKind
+  alt                   String
+  caption               String?
+  categorySlug          String?
+  order                 Int              @default(0)
+  imageUrl              String?
+  imagePathname         String?
+  imageMimeType         String?
+  imageSizeBytes        Int?
+  imageOriginalFilename String?
+  youtubeUrl            String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  createdById           String
+  createdBy             User             @relation("GalleryMediaItemCreatedBy", fields: [createdById], references: [id])
+
+  @@index([kind, order])
+  @@index([categorySlug])
+  @@index([imageUrl])
 }

@@ -97,3 +97,7 @@ export function buildTestimonialImagePath(
 export function buildUserAvatarPath(userId: string, originalFilename: string): string {
   return buildTimestampedImagePath(["users", userId, "avatar"], originalFilename);
 }
+
+export function buildTimestampedGalleryPhotoPath(originalFilename: string): string {
+  return buildTimestampedImagePath(["gallery", "photos"], originalFilename);
+}

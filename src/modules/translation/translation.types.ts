@@ -12,7 +12,8 @@ export type TranslationEntityType =
   | "landingPage"
   | "blogArticle"
   | "document"
-  | "instagramMedia";
+  | "instagramMedia"
+  | "galleryMediaItem";
 
 export type TextFormat = "plain" | "html";
 
