@@ -51,7 +51,7 @@ function isInternalAuthorized(c: Context): boolean {
 function buildOAuthCallbackHtml(): string {
   const adminUrl = new URL(
     "/conteudo/instagram",
-    env.ADMIN_APP_URL ?? "http://localhost:5173"
+    env.ADMIN_APP_URL ?? "http://localhost:5174"
   ).toString();
 
   return `<!doctype html>

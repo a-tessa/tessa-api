@@ -18,7 +18,7 @@
     "prisma:migrate": "npx dotenv -e .env.development -- npx prisma migrate dev",
     "prisma:migrate:deploy": "npx dotenv -e .env.production.local -- npx prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "test": "tsx --test src/modules/instagram/__tests__/*.test.ts"
+    "test": "tsx --test src/modules/*/__tests__/*.test.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.68",

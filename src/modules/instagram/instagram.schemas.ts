@@ -71,8 +71,7 @@ export const instagramMediaListSchema = z.object({
 
 export const instagramMeSchema = z.object({
   id: z.union([z.string(), z.number()]).transform(String),
-  username: z.string().min(1),
-  account_type: z.string().optional()
+  username: z.string().min(1)
 });
 
 export const instagramLongLivedTokenSchema = z.object({

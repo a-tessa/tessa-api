@@ -96,7 +96,7 @@ export type SelectedInstagramMedia = InstagramMediaRecord & {
 };
 
 function adminRedirect(path: string): string {
-  const base = env.ADMIN_APP_URL ?? "http://localhost:5173";
+  const base = env.ADMIN_APP_URL ?? "http://localhost:5174";
   return new URL(path, base.endsWith("/") ? base : `${base}/`).toString();
 }
 

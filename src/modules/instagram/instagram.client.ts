@@ -160,7 +160,7 @@ export async function fetchInstagramMe(
   const url = new URL(
     `${INSTAGRAM_GRAPH_HOST}/${INSTAGRAM_API_VERSION}/${instagramUserId}`
   );
-  url.searchParams.set("fields", "id,username,account_type");
+  url.searchParams.set("fields", "id,username");
   url.searchParams.set("access_token", accessToken);
 
   const payload = await fetchJson(url.toString());
@@ -169,7 +169,7 @@ export async function fetchInstagramMe(
   return {
     userId: parsed.id,
     username: parsed.username,
-    accountType: parsed.account_type ?? null
+    accountType: null
   };
 }
 
