@@ -5,6 +5,7 @@ import {
   draftNpsItemSchema,
   draftRepresentantSchema,
   heroSectionSchema,
+  industrySectionSchema,
   npsItemSchema,
   operationSectionSchema,
   representantInputSchema,
@@ -18,6 +19,12 @@ export const singularSectionConfigs = [
     path: "hero-section",
     label: "Seção hero",
     schema: heroSectionSchema
+  },
+  {
+    key: "industrySection",
+    path: "industry-section",
+    label: "Seção Indústria",
+    schema: industrySectionSchema
   },
   {
     key: "operationSection",

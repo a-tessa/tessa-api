@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getYouTubeVideoId } from "./content.youtube.js";
 
 const nonEmptyString = z.string().trim().min(1);
 const optionalNonEmptyString = z.preprocess(
@@ -137,6 +138,27 @@ export const operationSectionSchema = z.object({
 
 export const operationSectionMultipartInputSchema = z.object({
   images: operationSectionImagesInputSchema
+});
+
+export const MAX_INDUSTRY_TITLE_PREFIX_LENGTH = 60;
+export const MAX_INDUSTRY_TITLE_LENGTH = 100;
+export const MAX_INDUSTRY_SUBTITLE_LENGTH = 300;
+
+export const industryVideoSchema = z.object({
+  url: nonEmptyString.refine(
+    (url) => getYouTubeVideoId(url) !== null,
+    "Informe uma URL válida do YouTube."
+  ),
+  startSeconds: z.number().int().nonnegative().optional()
+});
+
+export const industrySectionSchema = z.object({
+  titlePrefix: nonEmptyString.max(MAX_INDUSTRY_TITLE_PREFIX_LENGTH),
+  title: nonEmptyString.max(MAX_INDUSTRY_TITLE_LENGTH),
+  subtitle: nonEmptyString.max(MAX_INDUSTRY_SUBTITLE_LENGTH),
+  videos: z.object({
+    "pt-BR": industryVideoSchema
+  })
 });
 
 export const npsAnswerSchema = z.object({
@@ -409,6 +431,7 @@ export const instagramSelectionSchema = z
 
 export const draftContentSchema = z.object({
   heroSection: heroSectionStoredSchema.optional(),
+  industrySection: industrySectionSchema.optional(),
   operationSection: operationSectionSchema.optional(),
   nps: z.array(draftNpsItemSchema).optional(),
   servicesPages: z.array(draftServicesPageItemSchema).optional(),

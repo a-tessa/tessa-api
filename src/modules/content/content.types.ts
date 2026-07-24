@@ -15,6 +15,7 @@ import {
   draftServicesPageItemSchema,
   heroSectionInputSchema,
   heroSectionSchema,
+  industrySectionSchema,
   instagramSelectionSchema,
   npsItemSchema,
   operationSectionSchema,
@@ -37,6 +38,7 @@ export type ClientItemParams = z.infer<typeof clientItemParamsSchema>;
 
 export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type HeroSectionInput = z.infer<typeof heroSectionInputSchema>;
+export type IndustrySection = z.infer<typeof industrySectionSchema>;
 export type SceneryItem = z.infer<typeof sceneryItemSchema>;
 export type ScenerySection = z.infer<typeof scenerySectionSchema>;
 export type OperationSection = z.infer<typeof operationSectionSchema>;
@@ -65,6 +67,7 @@ export type ContentWithScenery<T extends Record<string, unknown>> = T & {
 
 export type SingularSectionKey =
   | "heroSection"
+  | "industrySection"
   | "operationSection"
   | "companyInformation";
 
