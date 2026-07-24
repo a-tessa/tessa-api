@@ -311,7 +311,7 @@ As `servicesPages` precisam referenciar uma categoria existente em `categories`.
 
 A seção `heroSection` aceita uma lista com `1` a `3` tópicos, e cada tópico segue a mesma estrutura de `title`, `description`, `image` e `button`.
 
-A `operationSection` aceita um array `images` com `1` a `20` fotos. Cada arquivo enviado por multipart precisa ter menos de `3 MB`. Se alguma foto ultrapassar esse limite, a API responde com erro informando o campo exato, como `image_7`, e o motivo.
+A `operationSection` aceita um array `images` com `0` a `40` fotos no rascunho (`6` a `40` para publicação quando a seção estiver presente). Cada item inclui `url`, `alt` obrigatório (`1..100`) e `caption` opcional (`0..300`, diferente do `alt`). Cada arquivo enviado por multipart precisa ter menos de `3 MB`. Se alguma foto ultrapassar esse limite, a API responde com erro informando o campo exato, como `image_7`, e o motivo.
 
 A rota `DELETE /api/content/admin/operation-section/images/:imageIndex` remove apenas a imagem selecionada (por índice), atualiza os metadados da seção e também limpa o arquivo correspondente no Blob.
 
@@ -332,7 +332,7 @@ No `multipart/form-data`, o campo `images` pode ser omitido no `payload` quando 
 As rotas `POST` e `PUT` de `operationSection` aceitam:
 
 - `application/json`, quando `images[].url` já estiver com as URLs finais
-- `multipart/form-data`, com arquivos opcionais `image_0` até `image_19` e um campo opcional `payload` para preservar URLs já existentes em slots específicos
+- `multipart/form-data`, com arquivos opcionais `image_0` até `image_39` e um campo opcional `payload` para preservar URLs já existentes em slots específicos
 
 No `multipart/form-data`, o `payload` pode ser omitido quando todas as fotos vierem como arquivo no mesmo request. Em edições parciais, `payload.images` pode ser enviado para preservar URLs já existentes em slots específicos, sem precisar usar objetos vazios para os uploads novos.
 

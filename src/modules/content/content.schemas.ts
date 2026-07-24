@@ -7,7 +7,10 @@ const optionalNonEmptyString = z.preprocess(
   nonEmptyString.optional()
 );
 const slugString = z.string().trim().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-export const MAX_OPERATION_SECTION_IMAGES = 20;
+export const MAX_OPERATION_SECTION_IMAGES = 40;
+export const MIN_OPERATION_SECTION_IMAGES_FOR_PUBLISH = 6;
+export const MAX_OPERATION_ALT_LENGTH = 100;
+export const MAX_OPERATION_CAPTION_LENGTH = 300;
 
 export const collectionItemParamsSchema = z.object({
   itemId: nonEmptyString
@@ -112,28 +115,76 @@ export const sceneryItemSchema = z.object({
 
 export const scenerySectionSchema = z.array(sceneryItemSchema);
 
-export const operationSectionImageSchema = z.object({
-  url: nonEmptyString,
-  alt: nonEmptyString.optional()
-});
+function optionalBoundedString(maximumLength: number) {
+  return z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    nonEmptyString.max(maximumLength).optional()
+  );
+}
 
-export const operationSectionImageInputSchema = z.object({
-  url: nonEmptyString.optional(),
-  alt: nonEmptyString.optional()
-});
+const operationAltStoredSchema = optionalBoundedString(MAX_OPERATION_ALT_LENGTH);
+const operationCaptionSchema = optionalBoundedString(MAX_OPERATION_CAPTION_LENGTH);
+
+function refineCaptionDiffersFromAlt(
+  image: { alt?: string; caption?: string },
+  context: z.RefinementCtx
+): void {
+  if (
+    typeof image.alt === "string" &&
+    typeof image.caption === "string" &&
+    image.alt === image.caption
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "A legenda deve ser diferente do texto alternativo.",
+      path: ["caption"]
+    });
+  }
+}
+
+/** Stored/draft read shape: legacy items may omit `alt` and `caption`. */
+export const operationSectionImageSchema = z
+  .object({
+    url: nonEmptyString,
+    alt: operationAltStoredSchema,
+    caption: operationCaptionSchema
+  })
+  .superRefine(refineCaptionDiffersFromAlt);
+
+/** Write shape for new/changed content: `alt` is required. */
+export const operationSectionImageWriteSchema = z
+  .object({
+    url: nonEmptyString,
+    alt: nonEmptyString.max(MAX_OPERATION_ALT_LENGTH),
+    caption: operationCaptionSchema
+  })
+  .superRefine(refineCaptionDiffersFromAlt);
+
+export const operationSectionImageInputSchema = z
+  .object({
+    url: nonEmptyString.optional(),
+    alt: nonEmptyString.max(MAX_OPERATION_ALT_LENGTH),
+    caption: operationCaptionSchema
+  })
+  .superRefine(refineCaptionDiffersFromAlt);
 
 const operationSectionImagesSchema = z
   .array(operationSectionImageSchema)
-  .min(1)
+  .max(MAX_OPERATION_SECTION_IMAGES);
+const operationSectionImagesWriteSchema = z
+  .array(operationSectionImageWriteSchema)
   .max(MAX_OPERATION_SECTION_IMAGES);
 const operationSectionImagesInputSchema = z
   .array(operationSectionImageInputSchema)
-  .min(1)
   .max(MAX_OPERATION_SECTION_IMAGES)
   .optional();
 
 export const operationSectionSchema = z.object({
   images: operationSectionImagesSchema
+});
+
+export const operationSectionWriteSchema = z.object({
+  images: operationSectionImagesWriteSchema
 });
 
 export const operationSectionMultipartInputSchema = z.object({

@@ -22,7 +22,9 @@
     "operationSection": {
       "images": [
         {
-          "url": "string"
+          "url": "string",
+          "alt": "string",
+          "caption": "string?"
         }
       ]
     },

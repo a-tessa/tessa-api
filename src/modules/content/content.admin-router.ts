@@ -61,7 +61,7 @@ import {
   MAX_OPERATION_SECTION_IMAGES,
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
-  operationSectionSchema,
+  operationSectionWriteSchema,
   servicePageAssetIndexSchema,
   servicePageAssetKindSchema,
   servicePageSlugParamsSchema,
@@ -301,7 +301,7 @@ async function parseOperationSectionBody(c: Context<AppBindings>): Promise<{
       badRequest("Body JSON inválido.");
     }
 
-    const parsedBody = operationSectionSchema.safeParse(rawBody);
+    const parsedBody = operationSectionWriteSchema.safeParse(rawBody);
     if (!parsedBody.success) {
       badRequest("Payload da seção de operação inválido.");
     }

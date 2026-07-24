@@ -250,11 +250,11 @@ Exemplos futuros:
 
 - `PUT /api/content/admin/services-pages/:slug` com `payload` + `image`
 - `PUT /api/content/admin/company-information` com `payload` + `logo`
-- `PUT /api/content/admin/operation-section` com `payload` + `image_0` até `image_19`
+- `PUT /api/content/admin/operation-section` com `payload` + `image_0` até `image_39`
 
 Regras específicas já adotadas na `operationSection`:
 
-- até `20` fotos por request
+- até `40` fotos por request
 - cada arquivo deve ter no máximo `3 MB`
 - quando alguma foto ultrapassa o limite, a API retorna erro apontando o campo exato, como `image_7`
 - no multipart, o campo `payload` é opcional quando o request só envia arquivos

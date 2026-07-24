@@ -19,6 +19,7 @@ import {
   instagramSelectionSchema,
   npsItemSchema,
   operationSectionSchema,
+  operationSectionWriteSchema,
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
   representantInputSchema,
@@ -42,6 +43,7 @@ export type IndustrySection = z.infer<typeof industrySectionSchema>;
 export type SceneryItem = z.infer<typeof sceneryItemSchema>;
 export type ScenerySection = z.infer<typeof scenerySectionSchema>;
 export type OperationSection = z.infer<typeof operationSectionSchema>;
+export type OperationSectionWrite = z.infer<typeof operationSectionWriteSchema>;
 export type OperationSectionMultipartInput = z.infer<typeof operationSectionMultipartInputSchema>;
 export type NpsItem = z.infer<typeof npsItemSchema>;
 export type ServicesPageItem = z.infer<typeof servicesPageItemSchema>;

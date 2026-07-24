@@ -21,6 +21,7 @@ import {
   buildScenerySection,
   ensureCollectionIds,
   hasLegacyHeroSectionFormat,
+  assertOperationSectionReadyForPublish,
   parseDraftContent,
   resolveCategorySlugFromCategories,
   sanitizeContentForPublish,
@@ -43,6 +44,7 @@ import {
   heroSectionSchema,
   heroSectionStoredSchema,
   operationSectionSchema,
+  operationSectionWriteSchema,
   servicesPageMutationSchema
 } from "./content.schemas.js";
 import type {
@@ -727,24 +729,26 @@ async function saveOperationSectionContent(
   const targetImageCount = Array.isArray(input.images)
     ? input.images.length
     : mode === "create"
-      ? maxUploadedIndex + 1
+      ? Math.max(0, maxUploadedIndex + 1)
       : Math.max(currentImages.length, maxUploadedIndex + 1);
 
-  if (targetImageCount < 1) {
-    badRequest("Ao menos uma imagem da seção de operação é obrigatória.");
-  }
-
-  const requestedImages: Array<{ url?: string; alt?: string }> = Array.isArray(input.images)
-    ? input.images
-    : Array.from({ length: targetImageCount }, () => ({}));
+  const requestedImages: Array<{ url?: string; alt?: string; caption?: string }> =
+    Array.isArray(input.images)
+      ? input.images
+      : Array.from({ length: targetImageCount }, () => ({}));
 
   for (let index = 0; index < targetImageCount; index += 1) {
     const requestedImage = requestedImages[index];
     const hasCurrentImage = Boolean(currentImages[index]?.url);
     const hasRequestedUrl = Boolean(requestedImage?.url);
+    const nextAlt = requestedImage?.alt ?? currentImages[index]?.alt;
 
     if (!uploadsByIndex.has(index) && !hasRequestedUrl && !hasCurrentImage) {
       badRequest(`Imagem ${index} da seção de operação é obrigatória.`);
+    }
+
+    if (typeof nextAlt !== "string" || nextAlt.trim().length === 0) {
+      badRequest(`Texto alternativo da imagem ${index} da seção de operação é obrigatório.`);
     }
   }
 
@@ -772,10 +776,11 @@ async function saveOperationSectionContent(
     throw error;
   }
 
-  const nextOperationSection = operationSectionSchema.parse({
+  const nextOperationSection = operationSectionWriteSchema.parse({
     images: requestedImages.map((image, index) => ({
       url: uploadedAssets.get(index)?.url ?? image.url ?? currentImages[index]?.url ?? "",
-      alt: image.alt ?? currentImages[index]?.alt
+      alt: image.alt ?? currentImages[index]?.alt,
+      caption: image.caption ?? currentImages[index]?.caption
     }))
   });
 
@@ -1112,6 +1117,7 @@ export async function publishMainContent(userId: string): Promise<AdminContentRe
     content,
     existingPage.publishedContent
   );
+  assertOperationSectionReadyForPublish(content);
   const publishedContent = sanitizeContentForPublish(content);
 
   const page = await prisma.landingPage.update({
@@ -1447,10 +1453,6 @@ export async function deleteOperationSectionImage(imageIndex: number, userId: st
 
   if (!operationSection.images[imageIndex]) {
     notFound("Imagem da seção de operação não encontrada.");
-  }
-
-  if (operationSection.images.length <= 1) {
-    badRequest("A seção de operação precisa manter ao menos uma imagem.");
   }
 
   const nextOperationSection = operationSectionSchema.parse({

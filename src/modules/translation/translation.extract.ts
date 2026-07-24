@@ -62,6 +62,13 @@ function walkLanding(content: Json, resolve: Resolver): Json {
       if (nonEmpty(image.alt)) {
         image.alt = resolve(`operation.image.${index}.alt`, image.alt, "plain");
       }
+      if (nonEmpty(image.caption)) {
+        image.caption = resolve(
+          `operation.image.${index}.caption`,
+          image.caption,
+          "plain"
+        );
+      }
     }
   }
 

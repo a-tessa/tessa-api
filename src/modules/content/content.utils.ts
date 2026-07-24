@@ -3,7 +3,13 @@ import { Prisma } from "@prisma/client";
 import { badRequest } from "../../lib/http.js";
 import { prisma } from "../../lib/prisma.js";
 import { collectionConfigs } from "./content.config.js";
-import { draftContentSchema, scenerySectionSchema } from "./content.schemas.js";
+import {
+  draftContentSchema,
+  MAX_OPERATION_ALT_LENGTH,
+  MAX_OPERATION_SECTION_IMAGES,
+  MIN_OPERATION_SECTION_IMAGES_FOR_PUBLISH,
+  scenerySectionSchema
+} from "./content.schemas.js";
 import type {
   Category,
   CollectionConfig,
@@ -180,6 +186,32 @@ export function ensureAllCollectionIds(content: DraftContent): {
     content: nextContent,
     changed
   };
+}
+
+export function assertOperationSectionReadyForPublish(content: DraftContent): void {
+  const section = content.operationSection;
+  if (!section) {
+    return;
+  }
+
+  const imageCount = section.images.length;
+  if (
+    imageCount < MIN_OPERATION_SECTION_IMAGES_FOR_PUBLISH ||
+    imageCount > MAX_OPERATION_SECTION_IMAGES
+  ) {
+    badRequest(
+      `A seção de operação precisa ter entre ${MIN_OPERATION_SECTION_IMAGES_FOR_PUBLISH} e ${MAX_OPERATION_SECTION_IMAGES} imagens para publicação.`
+    );
+  }
+
+  for (const [index, image] of section.images.entries()) {
+    const alt = typeof image.alt === "string" ? image.alt.trim() : "";
+    if (alt.length === 0 || alt.length > MAX_OPERATION_ALT_LENGTH) {
+      badRequest(
+        `A imagem ${index} da seção de operação precisa de um texto alternativo válido (1 a ${MAX_OPERATION_ALT_LENGTH} caracteres) antes da publicação.`
+      );
+    }
+  }
 }
 
 export function sanitizeContentForPublish(value: unknown): Prisma.InputJsonValue {
