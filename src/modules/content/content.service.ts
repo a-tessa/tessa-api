@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { LandingPage } from "@prisma/client";
+import type { Asset, LandingPage } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { badRequest, conflict, notFound } from "../../lib/http.js";
@@ -33,8 +33,10 @@ import { validateInstagramSelectionForPublish } from "../instagram/instagram.ser
 import { LANDING_ENTITY_TYPE } from "../translation/translation.config.js";
 import {
   enqueueLandingTranslations,
+  getLandingTranslationPublicationStatus,
   localizeLandingContent,
   processEntityTranslations,
+  retryLandingTranslations,
   runTranslationsInBackground
 } from "../translation/translation.service.js";
 import type { TargetLocale } from "../translation/translation.types.js";
@@ -351,6 +353,115 @@ async function cleanupBlobUrls(urls: string[]) {
       });
     }
   }
+}
+
+function getOperationImageUrls(content: unknown): Set<string> {
+  if (typeof content !== "object" || content === null || Array.isArray(content)) {
+    return new Set();
+  }
+
+  const operationSection = (content as Record<string, unknown>).operationSection;
+  if (
+    typeof operationSection !== "object" ||
+    operationSection === null ||
+    Array.isArray(operationSection)
+  ) {
+    return new Set();
+  }
+
+  const images = (operationSection as Record<string, unknown>).images;
+  if (!Array.isArray(images)) {
+    return new Set();
+  }
+
+  return new Set(
+    images.flatMap((image) => {
+      if (typeof image !== "object" || image === null || Array.isArray(image)) {
+        return [];
+      }
+
+      const url = (image as Record<string, unknown>).url;
+      return typeof url === "string" && url.trim().length > 0 ? [url] : [];
+    })
+  );
+}
+
+function toOperationAssetInput(asset: Asset): Prisma.AssetCreateManyInput {
+  return {
+    kind: asset.kind,
+    entityType: asset.entityType,
+    entityId: asset.entityId,
+    sectionKey: asset.sectionKey,
+    fieldKey: asset.fieldKey,
+    slot: asset.slot,
+    pathname: asset.pathname,
+    url: asset.url,
+    mimeType: asset.mimeType,
+    sizeBytes: asset.sizeBytes,
+    originalFilename: asset.originalFilename,
+    alt: asset.alt,
+    createdById: asset.createdById
+  };
+}
+
+function retainPublishedOperationAssets(
+  draftAssets: Prisma.AssetCreateManyInput[],
+  previousAssets: Asset[],
+  publishedContent: unknown
+): Prisma.AssetCreateManyInput[] {
+  const draftUrls = new Set(draftAssets.map((asset) => asset.url));
+  const publishedUrls = getOperationImageUrls(publishedContent);
+  const retainedUrls = new Set<string>();
+  const publishedOnlyAssets: Prisma.AssetCreateManyInput[] = [];
+
+  for (const asset of previousAssets) {
+    if (
+      draftUrls.has(asset.url) ||
+      !publishedUrls.has(asset.url) ||
+      retainedUrls.has(asset.url)
+    ) {
+      continue;
+    }
+
+    retainedUrls.add(asset.url);
+    publishedOnlyAssets.push(toOperationAssetInput(asset));
+  }
+
+  return [...draftAssets, ...publishedOnlyAssets];
+}
+
+async function reconcilePublishedOperationAssets(publishedContent: unknown): Promise<void> {
+  const referencedUrls = getOperationImageUrls(publishedContent);
+  const assets = await prisma.asset.findMany({
+    where: OPERATION_SECTION_ASSET_FILTER,
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+  const staleUrls = getUniqueUrls(
+    assets.map((asset) => asset.url).filter((url) => !referencedUrls.has(url))
+  );
+
+  if (staleUrls.length === 0) {
+    return;
+  }
+
+  try {
+    await prisma.asset.deleteMany({
+      where: {
+        ...OPERATION_SECTION_ASSET_FILTER,
+        url: { in: staleUrls }
+      }
+    });
+  } catch (error) {
+    console.error("Falha ao reconciliar assets da seção de operação após publicação.", {
+      urls: staleUrls,
+      error
+    });
+    return;
+  }
+
+  await cleanupBlobUrls(staleUrls);
 }
 
 async function saveServicePageContent(
@@ -885,6 +996,15 @@ async function saveOperationSectionContent(
   }
 
   const finalImageUrls = new Set(nextOperationSection.images.map((image) => image.url));
+  const assetsToRetain = retainPublishedOperationAssets(
+    assetsToPersist,
+    previousAssets,
+    page.publishedContent
+  );
+  const referencedImageUrls = new Set([
+    ...finalImageUrls,
+    ...getOperationImageUrls(page.publishedContent)
+  ]);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -904,9 +1024,9 @@ async function saveOperationSectionContent(
         where: OPERATION_SECTION_ASSET_FILTER
       });
 
-      if (assetsToPersist.length > 0) {
+      if (assetsToRetain.length > 0) {
         await tx.asset.createMany({
-          data: assetsToPersist
+          data: assetsToRetain
         });
       }
     });
@@ -917,7 +1037,7 @@ async function saveOperationSectionContent(
 
   const previousUrlsToDelete = previousAssets
     .map((asset) => asset.url)
-    .filter((url) => !finalImageUrls.has(url));
+    .filter((url) => !referencedImageUrls.has(url));
 
   await cleanupBlobUrls(previousUrlsToDelete);
 
@@ -1163,6 +1283,7 @@ export async function publishMainContent(userId: string): Promise<AdminContentRe
     }
   });
 
+  await reconcilePublishedOperationAssets(publishedContent);
   await enqueueLandingTranslations(page.id, publishedContent);
   runTranslationsInBackground(processEntityTranslations(LANDING_ENTITY_TYPE, page.id));
 
@@ -1173,6 +1294,20 @@ export async function publishMainContent(userId: string): Promise<AdminContentRe
     publishedAt: page.publishedAt,
     updatedAt: page.updatedAt
   };
+}
+
+export async function getMainPublicationStatus() {
+  const page = await findMainPage();
+  if (!page) {
+    return getLandingTranslationPublicationStatus("missing", null);
+  }
+
+  return getLandingTranslationPublicationStatus(page.id, page.publishedContent);
+}
+
+export async function retryMainTranslations() {
+  const page = await getMainPageOrThrow();
+  return retryLandingTranslations(page.id, page.publishedContent);
 }
 
 export async function getScenerySection() {
@@ -1454,6 +1589,7 @@ export async function deleteOperationSection(userId: string) {
 
   const nextContent = { ...content };
   delete nextContent.operationSection;
+  const publishedImageUrls = getOperationImageUrls(page.publishedContent);
 
   await prisma.$transaction(async (tx) => {
     await tx.landingPage.update({
@@ -1465,12 +1601,23 @@ export async function deleteOperationSection(userId: string) {
       }
     });
 
-    await tx.asset.deleteMany({
-      where: OPERATION_SECTION_ASSET_FILTER
-    });
+    if (publishedImageUrls.size === 0) {
+      await tx.asset.deleteMany({
+        where: OPERATION_SECTION_ASSET_FILTER
+      });
+    } else {
+      await tx.asset.deleteMany({
+        where: {
+          ...OPERATION_SECTION_ASSET_FILTER,
+          url: { notIn: [...publishedImageUrls] }
+        }
+      });
+    }
   });
 
-  await cleanupBlobUrls(previousAssets.map((asset) => asset.url));
+  await cleanupBlobUrls(
+    previousAssets.map((asset) => asset.url).filter((url) => !publishedImageUrls.has(url))
+  );
 }
 
 export async function deleteOperationSectionImage(imageIndex: number, userId: string) {
@@ -1541,6 +1688,15 @@ export async function deleteOperationSectionImage(imageIndex: number, userId: st
   }
 
   const finalImageUrls = new Set(nextOperationSection.images.map((image) => image.url));
+  const assetsToRetain = retainPublishedOperationAssets(
+    assetsToPersist,
+    previousAssets,
+    page.publishedContent
+  );
+  const referencedImageUrls = new Set([
+    ...finalImageUrls,
+    ...getOperationImageUrls(page.publishedContent)
+  ]);
 
   await prisma.$transaction(async (tx) => {
     await tx.landingPage.update({
@@ -1559,16 +1715,16 @@ export async function deleteOperationSectionImage(imageIndex: number, userId: st
       where: OPERATION_SECTION_ASSET_FILTER
     });
 
-    if (assetsToPersist.length > 0) {
+    if (assetsToRetain.length > 0) {
       await tx.asset.createMany({
-        data: assetsToPersist
+        data: assetsToRetain
       });
     }
   });
 
   const previousUrlsToDelete = previousAssets
     .map((asset) => asset.url)
-    .filter((url) => !finalImageUrls.has(url));
+    .filter((url) => !referencedImageUrls.has(url));
 
   await cleanupBlobUrls(previousUrlsToDelete);
 

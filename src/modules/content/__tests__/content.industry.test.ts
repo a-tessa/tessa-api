@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import { describe, it } from "node:test";
 import {
   draftContentSchema,
-  industrySectionSchema
+  industrySectionSchema,
+  MAX_INDUSTRY_SUBTITLE_LENGTH
 } from "../content.schemas.js";
 import { sanitizeContentForPublish } from "../content.utils.js";
 import {
@@ -106,7 +107,14 @@ describe("industry section content", () => {
     assert.equal(
       industrySectionSchema.safeParse({
         ...industrySection,
-        subtitle: "a".repeat(301)
+        subtitle: "a".repeat(MAX_INDUSTRY_SUBTITLE_LENGTH)
+      }).success,
+      true
+    );
+    assert.equal(
+      industrySectionSchema.safeParse({
+        ...industrySection,
+        subtitle: "a".repeat(MAX_INDUSTRY_SUBTITLE_LENGTH + 1)
       }).success,
       false
     );
@@ -151,11 +159,18 @@ describe("industry section content", () => {
   });
 
   it("extracts the Portuguese texts for translation but never the video configuration", () => {
-    assert.deepEqual(extractLandingItems({ industrySection }), [
+    const extracted = extractLandingItems({ industrySection });
+
+    assert.deepEqual(extracted, [
       { id: "industry.titlePrefix", text: industrySection.titlePrefix, format: "plain" },
       { id: "industry.title", text: industrySection.title, format: "plain" },
       { id: "industry.subtitle", text: industrySection.subtitle, format: "plain" }
     ]);
+    const serialized = JSON.stringify(extracted);
+    assert.equal(serialized.includes("youtube.com"), false);
+    assert.equal(serialized.includes('"startSeconds"'), false);
+    assert.equal(serialized.includes('"8"'), false);
+    assert.equal(serialized.includes('"6"'), false);
   });
 
   it("applies translated texts while keeping the source videos untouched", () => {

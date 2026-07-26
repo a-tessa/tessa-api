@@ -135,6 +135,104 @@ export async function enqueueLandingTranslations(
   return enqueueTranslations(LANDING_ENTITY_TYPE, pageId, extractLandingItems(publishedContent));
 }
 
+export type TranslationPublicationStatus =
+  | "not_started"
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed";
+
+export interface TranslationLocalePublicationStatus {
+  locale: TargetLocale;
+  status: TranslationPublicationStatus;
+  attempts: number;
+  error: string | null;
+  fields: string[];
+  updatedAt: string | null;
+}
+
+export interface LandingTranslationPublicationStatus {
+  translations: {
+    configured: boolean;
+    locales: TranslationLocalePublicationStatus[];
+  };
+}
+
+function fieldsFromTranslationContent(content: unknown, fallbackFields: string[]): string[] {
+  if (!content || typeof content !== "object" || Array.isArray(content)) {
+    return fallbackFields;
+  }
+
+  const keys = Object.keys(content as Record<string, unknown>).sort();
+  return keys.length > 0 ? keys : fallbackFields;
+}
+
+/**
+ * Structured localization status for the published homepage, used by the admin
+ * publication brief. Missing rows surface as `not_started` so editors can see
+ * which locales still need a first pass without opening the database.
+ */
+export async function getLandingTranslationPublicationStatus(
+  pageId: string,
+  publishedContent: unknown
+): Promise<LandingTranslationPublicationStatus> {
+  const expectedFields = extractLandingItems(publishedContent).map((item) => item.id);
+  const configured = isTranslationConfigured();
+  const rows = await prisma.translation.findMany({
+    where: {
+      entityType: LANDING_ENTITY_TYPE,
+      entityId: pageId,
+      locale: { in: [...TARGET_LOCALES] }
+    }
+  });
+  const rowByLocale = new Map(rows.map((row) => [row.locale, row]));
+
+  return {
+    translations: {
+      configured,
+      locales: TARGET_LOCALES.map((locale) => {
+        const row = rowByLocale.get(locale);
+        if (!row) {
+          return {
+            locale,
+            status: "not_started" as const,
+            attempts: 0,
+            error: null,
+            fields: expectedFields,
+            updatedAt: null
+          };
+        }
+
+        return {
+          locale,
+          status: row.status,
+          attempts: row.attempts,
+          error: row.error,
+          fields: fieldsFromTranslationContent(row.content, expectedFields),
+          updatedAt: row.updatedAt.toISOString()
+        };
+      })
+    }
+  };
+}
+
+/**
+ * Re-queues homepage translations from the current published content and
+ * processes outstanding rows immediately. Safe when localization is disabled:
+ * status is returned without mutating rows.
+ */
+export async function retryLandingTranslations(
+  pageId: string,
+  publishedContent: unknown
+): Promise<LandingTranslationPublicationStatus> {
+  if (isTranslationConfigured() && publishedContent) {
+    await enqueueLandingTranslations(pageId, publishedContent);
+    await processEntityTranslations(LANDING_ENTITY_TYPE, pageId);
+  }
+
+  return getLandingTranslationPublicationStatus(pageId, publishedContent);
+}
+
 export async function enqueueBlogTranslations(
   article: Pick<BlogArticleRecord, "id" | "title" | "content" | "headerImageAlt">
 ): Promise<boolean> {

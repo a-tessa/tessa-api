@@ -35,6 +35,7 @@ import {
   getAdminContent,
   getClient,
   getCollectionItem,
+  getMainPublicationStatus,
   getScenerySection,
   getServicePage,
   getSingularSection,
@@ -43,6 +44,7 @@ import {
   listRepresentantSegments,
   listServicePages,
   publishMainContent,
+  retryMainTranslations,
   updateClient,
   updateHeroSection,
   updateOperationSection,
@@ -614,6 +616,20 @@ adminContentRouter.post("/publish", ...requireAdminWriteAccess, async (c) => {
 
   return c.json(serializeAdminContentResponse(content));
 });
+
+adminContentRouter.get("/publication-status", async (c) => {
+  const status = await getMainPublicationStatus();
+  return c.json(status);
+});
+
+adminContentRouter.post(
+  "/translations/retry",
+  ...requireAdminWriteAccess,
+  async (c) => {
+    const status = await retryMainTranslations();
+    return c.json(status);
+  }
+);
 
 adminContentRouter.get("/hero-section", async (c) => {
   const value = await getSingularSection(heroSectionConfig);
