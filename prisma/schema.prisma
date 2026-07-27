@@ -70,6 +70,8 @@ model User {
   email                String                @unique
   passwordHash         String
   role                 UserRole
+  cpf                  String?               @unique
+  phone                String?
   avatarUrl            String?
   avatarPathname       String?
   isActive             Boolean               @default(true)

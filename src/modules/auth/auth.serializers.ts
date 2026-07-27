@@ -12,7 +12,9 @@ export function serializeAuthUser(user: AuthSessionResult["user"]): AuthUserDto 
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role
+    role: user.role,
+    cpf: user.cpf,
+    phone: user.phone
   };
 }
 
@@ -31,6 +33,8 @@ export function serializeCurrentUser(user: CurrentUserRecord): CurrentUserDto {
     name: user.name,
     email: user.email,
     role: user.role,
+    cpf: user.cpf,
+    phone: user.phone,
     avatarUrl: user.avatarUrl,
     isActive: user.isActive,
     createdAt: user.createdAt,

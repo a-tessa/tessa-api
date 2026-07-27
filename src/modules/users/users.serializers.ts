@@ -13,6 +13,8 @@ export function serializeManagedUser(user: ManagedUserRecord): ManagedUserDto {
     name: user.name,
     email: user.email,
     role: user.role,
+    cpf: user.cpf,
+    phone: user.phone,
     avatarUrl: user.avatarUrl,
     isActive: user.isActive,
     createdAt: user.createdAt,

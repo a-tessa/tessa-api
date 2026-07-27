@@ -11,6 +11,27 @@ function normalizeOptionalFormString(value: FormDataEntryValue | null): string |
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+/**
+ * Unlike name/email, CPF and phone may be cleared with an empty string.
+ * Missing key → undefined (unchanged). Present empty → null (clear).
+ */
+function normalizeClearableFormString(
+  formData: FormData,
+  key: string
+): string | null | undefined {
+  if (!formData.has(key)) {
+    return undefined;
+  }
+
+  const value = formData.get(key);
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function parseRemoveAvatar(value: FormDataEntryValue | null): boolean | undefined {
   if (typeof value !== "string") {
     return undefined;
@@ -42,6 +63,8 @@ export function parseUpdateUserProfileRequest(
     const parsed = updateUserProfileSchema.safeParse({
       name: normalizeOptionalFormString(formData.get("name")),
       email: normalizeOptionalFormString(formData.get("email")),
+      cpf: normalizeClearableFormString(formData, "cpf"),
+      phone: normalizeClearableFormString(formData, "phone"),
       removeAvatar: parseRemoveAvatar(formData.get("removeAvatar"))
     });
 

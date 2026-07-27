@@ -22,6 +22,8 @@ const managedUserSelect = {
   name: true,
   email: true,
   role: true,
+  cpf: true,
+  phone: true,
   avatarUrl: true,
   isActive: true,
   createdAt: true,
@@ -103,6 +105,8 @@ export async function updateUserProfile(
       id: true,
       name: true,
       email: true,
+      cpf: true,
+      phone: true,
       avatarUrl: true,
       avatarPathname: true
     }
@@ -114,10 +118,19 @@ export async function updateUserProfile(
 
   const hasNameUpdate = input.name !== undefined;
   const hasEmailUpdate = input.email !== undefined;
+  const hasCpfUpdate = input.cpf !== undefined;
+  const hasPhoneUpdate = input.phone !== undefined;
   const hasAvatarUpload = avatarFile instanceof File && avatarFile.size > 0;
   const hasAvatarRemoval = input.removeAvatar === true;
 
-  if (!hasNameUpdate && !hasEmailUpdate && !hasAvatarUpload && !hasAvatarRemoval) {
+  if (
+    !hasNameUpdate &&
+    !hasEmailUpdate &&
+    !hasCpfUpdate &&
+    !hasPhoneUpdate &&
+    !hasAvatarUpload &&
+    !hasAvatarRemoval
+  ) {
     badRequest("Informe ao menos um campo para atualizar.");
   }
 
@@ -133,6 +146,22 @@ export async function updateUserProfile(
 
       if (existingUser) {
         conflict("Já existe um usuário com este email.");
+      }
+    }
+  }
+
+  let nextCpf = user.cpf;
+
+  if (hasCpfUpdate) {
+    nextCpf = input.cpf!;
+
+    if (nextCpf !== null && nextCpf !== user.cpf) {
+      const existingCpf = await prisma.user.findUnique({
+        where: { cpf: nextCpf }
+      });
+
+      if (existingCpf) {
+        conflict("Já existe um usuário com este CPF.");
       }
     }
   }
@@ -156,6 +185,8 @@ export async function updateUserProfile(
     data: {
       ...(hasNameUpdate ? { name: input.name!.trim() } : {}),
       ...(hasEmailUpdate ? { email: nextEmail } : {}),
+      ...(hasCpfUpdate ? { cpf: nextCpf } : {}),
+      ...(hasPhoneUpdate ? { phone: input.phone! } : {}),
       ...(hasAvatarUpload || hasAvatarRemoval
         ? { avatarUrl: nextAvatarUrl, avatarPathname: nextAvatarPathname }
         : {})

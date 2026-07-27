@@ -43,7 +43,9 @@ export async function bootstrapMasterUser(input: BootstrapInput): Promise<AuthSe
       id: true,
       name: true,
       email: true,
-      role: true
+      role: true,
+      cpf: true,
+      phone: true
     }
   });
 
@@ -86,7 +88,9 @@ export async function loginUser(input: LoginInput): Promise<AuthSessionResult> {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      cpf: user.cpf,
+      phone: user.phone
     },
     accessToken
   };
@@ -100,6 +104,8 @@ export async function getCurrentUser(userId: string): Promise<CurrentUserRecord>
       name: true,
       email: true,
       role: true,
+      cpf: true,
+      phone: true,
       avatarUrl: true,
       isActive: true,
       createdAt: true,
