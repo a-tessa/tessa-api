@@ -6,6 +6,7 @@ import { structuredLogger } from "./middlewares/logger.js";
 import { authRouter } from "./routes/auth.js";
 import { blogRouter } from "./routes/blog.js";
 import { contentRouter } from "./routes/content.js";
+import { googleReviewsInternalRouter } from "./routes/google-reviews.js";
 import { healthRouter } from "./routes/health.js";
 import { contactRouter } from "./routes/contact.js";
 import { dashboardRouter } from "./routes/dashboard.js";
@@ -53,6 +54,7 @@ app.route("/api/gallery", galleryRouter);
 app.route("/api/instagram", instagramRouter);
 app.route("/api/internal/translations", translationRouter);
 app.route("/api/internal/instagram", instagramInternalRouter);
+app.route("/api/internal/google-reviews", googleReviewsInternalRouter);
 
 app.notFound((c) =>
   c.json(

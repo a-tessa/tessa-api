@@ -1,11 +1,12 @@
-import type { TestimonialStatus } from "@prisma/client";
+import type { TestimonialSource, TestimonialStatus } from "@prisma/client";
 import { z } from "zod";
 import type { PaginationMetaDto, PaginationState } from "../shared/pagination.types.js";
 import {
   createTestimonialSchema,
   testimonialIdParamsSchema,
   testimonialListQuerySchema,
-  updateTestimonialModerationSchema
+  updateTestimonialModerationSchema,
+  updateTestimonialVisibilitySchema
 } from "./testimonial.schemas.js";
 
 export type CreateTestimonialInput = z.infer<typeof createTestimonialSchema>;
@@ -13,6 +14,9 @@ export type TestimonialListQuery = z.infer<typeof testimonialListQuerySchema>;
 export type TestimonialIdParams = z.infer<typeof testimonialIdParamsSchema>;
 export type UpdateTestimonialModerationInput = z.infer<
   typeof updateTestimonialModerationSchema
+>;
+export type UpdateTestimonialVisibilityInput = z.infer<
+  typeof updateTestimonialVisibilitySchema
 >;
 
 export type PublicTestimonialRecord = {
@@ -25,15 +29,23 @@ export type PublicTestimonialRecord = {
   question: string | null;
   profileImageUrl: string | null;
   reviewImageUrl: string | null;
+  source: TestimonialSource;
+  authorUrl: string | null;
   createdAt: Date;
   reviewedAt: Date | null;
 };
 
 export type AdminTestimonialRecord = PublicTestimonialRecord & {
   status: TestimonialStatus;
+  hidden: boolean;
   profileImagePathname: string | null;
   reviewImagePathname: string | null;
   reviewedById: string | null;
+};
+
+export type TestimonialAggregate = {
+  average: number;
+  count: number;
 };
 
 export type PublicTestimonialDto = PublicTestimonialRecord;
@@ -53,6 +65,7 @@ export type TestimonialStatsRecord = {
 
 export type PublicTestimonialListResponseDto = {
   testimonials: PublicTestimonialDto[];
+  aggregate: TestimonialAggregate;
 };
 
 export type AdminTestimonialListResponseDto = {

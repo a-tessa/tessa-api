@@ -8,6 +8,7 @@ import type {
   PublicTestimonialListResponseDto,
   PublicTestimonialRecord,
   PublicTestimonialResponseDto,
+  TestimonialAggregate,
   TestimonialListResult,
   TestimonialStatsRecord,
   TestimonialStatsResponseDto
@@ -26,6 +27,8 @@ export function serializePublicTestimonial(
     question: testimonial.question,
     profileImageUrl: testimonial.profileImageUrl,
     reviewImageUrl: testimonial.reviewImageUrl,
+    source: testimonial.source,
+    authorUrl: testimonial.authorUrl,
     createdAt: testimonial.createdAt,
     reviewedAt: testimonial.reviewedAt
   };
@@ -37,6 +40,7 @@ export function serializeAdminTestimonial(
   return {
     ...serializePublicTestimonial(testimonial),
     status: testimonial.status,
+    hidden: testimonial.hidden,
     profileImagePathname: testimonial.profileImagePathname,
     reviewImagePathname: testimonial.reviewImagePathname,
     reviewedById: testimonial.reviewedById
@@ -44,10 +48,12 @@ export function serializeAdminTestimonial(
 }
 
 export function serializePublicTestimonialListResponse(
-  testimonials: PublicTestimonialRecord[]
+  testimonials: PublicTestimonialRecord[],
+  aggregate: TestimonialAggregate
 ): PublicTestimonialListResponseDto {
   return {
-    testimonials: testimonials.map(serializePublicTestimonial)
+    testimonials: testimonials.map(serializePublicTestimonial),
+    aggregate
   };
 }
 

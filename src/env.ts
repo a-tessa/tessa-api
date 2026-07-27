@@ -39,7 +39,16 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
-  ADMIN_APP_URL: z.string().url().optional()
+  ADMIN_APP_URL: z.string().url().optional(),
+  // Google Business Profile reviews sync.
+  // "auto" (default): use live when credentials exist, otherwise stub outside
+  // production. Force with "live" | "stub" | "off".
+  GOOGLE_REVIEWS_MODE: z.enum(["auto", "live", "stub", "off"]).default("auto"),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
+  GOOGLE_OAUTH_REFRESH_TOKEN: z.string().min(1).optional(),
+  GOOGLE_BUSINESS_ACCOUNT_ID: z.string().min(1).optional(),
+  GOOGLE_BUSINESS_LOCATION_ID: z.string().min(1).optional()
 });
 
 export const env = envSchema.parse(process.env);

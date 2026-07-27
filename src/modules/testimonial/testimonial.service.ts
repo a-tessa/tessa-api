@@ -12,6 +12,7 @@ import type {
   CreateTestimonialInput,
   PreparedTestimonialImage,
   PublicTestimonialRecord,
+  TestimonialAggregate,
   TestimonialListQuery,
   TestimonialListResult,
   TestimonialStatsRecord,
@@ -28,6 +29,8 @@ const publicTestimonialSelect = {
   question: true,
   profileImageUrl: true,
   reviewImageUrl: true,
+  source: true,
+  authorUrl: true,
   createdAt: true,
   reviewedAt: true
 } satisfies Prisma.TestimonialSelect;
@@ -35,10 +38,21 @@ const publicTestimonialSelect = {
 const adminTestimonialSelect = {
   ...publicTestimonialSelect,
   status: true,
+  hidden: true,
   profileImagePathname: true,
   reviewImagePathname: true,
   reviewedById: true
 } satisfies Prisma.TestimonialSelect;
+
+/**
+ * Reviews that count toward the public list and the aggregate rating:
+ * approved, not admin-hidden, and not soft-removed by the Google sync.
+ */
+const countedTestimonialWhere = {
+  status: "approved",
+  hidden: false,
+  removedAt: null
+} satisfies Prisma.TestimonialWhereInput;
 
 function normalizeOptionalText(value: string | undefined) {
   const normalized = value?.trim();
@@ -104,10 +118,23 @@ export async function createTestimonial(
 
 export async function listApprovedTestimonials(): Promise<PublicTestimonialRecord[]> {
   return prisma.testimonial.findMany({
-    where: { status: "approved" },
+    where: countedTestimonialWhere,
     orderBy: [{ reviewedAt: "desc" }, { createdAt: "desc" }],
     select: publicTestimonialSelect
   });
+}
+
+export async function getTestimonialAggregate(): Promise<TestimonialAggregate> {
+  const result = await prisma.testimonial.aggregate({
+    where: countedTestimonialWhere,
+    _avg: { rating: true },
+    _count: { _all: true }
+  });
+
+  return {
+    average: result._avg.rating ?? 0,
+    count: result._count._all
+  };
 }
 
 export async function listTestimonials(
@@ -194,6 +221,29 @@ export async function updateTestimonialModeration(
       status: input.status,
       reviewedAt: new Date(),
       reviewedById: userId
+    },
+    select: adminTestimonialSelect
+  });
+}
+
+export async function setTestimonialVisibility(
+  id: string,
+  hidden: boolean
+): Promise<AdminTestimonialRecord> {
+  const existing = await prisma.testimonial.findUnique({
+    where: { id },
+    select: { id: true }
+  });
+
+  if (!existing) {
+    notFound("Avaliação não encontrada.");
+  }
+
+  return prisma.testimonial.update({
+    where: { id },
+    data: {
+      hidden,
+      hiddenAt: hidden ? new Date() : null
     },
     select: adminTestimonialSelect
   });

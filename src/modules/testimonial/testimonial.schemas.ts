@@ -26,3 +26,7 @@ export const testimonialIdParamsSchema = z.object({
 export const updateTestimonialModerationSchema = z.object({
   status: z.enum(["approved", "rejected"])
 });
+
+export const updateTestimonialVisibilitySchema = z.object({
+  hidden: z.boolean()
+});

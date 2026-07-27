@@ -8,7 +8,8 @@ import {
   createTestimonialSchema,
   testimonialIdParamsSchema,
   testimonialListQuerySchema,
-  updateTestimonialModerationSchema
+  updateTestimonialModerationSchema,
+  updateTestimonialVisibilitySchema
 } from "./testimonial.schemas.js";
 import {
   serializeAdminTestimonialListResponse,
@@ -19,10 +20,12 @@ import {
 import {
   createTestimonial,
   deleteTestimonial,
+  getTestimonialAggregate,
   getTestimonialById,
   getTestimonialStats,
   listApprovedTestimonials,
   listTestimonials,
+  setTestimonialVisibility,
   updateTestimonialModeration
 } from "./testimonial.service.js";
 
@@ -40,9 +43,12 @@ function normalizeOptionalFormString(value: FormDataEntryValue | null): string |
 }
 
 testimonialRouter.get("/", async (c) => {
-  const testimonials = await listApprovedTestimonials();
+  const [testimonials, aggregate] = await Promise.all([
+    listApprovedTestimonials(),
+    getTestimonialAggregate()
+  ]);
 
-  return c.json(serializePublicTestimonialListResponse(testimonials));
+  return c.json(serializePublicTestimonialListResponse(testimonials, aggregate));
 });
 
 testimonialRouter.post("/", submitRateLimit, async (c) => {
@@ -132,6 +138,19 @@ testimonialRouter.patch(
     const input = c.req.valid("json");
     const user = c.get("user");
     const testimonial = await updateTestimonialModeration(id, input, user.id);
+
+    return c.json(serializeAdminTestimonialResponse(testimonial));
+  }
+);
+
+testimonialRouter.patch(
+  "/admin/:id/visibility",
+  zValidator("param", testimonialIdParamsSchema),
+  zValidator("json", updateTestimonialVisibilitySchema),
+  async (c) => {
+    const { id } = c.req.valid("param");
+    const { hidden } = c.req.valid("json");
+    const testimonial = await setTestimonialVisibility(id, hidden);
 
     return c.json(serializeAdminTestimonialResponse(testimonial));
   }
