@@ -1,4 +1,5 @@
 import {
+  aboutSectionSchema,
   categorySchema,
   companyInformationSchema,
   draftCategorySchema,
@@ -25,6 +26,12 @@ export const singularSectionConfigs = [
     path: "industry-section",
     label: "Seção Indústria",
     schema: industrySectionSchema
+  },
+  {
+    key: "aboutSection",
+    path: "about-section",
+    label: "Quem Somos",
+    schema: aboutSectionSchema
   },
   {
     key: "operationSection",

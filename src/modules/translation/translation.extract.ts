@@ -58,6 +58,34 @@ function walkLanding(content: Json, resolve: Resolver): Json {
     // must never be sent to translation.
   }
 
+  if (isObject(clone.aboutSection)) {
+    const about = clone.aboutSection;
+    if (nonEmpty(about.heroTitle)) {
+      about.heroTitle = resolve("about.heroTitle", about.heroTitle, "plain");
+    }
+    if (nonEmpty(about.body)) {
+      about.body = resolve("about.body", about.body, "plain");
+    }
+    if (isObject(about.sideImage) && nonEmpty(about.sideImage.alt)) {
+      about.sideImage.alt = resolve("about.sideImage.alt", about.sideImage.alt, "plain");
+    }
+    for (const pillarKey of ["mission", "vision", "values"] as const) {
+      const pillar = about[pillarKey];
+      if (!isObject(pillar)) continue;
+      if (nonEmpty(pillar.title)) {
+        pillar.title = resolve(`about.${pillarKey}.title`, pillar.title, "plain");
+      }
+      if (nonEmpty(pillar.description)) {
+        pillar.description = resolve(
+          `about.${pillarKey}.description`,
+          pillar.description,
+          "plain"
+        );
+      }
+    }
+    // `about.videos` and `about.sideImage.url` are intentionally left untouched.
+  }
+
   if (isObject(clone.operationSection)) {
     for (const [index, image] of asObjectArray(clone.operationSection.images).entries()) {
       if (nonEmpty(image.alt)) {

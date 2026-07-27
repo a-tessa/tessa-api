@@ -49,6 +49,13 @@ export function buildOperationSectionImagePath(
   );
 }
 
+export function buildAboutSectionSideImagePath(originalFilename: string): string {
+  return buildTimestampedImagePath(
+    ["landing-page", "home", "about-section", "side-image"],
+    originalFilename
+  );
+}
+
 export function buildServicePageCoverImagePath(
   servicePageSlug: string,
   originalFilename: string

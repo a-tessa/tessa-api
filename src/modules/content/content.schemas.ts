@@ -238,6 +238,34 @@ export const industrySectionSchema = z.object({
   })
 });
 
+export const MAX_ABOUT_HERO_TITLE_LENGTH = 80;
+export const MAX_ABOUT_BODY_LENGTH = 4000;
+export const MAX_ABOUT_SIDE_IMAGE_ALT_LENGTH = 120;
+export const MAX_ABOUT_PILLAR_TITLE_LENGTH = 80;
+export const MAX_ABOUT_PILLAR_DESCRIPTION_LENGTH = 500;
+
+export const aboutPillarSchema = z.object({
+  title: nonEmptyString.max(MAX_ABOUT_PILLAR_TITLE_LENGTH),
+  description: nonEmptyString.max(MAX_ABOUT_PILLAR_DESCRIPTION_LENGTH)
+});
+
+export const aboutSectionSchema = z.object({
+  heroTitle: nonEmptyString.max(MAX_ABOUT_HERO_TITLE_LENGTH),
+  videos: z.object({
+    "pt-BR": industryVideoSchema,
+    en: industryVideoSchema.optional(),
+    es: industryVideoSchema.optional()
+  }),
+  sideImage: z.object({
+    url: nonEmptyString,
+    alt: nonEmptyString.max(MAX_ABOUT_SIDE_IMAGE_ALT_LENGTH)
+  }),
+  body: nonEmptyString.max(MAX_ABOUT_BODY_LENGTH),
+  mission: aboutPillarSchema,
+  vision: aboutPillarSchema,
+  values: aboutPillarSchema
+});
+
 export const npsAnswerSchema = z.object({
   text: nonEmptyString,
   value: z.number(),
@@ -502,6 +530,7 @@ export const instagramSelectionSchema = z
 export const draftContentSchema = z.object({
   heroSection: heroSectionStoredSchema.optional(),
   industrySection: industrySectionSchema.optional(),
+  aboutSection: aboutSectionSchema.optional(),
   operationSection: operationSectionSchema.optional(),
   nps: z.array(draftNpsItemSchema).optional(),
   servicesPages: z.array(draftServicesPageItemSchema).optional(),

@@ -72,6 +72,7 @@ import {
 } from "./content.schemas.js";
 import { prepareImageAsset, uploadPublicAsset } from "../assets/assets.service.js";
 import {
+  buildAboutSectionSideImagePath,
   buildOperationSectionImagePath,
   buildServicePageBackgroundImagePath,
   buildServicePageExampleImagePath
@@ -794,6 +795,66 @@ adminContentRouter.post(
         sizeBytes: preparedAsset.sizeBytes,
         originalFilename: preparedAsset.originalFilename,
         index
+      },
+      201
+    );
+  }
+);
+
+adminContentRouter.post(
+  "/about-section/assets",
+  ...requireAdminWriteAccess,
+  async (c) => {
+    const contentType = c.req.header("content-type");
+
+    if (!isMultipartRequest(contentType)) {
+      badRequest("Envie o arquivo como multipart/form-data.");
+    }
+
+    const contentLength = parseContentLength(c.req.header("content-length"));
+    const maxSingleAssetBodyBytes = MAX_OPERATION_SECTION_IMAGE_BYTES + 512 * 1024;
+
+    if (contentLength !== null && contentLength > maxSingleAssetBodyBytes) {
+      payloadTooLarge(
+        `Arquivo maior do que o suportado (${maxSingleAssetBodyBytes} bytes).`
+      );
+    }
+
+    let formData: FormData;
+    try {
+      formData = await c.req.formData();
+    } catch {
+      badRequest("Não foi possível processar o multipart/form-data enviado.");
+    }
+
+    const rawFile = formData.get("file");
+    if (!(rawFile instanceof File)) {
+      badRequest("Campo 'file' inválido.");
+    }
+
+    if (rawFile.size === 0 || !rawFile.name) {
+      badRequest("Arquivo inválido.");
+    }
+
+    if (rawFile.size > MAX_OPERATION_SECTION_IMAGE_BYTES) {
+      payloadTooLarge(
+        `A imagem lateral da seção Quem Somos excede o limite de ${MAX_OPERATION_SECTION_IMAGE_BYTES} bytes.`
+      );
+    }
+
+    const preparedAsset = await prepareImageAsset(rawFile);
+    const uploadedAsset = await uploadPublicAsset(
+      buildAboutSectionSideImagePath(preparedAsset.originalFilename),
+      preparedAsset
+    );
+
+    return c.json(
+      {
+        url: uploadedAsset.url,
+        pathname: uploadedAsset.pathname,
+        mimeType: preparedAsset.contentType,
+        sizeBytes: preparedAsset.sizeBytes,
+        originalFilename: preparedAsset.originalFilename
       },
       201
     );
