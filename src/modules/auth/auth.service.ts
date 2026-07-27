@@ -206,7 +206,7 @@ export async function requestPasswordReset(input: ForgotPasswordInput): Promise<
   }
 
   if (!isAuthEmailConfigured()) {
-    console.error("[auth-email] SMTP não configurado; reset de senha não enviado.");
+    console.error("[auth-email] E-mail não configurado; reset de senha não enviado.");
     return;
   }
 

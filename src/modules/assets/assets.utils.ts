@@ -56,6 +56,16 @@ export function buildAboutSectionSideImagePath(originalFilename: string): string
   );
 }
 
+export function buildHeadingImagePath(
+  pageKey: string,
+  originalFilename: string
+): string {
+  return buildTimestampedImagePath(
+    ["landing-page", "home", "heading-images", pageKey],
+    originalFilename
+  );
+}
+
 export function buildServicePageCoverImagePath(
   servicePageSlug: string,
   originalFilename: string

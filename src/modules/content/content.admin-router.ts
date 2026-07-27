@@ -12,6 +12,7 @@ import {
   serializeAdminContentResponse,
   serializeCollectionItemResponse,
   serializeCollectionResponse,
+  serializeHeadingImagesResponse,
   serializeScenerySectionResponse,
   serializeServicePageResponse,
   serializeServicePagesResponse,
@@ -25,6 +26,7 @@ import {
   createServicePage,
   createSingularSection,
   deleteClient,
+  deleteHeadingImage,
   deleteHeroSection,
   deleteHeroSectionSlide,
   deleteOperationSection,
@@ -35,6 +37,7 @@ import {
   getAdminContent,
   getClient,
   getCollectionItem,
+  getHeadingImages,
   getMainPublicationStatus,
   getScenerySection,
   getServicePage,
@@ -50,6 +53,7 @@ import {
   updateOperationSection,
   updateCollectionItem,
   updateServicePage,
+  upsertHeadingImage,
   updateSingularSection
 } from "./content.service.js";
 import {
@@ -57,6 +61,7 @@ import {
   clientItemInputSchema,
   clientItemParamsSchema,
   collectionItemParamsSchema,
+  headingImagePageParamsSchema,
   heroSectionInputSchema,
   heroSectionSlideParamsSchema,
   heroSectionUpdateInputSchema,
@@ -858,6 +863,74 @@ adminContentRouter.post(
       },
       201
     );
+  }
+);
+
+adminContentRouter.get("/heading-images", async (c) => {
+  const headingImages = await getHeadingImages();
+  return c.json(serializeHeadingImagesResponse(headingImages));
+});
+
+adminContentRouter.post(
+  "/heading-images/:pageKey",
+  ...requireAdminWriteAccess,
+  zValidator("param", headingImagePageParamsSchema),
+  async (c) => {
+    const { pageKey } = c.req.valid("param");
+    const contentType = c.req.header("content-type");
+
+    if (!isMultipartRequest(contentType)) {
+      badRequest("Envie o arquivo como multipart/form-data.");
+    }
+
+    const contentLength = parseContentLength(c.req.header("content-length"));
+    const maxSingleAssetBodyBytes = env.ASSET_MAX_UPLOAD_BYTES + 512 * 1024;
+
+    if (contentLength !== null && contentLength > maxSingleAssetBodyBytes) {
+      payloadTooLarge(
+        `Arquivo maior do que o suportado (${maxSingleAssetBodyBytes} bytes).`
+      );
+    }
+
+    let formData: FormData;
+    try {
+      formData = await c.req.formData();
+    } catch {
+      badRequest("Não foi possível processar o multipart/form-data enviado.");
+    }
+
+    const rawFile = formData.get("file");
+    if (!(rawFile instanceof File)) {
+      badRequest("Campo 'file' inválido.");
+    }
+
+    if (rawFile.size === 0 || !rawFile.name) {
+      badRequest("Arquivo inválido.");
+    }
+
+    if (rawFile.size > env.ASSET_MAX_UPLOAD_BYTES) {
+      payloadTooLarge(
+        `A imagem do cabeçalho excede o limite de ${env.ASSET_MAX_UPLOAD_BYTES} bytes.`
+      );
+    }
+
+    const user = c.get("user");
+    const headingImages = await upsertHeadingImage(pageKey, rawFile, user.id);
+
+    return c.json(serializeHeadingImagesResponse(headingImages));
+  }
+);
+
+adminContentRouter.delete(
+  "/heading-images/:pageKey",
+  ...requireAdminWriteAccess,
+  zValidator("param", headingImagePageParamsSchema),
+  async (c) => {
+    const { pageKey } = c.req.valid("param");
+    const user = c.get("user");
+    const headingImages = await deleteHeadingImage(pageKey, user.id);
+
+    return c.json(serializeHeadingImagesResponse(headingImages));
   }
 );
 

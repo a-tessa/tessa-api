@@ -1,4 +1,4 @@
-import { escapeHtml, isSmtpConfigured, sendMail } from "../../lib/mailer.js";
+import { escapeHtml, isEmailConfigured, sendMail } from "../../lib/mailer.js";
 
 function buildPasswordResetEmailHtml(input: {
   name: string;
@@ -55,7 +55,7 @@ function buildPasswordResetEmailText(input: {
 }
 
 export function isAuthEmailConfigured(): boolean {
-  return isSmtpConfigured();
+  return isEmailConfigured();
 }
 
 export async function sendPasswordResetEmail(input: {
@@ -65,7 +65,7 @@ export async function sendPasswordResetEmail(input: {
   expiresInMinutes: number;
 }): Promise<void> {
   if (!isAuthEmailConfigured()) {
-    throw new Error("SMTP não configurado.");
+    throw new Error("E-mail não configurado.");
   }
 
   await sendMail({

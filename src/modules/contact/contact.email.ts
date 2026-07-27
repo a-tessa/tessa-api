@@ -1,5 +1,5 @@
 import { env } from "../../env.js";
-import { escapeHtml, isSmtpConfigured, sendMail } from "../../lib/mailer.js";
+import { escapeHtml, isEmailConfigured, sendMail } from "../../lib/mailer.js";
 import type { ContactRecord } from "./contact.types.js";
 
 function formatField(label: string, value: string | null | undefined): string {
@@ -80,7 +80,7 @@ function buildContactEmailText(contact: ContactRecord): string {
 }
 
 export function isContactEmailConfigured(): boolean {
-  return Boolean(isSmtpConfigured() && env.CONTACT_NOTIFICATION_EMAIL);
+  return Boolean(isEmailConfigured() && env.CONTACT_NOTIFICATION_EMAIL);
 }
 
 export async function sendContactNotificationEmail(contact: ContactRecord): Promise<void> {

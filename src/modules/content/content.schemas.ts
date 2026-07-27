@@ -527,11 +527,46 @@ export const instagramSelectionSchema = z
     }
   });
 
+export const HEADING_IMAGE_PAGE_KEYS = [
+  "quem-somos",
+  "servicos",
+  "representantes",
+  "blog",
+  "downloads",
+  "galeria",
+  "contato"
+] as const;
+
+export const headingImagePageKeySchema = z.enum(HEADING_IMAGE_PAGE_KEYS);
+
+export const HEADING_IMAGE_PAGE_LABELS = {
+  "quem-somos": "Quem Somos",
+  servicos: "Serviços",
+  representantes: "Representantes",
+  blog: "Blog",
+  downloads: "Downloads",
+  galeria: "Galeria",
+  contato: "Contato"
+} as const satisfies Record<(typeof HEADING_IMAGE_PAGE_KEYS)[number], string>;
+
+export const headingImageEntrySchema = z.object({
+  url: nonEmptyString
+});
+
+export const headingImagesSchema = z
+  .record(headingImagePageKeySchema, headingImageEntrySchema)
+  .default({});
+
+export const headingImagePageParamsSchema = z.object({
+  pageKey: headingImagePageKeySchema
+});
+
 export const draftContentSchema = z.object({
   heroSection: heroSectionStoredSchema.optional(),
   industrySection: industrySectionSchema.optional(),
   aboutSection: aboutSectionSchema.optional(),
   operationSection: operationSectionSchema.optional(),
+  headingImages: headingImagesSchema.optional(),
   nps: z.array(draftNpsItemSchema).optional(),
   servicesPages: z.array(draftServicesPageItemSchema).optional(),
   representantsBase: z.array(draftRepresentantSchema).optional(),

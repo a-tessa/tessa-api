@@ -14,6 +14,9 @@ import {
   draftRepresentantSchema,
   draftServicesPageItemSchema,
   aboutSectionSchema,
+  headingImagesSchema,
+  headingImageEntrySchema,
+  headingImagePageKeySchema,
   heroSectionInputSchema,
   heroSectionSchema,
   industrySectionSchema,
@@ -43,6 +46,9 @@ export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type HeroSectionInput = z.infer<typeof heroSectionInputSchema>;
 export type IndustrySection = z.infer<typeof industrySectionSchema>;
 export type AboutSection = z.infer<typeof aboutSectionSchema>;
+export type HeadingImagePageKey = z.infer<typeof headingImagePageKeySchema>;
+export type HeadingImageEntry = z.infer<typeof headingImageEntrySchema>;
+export type HeadingImages = z.infer<typeof headingImagesSchema>;
 export type SceneryItem = z.infer<typeof sceneryItemSchema>;
 export type ScenerySection = z.infer<typeof scenerySectionSchema>;
 export type OperationSection = z.infer<typeof operationSectionSchema>;
@@ -154,4 +160,8 @@ export type ServicePageResponseDto = {
 
 export type ServicePagesResponseDto = {
   servicesPages: DraftServicesPageItem[];
+};
+
+export type HeadingImagesResponseDto = {
+  headingImages: HeadingImages;
 };

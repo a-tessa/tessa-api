@@ -6,6 +6,8 @@ import type {
   CollectionResponseDto,
   DraftServicesPageItem,
   DraftContent,
+  HeadingImages,
+  HeadingImagesResponseDto,
   PublicContentRecord,
   PublicContentResponseDto,
   ScenerySection,
@@ -79,4 +81,10 @@ export function serializeServicePagesResponse(
   servicesPages: DraftServicesPageItem[]
 ): ServicePagesResponseDto {
   return { servicesPages };
+}
+
+export function serializeHeadingImagesResponse(
+  headingImages: HeadingImages
+): HeadingImagesResponseDto {
+  return { headingImages };
 }

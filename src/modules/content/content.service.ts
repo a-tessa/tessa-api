@@ -11,6 +11,7 @@ import {
 } from "../assets/assets.service.js";
 import {
   buildClientLogoPath,
+  buildHeadingImagePath,
   buildHeroSectionImagePath,
   buildOperationSectionImagePath,
   buildServicePageBackgroundImagePath,
@@ -43,6 +44,8 @@ import type { TargetLocale } from "../translation/translation.types.js";
 import {
   CLIENT_LOGO_MAX_BYTES,
   clientItemSchema,
+  headingImagesSchema,
+  HEADING_IMAGE_PAGE_KEYS,
   heroSectionSchema,
   heroSectionStoredSchema,
   operationSectionSchema,
@@ -57,6 +60,8 @@ import type {
   DraftClientItem,
   DraftContent,
   DraftServicesPageItem,
+  HeadingImagePageKey,
+  HeadingImages,
   HeroSection,
   HeroSectionInput,
   OperationSection,
@@ -81,6 +86,12 @@ const OPERATION_SECTION_ASSET_FILTER = {
   entityId: MAIN_CONTENT_SLUG,
   sectionKey: "operationSection",
   fieldKey: "images"
+} as const;
+const HEADING_IMAGES_ASSET_FILTER = {
+  entityType: "landingPage",
+  entityId: MAIN_CONTENT_SLUG,
+  sectionKey: "headingImages",
+  fieldKey: "url"
 } as const;
 const CLIENTS_ASSET_FILTER = {
   entityType: "landingPage",
@@ -455,6 +466,108 @@ async function reconcilePublishedOperationAssets(publishedContent: unknown): Pro
     });
   } catch (error) {
     console.error("Falha ao reconciliar assets da seção de operação após publicação.", {
+      urls: staleUrls,
+      error
+    });
+    return;
+  }
+
+  await cleanupBlobUrls(staleUrls);
+}
+
+function getHeadingImagesFromContent(content: unknown): HeadingImages {
+  if (typeof content !== "object" || content === null || Array.isArray(content)) {
+    return {};
+  }
+
+  const parsed = headingImagesSchema.safeParse(
+    (content as Record<string, unknown>).headingImages
+  );
+
+  return parsed.success ? parsed.data : {};
+}
+
+function getHeadingImageUrls(content: unknown): Set<string> {
+  return new Set(
+    Object.values(getHeadingImagesFromContent(content)).map((entry) => entry.url)
+  );
+}
+
+function getHeadingImagePageSlot(pageKey: HeadingImagePageKey): number {
+  return HEADING_IMAGE_PAGE_KEYS.indexOf(pageKey);
+}
+
+function toHeadingImageAssetInput(asset: Asset): Prisma.AssetCreateManyInput {
+  return {
+    kind: asset.kind,
+    entityType: asset.entityType,
+    entityId: asset.entityId,
+    sectionKey: asset.sectionKey,
+    fieldKey: asset.fieldKey,
+    slot: asset.slot,
+    pathname: asset.pathname,
+    url: asset.url,
+    mimeType: asset.mimeType,
+    sizeBytes: asset.sizeBytes,
+    originalFilename: asset.originalFilename,
+    alt: asset.alt,
+    createdById: asset.createdById
+  };
+}
+
+function retainPublishedHeadingImageAssets(
+  draftAssets: Prisma.AssetCreateManyInput[],
+  previousAssets: Asset[],
+  publishedContent: unknown
+): Prisma.AssetCreateManyInput[] {
+  const draftUrls = new Set(draftAssets.map((asset) => asset.url));
+  const publishedUrls = getHeadingImageUrls(publishedContent);
+  const retainedUrls = new Set<string>();
+  const publishedOnlyAssets: Prisma.AssetCreateManyInput[] = [];
+
+  for (const asset of previousAssets) {
+    if (
+      draftUrls.has(asset.url) ||
+      !publishedUrls.has(asset.url) ||
+      retainedUrls.has(asset.url)
+    ) {
+      continue;
+    }
+
+    retainedUrls.add(asset.url);
+    publishedOnlyAssets.push(toHeadingImageAssetInput(asset));
+  }
+
+  return [...draftAssets, ...publishedOnlyAssets];
+}
+
+async function reconcilePublishedHeadingImageAssets(
+  publishedContent: unknown
+): Promise<void> {
+  const referencedUrls = getHeadingImageUrls(publishedContent);
+  const assets = await prisma.asset.findMany({
+    where: HEADING_IMAGES_ASSET_FILTER,
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+  const staleUrls = getUniqueUrls(
+    assets.map((asset) => asset.url).filter((url) => !referencedUrls.has(url))
+  );
+
+  if (staleUrls.length === 0) {
+    return;
+  }
+
+  try {
+    await prisma.asset.deleteMany({
+      where: {
+        ...HEADING_IMAGES_ASSET_FILTER,
+        url: { in: staleUrls }
+      }
+    });
+  } catch (error) {
+    console.error("Falha ao reconciliar assets das imagens dos cabeçalhos após publicação.", {
       urls: staleUrls,
       error
     });
@@ -1284,6 +1397,7 @@ export async function publishMainContent(userId: string): Promise<AdminContentRe
   });
 
   await reconcilePublishedOperationAssets(publishedContent);
+  await reconcilePublishedHeadingImageAssets(publishedContent);
   await enqueueLandingTranslations(page.id, publishedContent);
   runTranslationsInBackground(processEntityTranslations(LANDING_ENTITY_TYPE, page.id));
 
@@ -1319,6 +1433,214 @@ export async function getScenerySection() {
 
   const content = await getMainDraftContent(page);
   return buildScenerySection(content);
+}
+
+export async function getHeadingImages(): Promise<HeadingImages> {
+  const page = await findMainPage();
+
+  if (!page) {
+    return {};
+  }
+
+  const content = await getMainDraftContent(page);
+  return getHeadingImagesFromContent(content);
+}
+
+export async function upsertHeadingImage(
+  pageKey: HeadingImagePageKey,
+  file: File,
+  userId: string
+): Promise<HeadingImages> {
+  const page = await ensureMainDraftPageExists(userId);
+  const content = await getMainDraftContent(page);
+  const currentHeadingImages = getHeadingImagesFromContent(content);
+  const previousUrl = currentHeadingImages[pageKey]?.url;
+
+  const preparedAsset = await prepareImageAsset(file);
+  const uploadedAsset = await uploadPublicAsset(
+    buildHeadingImagePath(pageKey, preparedAsset.originalFilename),
+    preparedAsset
+  );
+
+  const nextHeadingImages = headingImagesSchema.parse({
+    ...currentHeadingImages,
+    [pageKey]: { url: uploadedAsset.url }
+  });
+
+  const previousAssets = await prisma.asset.findMany({
+    where: HEADING_IMAGES_ASSET_FILTER,
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  const previousAssetByUrl = new Map<string, Asset>();
+  for (const asset of previousAssets) {
+    if (!previousAssetByUrl.has(asset.url)) {
+      previousAssetByUrl.set(asset.url, asset);
+    }
+  }
+
+  const assetsToPersist: Prisma.AssetCreateManyInput[] = [];
+
+  for (const [key, entry] of Object.entries(nextHeadingImages) as Array<
+    [HeadingImagePageKey, { url: string }]
+  >) {
+    const existingAsset = previousAssetByUrl.get(entry.url);
+    if (existingAsset) {
+      assetsToPersist.push({
+        ...toHeadingImageAssetInput(existingAsset),
+        slot: getHeadingImagePageSlot(key)
+      });
+      continue;
+    }
+
+    if (entry.url === uploadedAsset.url) {
+      assetsToPersist.push({
+        kind: "image",
+        entityType: HEADING_IMAGES_ASSET_FILTER.entityType,
+        entityId: HEADING_IMAGES_ASSET_FILTER.entityId,
+        sectionKey: HEADING_IMAGES_ASSET_FILTER.sectionKey,
+        fieldKey: HEADING_IMAGES_ASSET_FILTER.fieldKey,
+        slot: getHeadingImagePageSlot(key),
+        pathname: uploadedAsset.pathname,
+        url: uploadedAsset.url,
+        mimeType: preparedAsset.contentType,
+        sizeBytes: preparedAsset.sizeBytes,
+        originalFilename: preparedAsset.originalFilename,
+        createdById: userId
+      });
+    }
+  }
+
+  const assetsToRetain = retainPublishedHeadingImageAssets(
+    assetsToPersist,
+    previousAssets,
+    page.publishedContent
+  );
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.landingPage.update({
+        where: { id: page.id },
+        data: {
+          draftContent: toDraftContentInput({
+            ...content,
+            headingImages: nextHeadingImages
+          } as DraftContent),
+          status: "draft",
+          updatedById: userId
+        }
+      });
+
+      await tx.asset.deleteMany({
+        where: HEADING_IMAGES_ASSET_FILTER
+      });
+
+      if (assetsToRetain.length > 0) {
+        await tx.asset.createMany({
+          data: assetsToRetain
+        });
+      }
+    });
+  } catch (error) {
+    await cleanupBlobUrls([uploadedAsset.url]);
+    throw error;
+  }
+
+  if (
+    previousUrl &&
+    previousUrl !== uploadedAsset.url &&
+    !getHeadingImageUrls(page.publishedContent).has(previousUrl)
+  ) {
+    await cleanupBlobUrls([previousUrl]);
+  }
+
+  return nextHeadingImages;
+}
+
+export async function deleteHeadingImage(
+  pageKey: HeadingImagePageKey,
+  userId: string
+): Promise<HeadingImages> {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const currentHeadingImages = getHeadingImagesFromContent(content);
+  const previousUrl = currentHeadingImages[pageKey]?.url;
+
+  if (!previousUrl) {
+    return currentHeadingImages;
+  }
+
+  const nextHeadingImages = { ...currentHeadingImages };
+  delete nextHeadingImages[pageKey];
+  const validatedHeadingImages = headingImagesSchema.parse(nextHeadingImages);
+
+  const previousAssets = await prisma.asset.findMany({
+    where: HEADING_IMAGES_ASSET_FILTER,
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  const previousAssetByUrl = new Map<string, Asset>();
+  for (const asset of previousAssets) {
+    if (!previousAssetByUrl.has(asset.url)) {
+      previousAssetByUrl.set(asset.url, asset);
+    }
+  }
+
+  const assetsToPersist: Prisma.AssetCreateManyInput[] = [];
+  for (const [key, entry] of Object.entries(validatedHeadingImages) as Array<
+    [HeadingImagePageKey, { url: string }]
+  >) {
+    const existingAsset = previousAssetByUrl.get(entry.url);
+    if (!existingAsset) {
+      continue;
+    }
+
+    assetsToPersist.push({
+      ...toHeadingImageAssetInput(existingAsset),
+      slot: getHeadingImagePageSlot(key)
+    });
+  }
+
+  const assetsToRetain = retainPublishedHeadingImageAssets(
+    assetsToPersist,
+    previousAssets,
+    page.publishedContent
+  );
+  const publishedUrls = getHeadingImageUrls(page.publishedContent);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.landingPage.update({
+      where: { id: page.id },
+      data: {
+        draftContent: toDraftContentInput({
+          ...content,
+          headingImages: validatedHeadingImages
+        } as DraftContent),
+        status: "draft",
+        updatedById: userId
+      }
+    });
+
+    await tx.asset.deleteMany({
+      where: HEADING_IMAGES_ASSET_FILTER
+    });
+
+    if (assetsToRetain.length > 0) {
+      await tx.asset.createMany({
+        data: assetsToRetain
+      });
+    }
+  });
+
+  if (!publishedUrls.has(previousUrl)) {
+    await cleanupBlobUrls([previousUrl]);
+  }
+
+  return validatedHeadingImages;
 }
 
 export async function getSingularSection(config: SingularSectionConfig) {

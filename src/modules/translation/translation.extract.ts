@@ -86,6 +86,9 @@ function walkLanding(content: Json, resolve: Resolver): Json {
     // `about.videos` and `about.sideImage.url` are intentionally left untouched.
   }
 
+  // `headingImages` (URLs) is intentionally left untouched: it must never be sent
+  // to translation.
+
   if (isObject(clone.operationSection)) {
     for (const [index, image] of asObjectArray(clone.operationSection.images).entries()) {
       if (nonEmpty(image.alt)) {

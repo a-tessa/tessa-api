@@ -1,14 +1,21 @@
 import { createHash, randomBytes } from "node:crypto";
 import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 import { env } from "../env.js";
 
+let cachedResend: Resend | null = null;
 let cachedTransporter: Transporter | null = null;
 
-export function isSmtpConfigured(): boolean {
-  return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD && env.CONTACT_EMAIL_FROM);
+function getResendClient(): Resend | null {
+  if (!env.RESEND_API_KEY) {
+    return null;
+  }
+
+  cachedResend ??= new Resend(env.RESEND_API_KEY);
+  return cachedResend;
 }
 
-export function getSmtpTransporter(): Transporter | null {
+function getSmtpTransporter(): Transporter | null {
   if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD) {
     return null;
   }
@@ -27,6 +34,17 @@ export function getSmtpTransporter(): Transporter | null {
   return cachedTransporter;
 }
 
+export function isEmailConfigured(): boolean {
+  return Boolean(
+    env.CONTACT_EMAIL_FROM && (env.RESEND_API_KEY || (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD))
+  );
+}
+
+/** @deprecated Prefer isEmailConfigured */
+export function isSmtpConfigured(): boolean {
+  return isEmailConfigured();
+}
+
 export function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -43,10 +61,33 @@ export async function sendMail(input: {
   text: string;
   replyTo?: string;
 }): Promise<void> {
+  if (!env.CONTACT_EMAIL_FROM) {
+    throw new Error("E-mail não configurado: CONTACT_EMAIL_FROM ausente.");
+  }
+
+  const resend = getResendClient();
+
+  if (resend) {
+    const { error } = await resend.emails.send({
+      from: env.CONTACT_EMAIL_FROM,
+      to: input.to,
+      replyTo: input.replyTo,
+      subject: input.subject,
+      html: input.html,
+      text: input.text
+    });
+
+    if (error) {
+      throw new Error(error.message || "Falha ao enviar e-mail via Resend.");
+    }
+
+    return;
+  }
+
   const transporter = getSmtpTransporter();
 
-  if (!transporter || !env.CONTACT_EMAIL_FROM) {
-    throw new Error("SMTP não configurado.");
+  if (!transporter) {
+    throw new Error("E-mail não configurado: defina RESEND_API_KEY ou SMTP_*.");
   }
 
   await transporter.sendMail({

@@ -51,7 +51,7 @@ ADMIN_APP_URL="http://localhost:5173"
 
 As variáveis de tradução são opcionais para subir a API: sem `OPENAI_API_KEY` (ou com `TRANSLATION_ENABLED="false"`) o conteúdo simplesmente continua só em pt-BR, sem enfileirar traduções.
 
-As variáveis de e-mail de contato também são opcionais: sem as credenciais SMTP (ou sem `CONTACT_EMAIL_FROM`) o formulário continua sendo salvo no banco, mas nenhuma notificação é enviada. Use a porta `587` para STARTTLS ou `465` para TLS implícito e mantenha o remetente autorizado pelo servidor SMTP.
+As variáveis de e-mail também são opcionais: sem `RESEND_API_KEY` (preferencial) ou SMTP + `CONTACT_EMAIL_FROM`, o formulário de contato continua sendo salvo no banco e o reset de senha não envia e-mail. Com Resend em modo de teste (`onboarding@resend.dev`), só é possível enviar para o e-mail da conta Resend até verificar um domínio próprio.
 
 As variáveis do Instagram são opcionais para subir a API, mas obrigatórias para conectar a conta no painel. Sem elas, a página **Conteúdo → Instagram** indica que a integração não está configurada. O guia completo está em [docs/instagram-integration.md](./docs/instagram-integration.md).
 ## Scripts
@@ -230,7 +230,7 @@ Após o deploy e as migrations:
 - `PATCH /api/auth/me`
 - `POST /api/auth/change-password`
 
-A recuperação de senha envia o link para o e-mail do administrador via SMTP (`CONTACT_EMAIL_FROM`). O link aponta para `${ADMIN_APP_URL}/redefinir-senha?token=...` e expira em 1 hora.
+A recuperação de senha envia o link para o e-mail do administrador via Resend (`RESEND_API_KEY`) ou SMTP. O remetente usa `CONTACT_EMAIL_FROM`. O link aponta para `${ADMIN_APP_URL}/redefinir-senha?token=...` e expira em 1 hora.
 
 ### Usuários
 
