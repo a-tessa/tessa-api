@@ -608,10 +608,22 @@
                   "value": "",
                   "description": "Busca case-insensitive no titulo.",
                   "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "Direcao: desc (mais recentes) | asc (mais antigos).",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "publishedAt",
+                  "description": "Coluna de data: publishedAt | updatedAt (default updatedAt).",
+                  "disabled": true
                 }
               ]
             },
-            "description": "Lista artigos para o admin, incluindo rascunhos. Ordena pelo mais recentemente atualizado. Requer autenticacao."
+            "description": "Lista artigos para o admin, incluindo rascunhos. Filtros opcionais: status, categorySlug, q (titulo), order, sortBy (publishedAt|updatedAt). Requer autenticacao."
           },
           "response": []
         },

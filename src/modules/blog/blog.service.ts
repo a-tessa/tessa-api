@@ -213,15 +213,24 @@ export async function listAdminBlogArticles(
   const skip = (query.page - 1) * query.perPage;
   const where = {
     ...(query.categorySlug ? { categorySlug: query.categorySlug } : {}),
-    ...(query.status ? { status: query.status } : {})
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.q ? { title: { contains: query.q, mode: "insensitive" as const } } : {})
   };
+
+  const orderBy =
+    query.sortBy === "publishedAt"
+      ? [
+          { publishedAt: { sort: query.order, nulls: "last" as const } },
+          { updatedAt: query.order }
+        ]
+      : { updatedAt: query.order };
 
   const [articles, total] = await Promise.all([
     prisma.blogArticle.findMany({
       where,
       skip,
       take: query.perPage,
-      orderBy: { updatedAt: "desc" },
+      orderBy,
       select: articleListSelect
     }),
     prisma.blogArticle.count({ where })
@@ -274,7 +283,6 @@ export async function updateBlogArticle(
       slug: true,
       headerImageUrl: true,
       status: true,
-      publishedAt: true,
       content: true
     }
   });
@@ -311,13 +319,9 @@ export async function updateBlogArticle(
     badRequest("Conteúdo é obrigatório para publicar o artigo.");
   }
 
-  let publishedAt: Date | null | undefined;
-  if (input.status !== undefined) {
-    if (input.status === "published" && existing.status !== "published") {
-      publishedAt = new Date();
-    } else if (input.status === "draft" && existing.status === "published") {
-      publishedAt = existing.publishedAt;
-    }
+  let publishedAt: Date | undefined;
+  if (input.status === "published" && existing.status !== "published") {
+    publishedAt = new Date();
   }
 
   const article = await prisma.blogArticle.update({

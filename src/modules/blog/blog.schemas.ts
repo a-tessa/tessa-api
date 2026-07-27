@@ -8,13 +8,17 @@ export const blogArticleSlugParamsSchema = z.object({
   slug: nonEmptyString
 });
 
+export const blogListSortBySchema = z.enum(["updatedAt", "publishedAt"]);
+
 export const blogListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(100).default(20),
   categorySlug: z.string().trim().optional(),
   status: blogArticleStatusSchema.optional(),
   q: z.string().trim().min(1).max(120).optional(),
-  order: z.enum(["asc", "desc"]).default("desc")
+  order: z.enum(["asc", "desc"]).default("desc"),
+  /** Admin list: which date column to sort by. Public list always uses publishedAt. */
+  sortBy: blogListSortBySchema.default("updatedAt")
 });
 
 export const createBlogArticleSchema = z
