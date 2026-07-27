@@ -1,9 +1,18 @@
 import { z } from "zod";
 import type { UserRole } from "../../types.js";
-import { bootstrapSchema, loginSchema } from "./auth.schemas.js";
+import {
+  bootstrapSchema,
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordSchema
+} from "./auth.schemas.js";
 
 export type BootstrapInput = z.infer<typeof bootstrapSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export type AuthSessionUserRecord = {
   id: string;
@@ -15,8 +24,6 @@ export type AuthSessionUserRecord = {
 };
 
 export type CurrentUserRecord = AuthSessionUserRecord & {
-  cpf: string | null;
-  phone: string | null;
   avatarUrl: string | null;
   isActive: boolean;
   createdAt: Date;
@@ -38,4 +45,8 @@ export type AuthSessionResponseDto = {
 
 export type CurrentUserResponseDto = {
   user: CurrentUserDto;
+};
+
+export type MessageResponseDto = {
+  message: string;
 };

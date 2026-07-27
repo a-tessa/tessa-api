@@ -224,7 +224,13 @@ Após o deploy e as migrations:
 
 - `POST /api/auth/bootstrap`
 - `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
 - `GET /api/auth/me`
+- `PATCH /api/auth/me`
+- `POST /api/auth/change-password`
+
+A recuperação de senha envia o link para o e-mail do administrador via SMTP (`CONTACT_EMAIL_FROM`). O link aponta para `${ADMIN_APP_URL}/redefinir-senha?token=...` e expira em 1 hora.
 
 ### Usuários
 

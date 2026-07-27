@@ -6,8 +6,21 @@ import type { AppBindings } from "../../types.js";
 import { parseUpdateUserProfileRequest } from "../users/users.profile.utils.js";
 import { updateUserProfile } from "../users/users.service.js";
 import { serializeAuthSessionResponse, serializeCurrentUserResponse } from "./auth.serializers.js";
-import { bootstrapSchema, loginSchema } from "./auth.schemas.js";
-import { bootstrapMasterUser, getCurrentUser, loginUser } from "./auth.service.js";
+import {
+  bootstrapSchema,
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordSchema
+} from "./auth.schemas.js";
+import {
+  bootstrapMasterUser,
+  changePassword,
+  getCurrentUser,
+  loginUser,
+  requestPasswordReset,
+  resetPassword
+} from "./auth.service.js";
 
 const authRateLimit = rateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 
@@ -26,6 +39,35 @@ authRouter.post("/login", authRateLimit, zValidator("json", loginSchema), async 
 
   return c.json(serializeAuthSessionResponse(session));
 });
+
+authRouter.post(
+  "/forgot-password",
+  authRateLimit,
+  zValidator("json", forgotPasswordSchema),
+  async (c) => {
+    const input = c.req.valid("json");
+    await requestPasswordReset(input);
+
+    return c.json({
+      message:
+        "Se o e-mail estiver cadastrado, enviaremos instruções para redefinir a senha."
+    });
+  }
+);
+
+authRouter.post(
+  "/reset-password",
+  authRateLimit,
+  zValidator("json", resetPasswordSchema),
+  async (c) => {
+    const input = c.req.valid("json");
+    await resetPassword(input);
+
+    return c.json({
+      message: "Senha redefinida com sucesso. Você já pode entrar com a nova senha."
+    });
+  }
+);
 
 authRouter.get("/me", requireAuth, async (c) => {
   const authUser = c.get("user");
@@ -46,3 +88,18 @@ authRouter.patch("/me", requireAuth, async (c) => {
 
   return c.json(serializeCurrentUserResponse(user));
 });
+
+authRouter.post(
+  "/change-password",
+  requireAuth,
+  zValidator("json", changePasswordSchema),
+  async (c) => {
+    const authUser = c.get("user");
+    const input = c.req.valid("json");
+    await changePassword(authUser.id, input);
+
+    return c.json({
+      message: "Senha alterada com sucesso."
+    });
+  }
+);

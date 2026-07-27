@@ -65,27 +65,31 @@ enum GalleryMediaKind {
 }
 
 model User {
-  id                   String                @id @default(cuid())
-  name                 String
-  email                String                @unique
-  passwordHash         String
-  role                 UserRole
-  cpf                  String?               @unique
-  phone                String?
-  avatarUrl            String?
-  avatarPathname       String?
-  isActive             Boolean               @default(true)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  pagesUpdated         LandingPage[]         @relation("LandingPageUpdatedBy")
-  pagesPublished       LandingPage[]         @relation("LandingPagePublishedBy")
-  createdAssets        Asset[]
-  blogArticles         BlogArticle[]         @relation("BlogArticleAuthor")
-  documents            Document[]            @relation("DocumentCreatedBy")
-  galleryMediaItems    GalleryMediaItem[]    @relation("GalleryMediaItemCreatedBy")
-  reviewedNpsResponses NpsResponse[]         @relation("NpsResponseReviewedBy")
-  reviewedTestimonials Testimonial[]         @relation("TestimonialReviewedBy")
-  instagramConnections InstagramConnection[] @relation("InstagramConnectionConnectedBy")
+  id                       String                @id @default(cuid())
+  name                     String
+  email                    String                @unique
+  passwordHash             String
+  role                     UserRole
+  cpf                      String?               @unique
+  phone                    String?
+  avatarUrl                String?
+  avatarPathname           String?
+  passwordResetTokenHash   String?
+  passwordResetExpiresAt   DateTime?
+  isActive                 Boolean               @default(true)
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  pagesUpdated             LandingPage[]         @relation("LandingPageUpdatedBy")
+  pagesPublished           LandingPage[]         @relation("LandingPagePublishedBy")
+  createdAssets            Asset[]
+  blogArticles             BlogArticle[]         @relation("BlogArticleAuthor")
+  documents                Document[]            @relation("DocumentCreatedBy")
+  galleryMediaItems        GalleryMediaItem[]    @relation("GalleryMediaItemCreatedBy")
+  reviewedNpsResponses     NpsResponse[]         @relation("NpsResponseReviewedBy")
+  reviewedTestimonials     Testimonial[]         @relation("TestimonialReviewedBy")
+  instagramConnections     InstagramConnection[] @relation("InstagramConnectionConnectedBy")
+
+  @@index([passwordResetTokenHash])
 }
 
 model LandingPage {

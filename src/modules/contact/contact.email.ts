@@ -1,36 +1,6 @@
-import nodemailer, { type Transporter } from "nodemailer";
 import { env } from "../../env.js";
+import { escapeHtml, isSmtpConfigured, sendMail } from "../../lib/mailer.js";
 import type { ContactRecord } from "./contact.types.js";
-
-let cachedTransporter: Transporter | null = null;
-
-function getSmtpTransporter(): Transporter | null {
-  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD) {
-    return null;
-  }
-
-  cachedTransporter ??= nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: env.SMTP_PORT === 465,
-    requireTLS: env.SMTP_PORT === 587,
-    auth: {
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASSWORD
-    }
-  });
-
-  return cachedTransporter;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
 
 function formatField(label: string, value: string | null | undefined): string {
   if (!value?.trim()) {
@@ -110,26 +80,17 @@ function buildContactEmailText(contact: ContactRecord): string {
 }
 
 export function isContactEmailConfigured(): boolean {
-  return Boolean(
-    env.SMTP_HOST &&
-      env.SMTP_USER &&
-      env.SMTP_PASSWORD &&
-      env.CONTACT_NOTIFICATION_EMAIL &&
-      env.CONTACT_EMAIL_FROM
-  );
+  return Boolean(isSmtpConfigured() && env.CONTACT_NOTIFICATION_EMAIL);
 }
 
 export async function sendContactNotificationEmail(contact: ContactRecord): Promise<void> {
-  const transporter = getSmtpTransporter();
-
-  if (!transporter || !env.CONTACT_NOTIFICATION_EMAIL || !env.CONTACT_EMAIL_FROM) {
+  if (!isContactEmailConfigured() || !env.CONTACT_NOTIFICATION_EMAIL) {
     return;
   }
 
   const subject = `[Site Tessa] Novo contato — ${contact.fullName} / ${contact.companyName}`;
 
-  await transporter.sendMail({
-    from: env.CONTACT_EMAIL_FROM,
+  await sendMail({
     to: env.CONTACT_NOTIFICATION_EMAIL,
     replyTo: contact.email,
     subject,
