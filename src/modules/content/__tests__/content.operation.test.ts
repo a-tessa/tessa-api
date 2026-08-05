@@ -268,7 +268,37 @@ describe("operation section content", () => {
     assert.equal(response.status, 401);
   });
 
-  it("rejects non-multipart bodies on the unit asset upload route", async () => {
+  it("requires authentication for blob upload-token and finalize routes", async () => {
+    process.env.DATABASE_URL ??= "postgresql://test:test@localhost:5432/test";
+    process.env.DATABASE_URL_UNPOOLED ??= process.env.DATABASE_URL;
+    process.env.JWT_SECRET ??= "test-jwt-secret-with-16-characters";
+    process.env.MASTER_SETUP_KEY ??= "test-setup-key";
+
+    const { adminContentRouter } = await import("../content.admin-router.js");
+
+    const tokenResponse = await adminContentRouter.request(
+      "/operation-section/assets/blob/upload-token",
+      { method: "POST", body: "{}" }
+    );
+    assert.equal(tokenResponse.status, 401);
+
+    const finalizeResponse = await adminContentRouter.request(
+      "/operation-section/assets/finalize",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          url: "https://store.public.blob.vercel-storage.com/landing-page/home/operation-section/staging/a.jpg",
+          pathname: "landing-page/home/operation-section/staging/a.jpg",
+          originalFilename: "a.jpg",
+          index: 0
+        })
+      }
+    );
+    assert.equal(finalizeResponse.status, 401);
+  });
+
+  it("rejects non-multipart bodies on the legacy unit asset upload route", async () => {
     process.env.DATABASE_URL ??= "postgresql://test:test@localhost:5432/test";
     process.env.DATABASE_URL_UNPOOLED ??= process.env.DATABASE_URL;
     process.env.JWT_SECRET ??= "test-jwt-secret-with-16-characters";

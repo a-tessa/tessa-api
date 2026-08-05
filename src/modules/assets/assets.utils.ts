@@ -39,6 +39,9 @@ export function buildHeroSectionImagePath(topicIndex: number, originalFilename: 
   );
 }
 
+export const OPERATION_SECTION_STAGING_PREFIX =
+  "landing-page/home/operation-section/staging/";
+
 export function buildOperationSectionImagePath(
   imageIndex: number,
   originalFilename: string
@@ -47,6 +50,18 @@ export function buildOperationSectionImagePath(
     ["landing-page", "home", "operation-section", `image-${imageIndex}`],
     originalFilename
   );
+}
+
+/** Staging path for client-direct Blob uploads (original bytes, before WebP convert). */
+export function buildOperationSectionStagingImagePath(originalFilename: string): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const filenameBase = getSafeFilenameBase(originalFilename);
+  const extension = extname(originalFilename).toLowerCase() || ".jpg";
+  const safeExtension = [".jpg", ".jpeg", ".png", ".webp"].includes(extension)
+    ? extension
+    : ".jpg";
+
+  return `${OPERATION_SECTION_STAGING_PREFIX}${timestamp}-${filenameBase}${safeExtension}`;
 }
 
 export function buildAboutSectionSideImagePath(originalFilename: string): string {

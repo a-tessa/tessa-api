@@ -34,6 +34,10 @@ function ensureBlobToken(): string {
   return env.BLOB_READ_WRITE_TOKEN;
 }
 
+export function ensureBlobConfigured(): string {
+  return ensureBlobToken();
+}
+
 function resolveAllowedImageMimeType(file: File): AllowedImageMimeType | null {
   const mimeTypeResult = allowedImageMimeTypeSchema.safeParse(file.type);
   if (mimeTypeResult.success) {

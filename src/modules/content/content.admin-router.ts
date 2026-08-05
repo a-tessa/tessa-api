@@ -1,12 +1,16 @@
 import { zValidator } from "@hono/zod-validator";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { env } from "../../env.js";
 import { requireAuth, requireRole } from "../../middlewares/auth.js";
 import { badRequest, payloadTooLarge } from "../../lib/http.js";
 import type { AppBindings } from "../../types.js";
-import { heroSectionImageAltSchema } from "../assets/assets.schemas.js";
-import { normalizeOptionalText } from "../assets/assets.utils.js";
+import { allowedImageMimeTypes, heroSectionImageAltSchema } from "../assets/assets.schemas.js";
+import {
+  normalizeOptionalText,
+  OPERATION_SECTION_STAGING_PREFIX
+} from "../assets/assets.utils.js";
 import { collectionConfigs, servicesPagesConfig, singularSectionConfigs } from "./content.config.js";
 import {
   serializeAdminContentResponse,
@@ -66,6 +70,7 @@ import {
   heroSectionSlideParamsSchema,
   heroSectionUpdateInputSchema,
   MAX_OPERATION_SECTION_IMAGES,
+  operationSectionAssetFinalizeSchema,
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
   operationSectionMutationSchema,
@@ -75,7 +80,12 @@ import {
   servicesPageMultipartInputSchema,
   servicesPageMutationSchema
 } from "./content.schemas.js";
-import { prepareImageAsset, uploadPublicAsset } from "../assets/assets.service.js";
+import {
+  deleteBlobAsset,
+  ensureBlobConfigured,
+  prepareImageAsset,
+  uploadPublicAsset
+} from "../assets/assets.service.js";
 import {
   buildAboutSectionSideImagePath,
   buildOperationSectionImagePath,
@@ -730,6 +740,124 @@ adminContentRouter.delete(
     const value = await deleteOperationSectionImage(imageIndex, user.id);
 
     return c.json(serializeSectionResponse("operationSection", value));
+  }
+);
+
+adminContentRouter.post("/operation-section/assets/blob/upload-token", async (c) => {
+  const token = ensureBlobConfigured();
+  const body = (await c.req.json()) as HandleUploadBody;
+
+  try {
+    const result = await handleUpload({
+      body,
+      request: c.req.raw,
+      token,
+      onBeforeGenerateToken: async (pathname) => {
+        if (!pathname.startsWith(OPERATION_SECTION_STAGING_PREFIX)) {
+          badRequest("Pathname do upload inválido.");
+        }
+
+        return {
+          allowedContentTypes: [...allowedImageMimeTypes],
+          maximumSizeInBytes: MAX_OPERATION_SECTION_IMAGE_BYTES,
+          addRandomSuffix: false
+        };
+      },
+      onUploadCompleted: async () => {
+        // Finalize converts staging → WebP via POST .../assets/finalize.
+      }
+    });
+
+    return c.json(result);
+  } catch (error) {
+    if (error instanceof Error && "getResponse" in error) {
+      throw error;
+    }
+
+    const message = error instanceof Error ? error.message : "Falha no upload.";
+    badRequest(message);
+  }
+});
+
+adminContentRouter.post(
+  "/operation-section/assets/finalize",
+  zValidator("json", operationSectionAssetFinalizeSchema),
+  async (c) => {
+    const { url, pathname, originalFilename, index } = c.req.valid("json");
+
+    if (!pathname.startsWith(OPERATION_SECTION_STAGING_PREFIX)) {
+      badRequest("Pathname de staging inválido.");
+    }
+
+    let stagingUrl: URL;
+    try {
+      stagingUrl = new URL(url);
+    } catch {
+      badRequest("URL de staging inválida.");
+    }
+
+    if (!stagingUrl.hostname.endsWith("blob.vercel-storage.com")) {
+      badRequest("URL de staging inválida.");
+    }
+
+    if (!stagingUrl.pathname.includes(pathname) && !url.includes(pathname)) {
+      badRequest("URL e pathname de staging não conferem.");
+    }
+
+    let stagingResponse: Response;
+    try {
+      stagingResponse = await fetch(url);
+    } catch {
+      badRequest("Não foi possível baixar a imagem enviada.");
+    }
+
+    if (!stagingResponse.ok) {
+      badRequest("Não foi possível baixar a imagem enviada.");
+    }
+
+    const stagingBytes = Buffer.from(await stagingResponse.arrayBuffer());
+    if (stagingBytes.byteLength === 0) {
+      badRequest("Arquivo vazio.");
+    }
+
+    if (stagingBytes.byteLength > MAX_OPERATION_SECTION_IMAGE_BYTES) {
+      payloadTooLarge(
+        `Arquivo maior do que o permitido. Limite: ${MAX_OPERATION_SECTION_IMAGE_BYTES} bytes.`
+      );
+    }
+
+    const contentTypeHeader = stagingResponse.headers.get("content-type") ?? "";
+    const mimeType = allowedImageMimeTypes.find((type) => contentTypeHeader.startsWith(type))
+      ?? (originalFilename.toLowerCase().endsWith(".png")
+        ? "image/png"
+        : originalFilename.toLowerCase().endsWith(".webp")
+          ? "image/webp"
+          : "image/jpeg");
+
+    const stagingFile = new File([new Uint8Array(stagingBytes)], originalFilename, {
+      type: mimeType
+    });
+    const preparedAsset = await prepareImageAsset(stagingFile);
+    const uploadedAsset = await uploadPublicAsset(
+      buildOperationSectionImagePath(index, preparedAsset.originalFilename),
+      preparedAsset
+    );
+
+    await deleteBlobAsset(url).catch(() => {
+      // Best-effort cleanup of the staging object.
+    });
+
+    return c.json(
+      {
+        url: uploadedAsset.url,
+        pathname: uploadedAsset.pathname,
+        mimeType: preparedAsset.contentType,
+        sizeBytes: preparedAsset.sizeBytes,
+        originalFilename: preparedAsset.originalFilename,
+        index
+      },
+      201
+    );
   }
 );
 
