@@ -8,6 +8,12 @@ function daysAgo(days: number): Date {
 }
 
 /**
+ * Google's public default avatar — real host (`lh3.googleusercontent.com`) so
+ * the landing hotlink path is exercised, without inventing IDs that 400.
+ */
+const STUB_GOOGLE_AVATAR = "https://lh3.googleusercontent.com/a/default-user";
+
+/**
  * Realistic fixtures exercising every display path decided during planning:
  * long 5-star reviews, a mid rating, an honest negative, and a star-only
  * review with no text. Used until live Business Profile API access is granted.
@@ -17,7 +23,7 @@ const STUB_REVIEWS: NormalizedGoogleReview[] = [
     externalId: "stub-google-review-1",
     authorName: "Marcos Andrade",
     authorUrl: "https://www.google.com/maps/contrib/stub1",
-    profileImageUrl: "https://lh3.googleusercontent.com/a/stub-avatar-1",
+    profileImageUrl: STUB_GOOGLE_AVATAR,
     rating: 5,
     comment:
       "Contratamos a Tessa para a estrutura metálica do nosso barracão e o resultado superou as expectativas. Prazo cumprido à risca e acabamento impecável. Recomendo demais!",
@@ -41,7 +47,7 @@ const STUB_REVIEWS: NormalizedGoogleReview[] = [
     externalId: "stub-google-review-3",
     authorName: "Ricardo Nunes",
     authorUrl: null,
-    profileImageUrl: "https://lh3.googleusercontent.com/a/stub-avatar-3",
+    profileImageUrl: STUB_GOOGLE_AVATAR,
     rating: 4,
     comment:
       "Bom trabalho no geral, estrutura sólida. Tirei uma estrela por um pequeno atraso na entrega dos documentos, mas resolveram rápido.",
@@ -53,7 +59,7 @@ const STUB_REVIEWS: NormalizedGoogleReview[] = [
     externalId: "stub-google-review-4",
     authorName: "Fernanda Lima",
     authorUrl: "https://www.google.com/maps/contrib/stub4",
-    profileImageUrl: "https://lh3.googleusercontent.com/a/stub-avatar-4",
+    profileImageUrl: STUB_GOOGLE_AVATAR,
     rating: 2,
     comment:
       "A comunicação durante a obra poderia ter sido melhor. O produto final é bom, mas o acompanhamento deixou a desejar.",

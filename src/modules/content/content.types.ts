@@ -29,6 +29,7 @@ import {
   operationSectionMultipartInputSchema,
   representantInputSchema,
   representantSchema,
+  resultsSectionSchema,
   servicePageSlugParamsSchema,
   sceneryItemSchema,
   scenerySectionSchema,
@@ -55,6 +56,7 @@ export type OperationSection = z.infer<typeof operationSectionSchema>;
 export type OperationSectionWrite = z.infer<typeof operationSectionWriteSchema>;
 export type OperationSectionMutationInput = z.infer<typeof operationSectionMutationSchema>;
 export type OperationSectionMultipartInput = z.infer<typeof operationSectionMultipartInputSchema>;
+export type ResultsSection = z.infer<typeof resultsSectionSchema>;
 export type NpsItem = z.infer<typeof npsItemSchema>;
 export type ServicesPageItem = z.infer<typeof servicesPageItemSchema>;
 export type ServicesPageMutationInput = z.infer<typeof servicesPageMutationSchema>;
@@ -82,6 +84,7 @@ export type SingularSectionKey =
   | "industrySection"
   | "aboutSection"
   | "operationSection"
+  | "resultsSection"
   | "companyInformation";
 
 export type CollectionKey = "nps" | "representantsBase" | "categories";

@@ -10,6 +10,7 @@ import {
   npsItemSchema,
   operationSectionSchema,
   representantInputSchema,
+  resultsSectionSchema,
   servicesPageItemSchema
 } from "./content.schemas.js";
 import type { CollectionConfig, SingularSectionConfig } from "./content.types.js";
@@ -38,6 +39,12 @@ export const singularSectionConfigs = [
     path: "operation-section",
     label: "Seção de operação",
     schema: operationSectionSchema
+  },
+  {
+    key: "resultsSection",
+    path: "results-section",
+    label: "Resultados",
+    schema: resultsSectionSchema
   },
   {
     key: "companyInformation",

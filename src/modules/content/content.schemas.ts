@@ -38,7 +38,7 @@ export const operationSectionAssetFinalizeSchema = z.object({
 });
 
 export const MAX_HERO_SLIDES = 3;
-export const MAX_HERO_TITLE_LENGTH = 25;
+export const MAX_HERO_TITLE_LENGTH = 40;
 export const MAX_HERO_DESCRIPTION_LENGTH = 200;
 
 const heroTopicBaseSchema = z.object({
@@ -574,11 +574,20 @@ export const headingImagePageParamsSchema = z.object({
   pageKey: headingImagePageKeySchema
 });
 
+export const RESULTS_SECTION_STAT_COUNT = 3;
+
+export const resultsSectionSchema = z.object({
+  values: z
+    .array(z.number().int().nonnegative())
+    .length(RESULTS_SECTION_STAT_COUNT)
+});
+
 export const draftContentSchema = z.object({
   heroSection: heroSectionStoredSchema.optional(),
   industrySection: industrySectionSchema.optional(),
   aboutSection: aboutSectionSchema.optional(),
   operationSection: operationSectionSchema.optional(),
+  resultsSection: resultsSectionSchema.optional(),
   headingImages: headingImagesSchema.optional(),
   nps: z.array(draftNpsItemSchema).optional(),
   servicesPages: z.array(draftServicesPageItemSchema).optional(),
