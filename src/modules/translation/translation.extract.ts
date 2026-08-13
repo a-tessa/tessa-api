@@ -89,6 +89,24 @@ function walkLanding(content: Json, resolve: Resolver): Json {
   // `headingImages` (URLs) is intentionally left untouched: it must never be sent
   // to translation.
 
+  if (isObject(clone.footerSection)) {
+    const footer = clone.footerSection;
+    if (nonEmpty(footer.newsletterTitle)) {
+      footer.newsletterTitle = resolve(
+        "footer.newsletterTitle",
+        footer.newsletterTitle,
+        "plain"
+      );
+    }
+    if (nonEmpty(footer.newsletterSub)) {
+      footer.newsletterSub = resolve(
+        "footer.newsletterSub",
+        footer.newsletterSub,
+        "plain"
+      );
+    }
+  }
+
   if (isObject(clone.operationSection)) {
     for (const [index, image] of asObjectArray(clone.operationSection.images).entries()) {
       if (nonEmpty(image.alt)) {

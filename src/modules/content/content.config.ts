@@ -11,6 +11,7 @@ import {
   operationSectionSchema,
   representantInputSchema,
   resultsSectionSchema,
+  footerSectionSchema,
   servicesPageItemSchema
 } from "./content.schemas.js";
 import type { CollectionConfig, SingularSectionConfig } from "./content.types.js";
@@ -45,6 +46,12 @@ export const singularSectionConfigs = [
     path: "results-section",
     label: "Resultados",
     schema: resultsSectionSchema
+  },
+  {
+    key: "footerSection",
+    path: "footer-section",
+    label: "Rodapé",
+    schema: footerSectionSchema
   },
   {
     key: "companyInformation",

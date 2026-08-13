@@ -582,12 +582,21 @@ export const resultsSectionSchema = z.object({
     .length(RESULTS_SECTION_STAT_COUNT)
 });
 
+export const MAX_FOOTER_NEWSLETTER_TITLE_LENGTH = 80;
+export const MAX_FOOTER_NEWSLETTER_SUB_LENGTH = 120;
+
+export const footerSectionSchema = z.object({
+  newsletterTitle: nonEmptyString.max(MAX_FOOTER_NEWSLETTER_TITLE_LENGTH),
+  newsletterSub: nonEmptyString.max(MAX_FOOTER_NEWSLETTER_SUB_LENGTH)
+});
+
 export const draftContentSchema = z.object({
   heroSection: heroSectionStoredSchema.optional(),
   industrySection: industrySectionSchema.optional(),
   aboutSection: aboutSectionSchema.optional(),
   operationSection: operationSectionSchema.optional(),
   resultsSection: resultsSectionSchema.optional(),
+  footerSection: footerSectionSchema.optional(),
   headingImages: headingImagesSchema.optional(),
   nps: z.array(draftNpsItemSchema).optional(),
   servicesPages: z.array(draftServicesPageItemSchema).optional(),
