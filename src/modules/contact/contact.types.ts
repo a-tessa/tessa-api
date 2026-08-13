@@ -4,6 +4,7 @@ import {
   contactIdParamsSchema,
   contactListQuerySchema,
   createContactSchema,
+  replaceContactNotificationRecipientsSchema,
   updateContactStatusSchema
 } from "./contact.schemas.js";
 
@@ -11,6 +12,9 @@ export type CreateContactInput = z.infer<typeof createContactSchema>;
 export type ContactListQuery = z.infer<typeof contactListQuerySchema>;
 export type ContactIdParams = z.infer<typeof contactIdParamsSchema>;
 export type UpdateContactStatusInput = z.infer<typeof updateContactStatusSchema>;
+export type ReplaceContactNotificationRecipientsInput = z.infer<
+  typeof replaceContactNotificationRecipientsSchema
+>;
 
 export type ContactRecord = {
   id: string;
@@ -51,4 +55,30 @@ export type ContactStatsDto = ContactStatsRecord;
 
 export type ContactStatsResponseDto = {
   stats: ContactStatsDto;
+};
+
+export type ContactNotificationRecipientRecord = {
+  id: string;
+  email: string;
+  name: string | null;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ContactNotificationRecipientDto = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
+/**
+ * `fallbackEmail` é o destino usado enquanto a lista está vazia, definido por
+ * `CONTACT_NOTIFICATION_EMAIL`. `isEmailDeliveryConfigured` indica se o
+ * ambiente consegue de fato enviar e-mails.
+ */
+export type ContactNotificationRecipientsResponseDto = {
+  recipients: ContactNotificationRecipientDto[];
+  fallbackEmail: string;
+  isEmailDeliveryConfigured: boolean;
 };

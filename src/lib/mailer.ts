@@ -55,7 +55,7 @@ export function escapeHtml(value: string): string {
 }
 
 export async function sendMail(input: {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text: string;

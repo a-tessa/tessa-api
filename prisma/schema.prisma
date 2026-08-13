@@ -151,6 +151,18 @@ model Contact {
   @@index([createdAt])
 }
 
+/// Caixas que recebem a notificação de cada novo contato enviado pelo site.
+model ContactNotificationRecipient {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
 model NpsResponse {
   id           String            @id @default(cuid())
   authorName   String

@@ -3,6 +3,9 @@ import type {
   ContactDto,
   ContactListResponseDto,
   ContactListResult,
+  ContactNotificationRecipientDto,
+  ContactNotificationRecipientRecord,
+  ContactNotificationRecipientsResponseDto,
   ContactRecord,
   ContactResponseDto,
   ContactStatsDto,
@@ -49,5 +52,27 @@ export function serializeContactStats(stats: ContactStatsRecord): ContactStatsDt
 export function serializeContactStatsResponse(stats: ContactStatsRecord): ContactStatsResponseDto {
   return {
     stats: serializeContactStats(stats)
+  };
+}
+
+export function serializeContactNotificationRecipient(
+  recipient: ContactNotificationRecipientRecord
+): ContactNotificationRecipientDto {
+  return {
+    id: recipient.id,
+    email: recipient.email,
+    name: recipient.name
+  };
+}
+
+export function serializeContactNotificationRecipientsResponse(input: {
+  recipients: ContactNotificationRecipientRecord[];
+  fallbackEmail: string;
+  isEmailDeliveryConfigured: boolean;
+}): ContactNotificationRecipientsResponseDto {
+  return {
+    recipients: input.recipients.map(serializeContactNotificationRecipient),
+    fallbackEmail: input.fallbackEmail,
+    isEmailDeliveryConfigured: input.isEmailDeliveryConfigured
   };
 }

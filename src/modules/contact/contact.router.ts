@@ -1,11 +1,18 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { env } from "../../env.js";
+import { isEmailConfigured } from "../../lib/mailer.js";
 import { requireAuth, requireRole } from "../../middlewares/auth.js";
 import { rateLimiter } from "../../middlewares/rate-limit.js";
 import type { AppBindings } from "../../types.js";
 import { sendContactNotificationEmail } from "./contact.email.js";
 import {
+  listContactNotificationRecipients,
+  replaceContactNotificationRecipients
+} from "./contact.notification-recipients.service.js";
+import {
   serializeContactListResponse,
+  serializeContactNotificationRecipientsResponse,
   serializeContactResponse,
   serializeContactStatsResponse
 } from "./contact.serializers.js";
@@ -13,6 +20,7 @@ import {
   contactIdParamsSchema,
   contactListQuerySchema,
   createContactSchema,
+  replaceContactNotificationRecipientsSchema,
   updateContactStatusSchema
 } from "./contact.schemas.js";
 import {
@@ -63,6 +71,36 @@ contactRouter.get("/admin/stats", async (c) => {
 
   return c.json(serializeContactStatsResponse(stats));
 });
+
+// Registrado antes de "/admin/:id" para não ser capturado pela rota dinâmica.
+contactRouter.get("/admin/notification-recipients", async (c) => {
+  const recipients = await listContactNotificationRecipients();
+
+  return c.json(
+    serializeContactNotificationRecipientsResponse({
+      recipients,
+      fallbackEmail: env.CONTACT_NOTIFICATION_EMAIL,
+      isEmailDeliveryConfigured: isEmailConfigured()
+    })
+  );
+});
+
+contactRouter.put(
+  "/admin/notification-recipients",
+  zValidator("json", replaceContactNotificationRecipientsSchema),
+  async (c) => {
+    const input = c.req.valid("json");
+    const recipients = await replaceContactNotificationRecipients(input);
+
+    return c.json(
+      serializeContactNotificationRecipientsResponse({
+        recipients,
+        fallbackEmail: env.CONTACT_NOTIFICATION_EMAIL,
+        isEmailDeliveryConfigured: isEmailConfigured()
+      })
+    );
+  }
+);
 
 contactRouter.get(
   "/admin/:id",

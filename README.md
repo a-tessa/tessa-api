@@ -53,6 +53,8 @@ As variáveis de tradução são opcionais para subir a API: sem `OPENAI_API_KEY
 
 As variáveis de e-mail também são opcionais: sem `RESEND_API_KEY` (preferencial) ou SMTP + `CONTACT_EMAIL_FROM`, o formulário de contato continua sendo salvo no banco e o reset de senha não envia e-mail. Com Resend em modo de teste (`onboarding@resend.dev`), só é possível enviar para o e-mail da conta Resend até verificar um domínio próprio.
 
+`CONTACT_NOTIFICATION_EMAIL` deixou de ser o único destino do formulário de contato: quem recebe a notificação é a lista cadastrada em **Moderação → Contatos** no painel, na seção *Destinatários das notificações* (`GET`/`PUT /api/contacts/admin/notification-recipients`, até 10 endereços). A variável passou a ser o destino de reserva, usado só enquanto a lista estiver vazia, para nenhum contato ficar sem aviso.
+
 As variáveis do Instagram são opcionais para subir a API, mas obrigatórias para conectar a conta no painel. Sem elas, a página **Conteúdo → Instagram** indica que a integração não está configurada. O guia completo está em [docs/instagram-integration.md](./docs/instagram-integration.md).
 ## Scripts
 

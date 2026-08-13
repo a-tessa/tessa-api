@@ -31,3 +31,44 @@ export const contactIdParamsSchema = z.object({
 export const updateContactStatusSchema = z.object({
   hasBeenContacted: z.boolean()
 });
+
+export const MAX_CONTACT_NOTIFICATION_RECIPIENTS = 10;
+export const MAX_CONTACT_NOTIFICATION_RECIPIENT_NAME_LENGTH = 120;
+export const MAX_CONTACT_NOTIFICATION_RECIPIENT_EMAIL_LENGTH = 255;
+
+export const contactNotificationRecipientInputSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Informe um e-mail válido.")
+    .max(MAX_CONTACT_NOTIFICATION_RECIPIENT_EMAIL_LENGTH),
+  name: z
+    .string()
+    .trim()
+    .max(MAX_CONTACT_NOTIFICATION_RECIPIENT_NAME_LENGTH)
+    .nullish()
+    .transform((value) => (value && value.length > 0 ? value : null))
+});
+
+export const replaceContactNotificationRecipientsSchema = z.object({
+  recipients: z
+    .array(contactNotificationRecipientInputSchema)
+    .max(MAX_CONTACT_NOTIFICATION_RECIPIENTS)
+    .superRefine((recipients, ctx) => {
+      const seen = new Set<string>();
+
+      recipients.forEach((recipient, index) => {
+        if (seen.has(recipient.email)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [index, "email"],
+            message: "Este e-mail já está na lista."
+          });
+          return;
+        }
+
+        seen.add(recipient.email);
+      });
+    })
+});

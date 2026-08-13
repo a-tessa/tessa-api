@@ -1,5 +1,6 @@
 import { env } from "../../env.js";
 import { escapeHtml, isEmailConfigured, sendMail } from "../../lib/mailer.js";
+import { listContactNotificationRecipients } from "./contact.notification-recipients.service.js";
 import type { ContactRecord } from "./contact.types.js";
 
 function formatField(label: string, value: string | null | undefined): string {
@@ -79,19 +80,44 @@ function buildContactEmailText(contact: ContactRecord): string {
   return lines.join("\n");
 }
 
-export function isContactEmailConfigured(): boolean {
-  return Boolean(isEmailConfigured() && env.CONTACT_NOTIFICATION_EMAIL);
+/**
+ * Destinos cadastrados no admin. Sem nenhum cadastrado, cai no endereço de
+ * `CONTACT_NOTIFICATION_EMAIL` para nunca deixar um contato sem aviso.
+ */
+export async function resolveContactNotificationRecipients(): Promise<string[]> {
+  const recipients = await listContactNotificationRecipients();
+
+  if (recipients.length > 0) {
+    return recipients.map((recipient) => recipient.email);
+  }
+
+  return env.CONTACT_NOTIFICATION_EMAIL ? [env.CONTACT_NOTIFICATION_EMAIL] : [];
+}
+
+export async function isContactEmailConfigured(): Promise<boolean> {
+  if (!isEmailConfigured()) {
+    return false;
+  }
+
+  const recipients = await resolveContactNotificationRecipients();
+  return recipients.length > 0;
 }
 
 export async function sendContactNotificationEmail(contact: ContactRecord): Promise<void> {
-  if (!isContactEmailConfigured() || !env.CONTACT_NOTIFICATION_EMAIL) {
+  if (!isEmailConfigured()) {
+    return;
+  }
+
+  const to = await resolveContactNotificationRecipients();
+
+  if (to.length === 0) {
     return;
   }
 
   const subject = `[Site Tessa] Novo contato — ${contact.fullName} / ${contact.companyName}`;
 
   await sendMail({
-    to: env.CONTACT_NOTIFICATION_EMAIL,
+    to,
     replyTo: contact.email,
     subject,
     html: buildContactEmailHtml(contact),
