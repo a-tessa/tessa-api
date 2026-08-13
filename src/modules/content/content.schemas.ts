@@ -488,17 +488,45 @@ export const draftClientItemSchema = clientItemSchema.extend({
   id: nonEmptyString.optional()
 });
 
+export const MAX_COMPANY_NAME_LENGTH = 160;
+export const MAX_COMPANY_CNPJ_LENGTH = 20;
+export const MAX_COMPANY_ADDRESS_LENGTH = 300;
+export const MAX_COMPANY_ZIP_CODE_LENGTH = 12;
+export const MAX_COMPANY_EMAIL_LENGTH = 255;
+export const MAX_COMPANY_PHONE_LENGTH = 40;
+export const MIN_COMPANY_PHONE_CONTACTS = 1;
+export const MAX_COMPANY_PHONE_CONTACTS = 5;
+export const MIN_WHATSAPP_DIGITS = 10;
+export const MAX_WHATSAPP_DIGITS = 15;
+
+function hasValidWhatsappDigits(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  return (
+    digits.length >= MIN_WHATSAPP_DIGITS && digits.length <= MAX_WHATSAPP_DIGITS
+  );
+}
+
+export const companyWhatsappSchema = nonEmptyString
+  .max(MAX_COMPANY_PHONE_LENGTH)
+  .refine(hasValidWhatsappDigits, {
+    message: "WhatsApp precisa incluir DDI e número (10 a 15 dígitos)."
+  });
+
 export const companyInformationSchema = z.object({
-  name: nonEmptyString,
-  cnpj: nonEmptyString,
-  address: nonEmptyString,
-  zipCode: nonEmptyString,
-  email: nonEmptyString,
-  phoneContacts: z.array(
-    z.object({
-      phone: nonEmptyString
-    })
-  )
+  name: nonEmptyString.max(MAX_COMPANY_NAME_LENGTH),
+  cnpj: nonEmptyString.max(MAX_COMPANY_CNPJ_LENGTH),
+  address: nonEmptyString.max(MAX_COMPANY_ADDRESS_LENGTH),
+  zipCode: nonEmptyString.max(MAX_COMPANY_ZIP_CODE_LENGTH),
+  email: nonEmptyString.email().max(MAX_COMPANY_EMAIL_LENGTH),
+  whatsapp: companyWhatsappSchema.optional(),
+  phoneContacts: z
+    .array(
+      z.object({
+        phone: nonEmptyString.max(MAX_COMPANY_PHONE_LENGTH)
+      })
+    )
+    .min(MIN_COMPANY_PHONE_CONTACTS)
+    .max(MAX_COMPANY_PHONE_CONTACTS)
 });
 
 export const draftNpsItemSchema = npsItemSchema.extend({

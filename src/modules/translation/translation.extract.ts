@@ -89,6 +89,9 @@ function walkLanding(content: Json, resolve: Resolver): Json {
   // `headingImages` (URLs) is intentionally left untouched: it must never be sent
   // to translation.
 
+  // `companyInformation` (legal name, CNPJ, address, email, phones, WhatsApp) is
+  // intentionally left untouched: it must never be sent to translation.
+
   if (isObject(clone.footerSection)) {
     const footer = clone.footerSection;
     if (nonEmpty(footer.newsletterTitle)) {

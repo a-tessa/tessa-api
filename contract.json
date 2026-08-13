@@ -89,6 +89,7 @@
       "address": "string",
       "zipCode": "string",
       "email": "string",
+      "whatsapp": "string",
       "phoneContacts": [
         {
           "phone": "string"

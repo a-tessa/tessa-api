@@ -1530,7 +1530,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Tessa LTDA\",\n  \"cnpj\": \"00.000.000/0001-00\",\n  \"address\": \"Rua Exemplo, 123\",\n  \"zipCode\": \"01000-000\",\n  \"email\": \"contato@tessa.com\",\n  \"phoneContacts\": [\n    {\n      \"phone\": \"+55 11 4000-0000\"\n    }\n  ]\n}"
+                  "raw": "{\n  \"name\": \"Tessa LTDA\",\n  \"cnpj\": \"00.000.000/0001-00\",\n  \"address\": \"Rua Exemplo, 123\",\n  \"zipCode\": \"01000-000\",\n  \"email\": \"contato@tessa.com\",\n  \"whatsapp\": \"+55 11 99999-0000\",\n  \"phoneContacts\": [\n    {\n      \"phone\": \"+55 11 4000-0000\"\n    }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/company-information",
@@ -1563,7 +1563,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Tessa LTDA Atualizada\",\n  \"cnpj\": \"00.000.000/0001-00\",\n  \"address\": \"Avenida Exemplo, 456\",\n  \"zipCode\": \"02000-000\",\n  \"email\": \"contato@tessa.com\",\n  \"phoneContacts\": [\n    {\n      \"phone\": \"+55 11 5000-0000\"\n    }\n  ]\n}"
+                  "raw": "{\n  \"name\": \"Tessa LTDA Atualizada\",\n  \"cnpj\": \"00.000.000/0001-00\",\n  \"address\": \"Avenida Exemplo, 456\",\n  \"zipCode\": \"02000-000\",\n  \"email\": \"contato@tessa.com\",\n  \"whatsapp\": \"+55 11 98888-0000\",\n  \"phoneContacts\": [\n    {\n      \"phone\": \"+55 11 5000-0000\"\n    }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/content/admin/company-information",
