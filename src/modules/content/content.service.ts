@@ -1015,7 +1015,9 @@ async function saveOperationSectionContent(
     images: requestedImages.map((image, index) => ({
       url: uploadedAssets.get(index)?.url ?? image.url ?? currentImages[index]?.url ?? "",
       alt: image.alt ?? currentImages[index]?.alt,
-      caption: image.caption ?? currentImages[index]?.caption
+      caption: Array.isArray(input.images)
+        ? image.caption
+        : image.caption ?? currentImages[index]?.caption
     }))
   });
 

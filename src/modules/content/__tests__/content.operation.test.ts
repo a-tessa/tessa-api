@@ -223,6 +223,29 @@ describe("operation section content", () => {
     ]);
   });
 
+  it("does not revive a removed caption from a stale translation map", () => {
+    const localized = applyLandingItems(
+      {
+        operationSection: {
+          images: [makeImage(0)]
+        }
+      },
+      {
+        "operation.image.0.alt": "Alternative text 0",
+        "operation.image.0.caption": "Stale caption"
+      }
+    );
+
+    assert.deepEqual(localized.operationSection, {
+      images: [
+        {
+          url: "https://cdn.example.com/operations/image-0.webp",
+          alt: "Alternative text 0"
+        }
+      ]
+    });
+  });
+
   it("applies localized alt/caption and falls back to Portuguese when missing", () => {
     const operationSection = {
       images: [

@@ -295,3 +295,43 @@ describe("operation section published asset safety", () => {
     assert.equal(harness.getAssets().some((asset) => asset.url === removedUrl), true);
   });
 });
+
+describe("operation section caption updates", () => {
+  it("clears a previously saved optional caption when the next save omits it", async () => {
+    const harness = await createOperationHarness();
+    const withCaption = harness.publishedImages.map((image, index) =>
+      index === 0 ? { ...image, caption: "Legenda da operação" } : image
+    );
+
+    const saveWithCaption = await harness.adminContentRouter.request("/operation-section", {
+      method: "PUT",
+      headers: harness.headers,
+      body: JSON.stringify({ images: withCaption })
+    });
+    assert.equal(saveWithCaption.status, 200);
+
+    const savedWithCaption = (await saveWithCaption.json()) as {
+      operationSection: { images: Array<{ caption?: string }> };
+    };
+    assert.equal(savedWithCaption.operationSection.images[0]?.caption, "Legenda da operação");
+
+    const withoutCaption = withCaption.map((image, index) =>
+      index === 0 ? { url: image.url, alt: image.alt } : image
+    );
+    const saveWithoutCaption = await harness.adminContentRouter.request("/operation-section", {
+      method: "PUT",
+      headers: harness.headers,
+      body: JSON.stringify({ images: withoutCaption })
+    });
+    assert.equal(saveWithoutCaption.status, 200);
+
+    const savedWithoutCaption = (await saveWithoutCaption.json()) as {
+      operationSection: { images: Array<{ caption?: string }> };
+    };
+    assert.equal(savedWithoutCaption.operationSection.images[0]?.caption, undefined);
+    assert.equal(
+      Object.hasOwn(savedWithoutCaption.operationSection.images[0] ?? {}, "caption"),
+      false
+    );
+  });
+});
