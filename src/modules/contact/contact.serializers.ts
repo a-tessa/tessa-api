@@ -10,7 +10,9 @@ import type {
   ContactResponseDto,
   ContactStatsDto,
   ContactStatsRecord,
-  ContactStatsResponseDto
+  ContactStatsResponseDto,
+  SuggestedContactNotificationUserDto,
+  SuggestedContactNotificationUserRecord
 } from "./contact.types.js";
 
 export function serializeContact(contact: ContactRecord): ContactDto {
@@ -65,13 +67,25 @@ export function serializeContactNotificationRecipient(
   };
 }
 
+export function serializeSuggestedContactNotificationUser(
+  user: SuggestedContactNotificationUserRecord
+): SuggestedContactNotificationUserDto {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email
+  };
+}
+
 export function serializeContactNotificationRecipientsResponse(input: {
   recipients: ContactNotificationRecipientRecord[];
+  suggestedUsers: SuggestedContactNotificationUserRecord[];
   fallbackEmail: string;
   isEmailDeliveryConfigured: boolean;
 }): ContactNotificationRecipientsResponseDto {
   return {
     recipients: input.recipients.map(serializeContactNotificationRecipient),
+    suggestedUsers: input.suggestedUsers.map(serializeSuggestedContactNotificationUser),
     fallbackEmail: input.fallbackEmail,
     isEmailDeliveryConfigured: input.isEmailDeliveryConfigured
   };

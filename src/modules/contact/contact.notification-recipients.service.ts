@@ -1,7 +1,8 @@
 import { prisma } from "../../lib/prisma.js";
 import type {
   ContactNotificationRecipientRecord,
-  ReplaceContactNotificationRecipientsInput
+  ReplaceContactNotificationRecipientsInput,
+  SuggestedContactNotificationUserRecord
 } from "./contact.types.js";
 
 const recipientSelect = {
@@ -21,6 +22,22 @@ export async function listContactNotificationRecipients(): Promise<
   return prisma.contactNotificationRecipient.findMany({
     orderBy: [...recipientOrderBy],
     select: recipientSelect
+  });
+}
+
+const suggestedUserSelect = {
+  id: true,
+  name: true,
+  email: true
+} as const;
+
+export async function listSuggestedContactNotificationUsers(): Promise<
+  SuggestedContactNotificationUserRecord[]
+> {
+  return prisma.user.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+    select: suggestedUserSelect
   });
 }
 

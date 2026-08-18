@@ -8,6 +8,7 @@ import type { AppBindings } from "../../types.js";
 import { sendContactNotificationEmail } from "./contact.email.js";
 import {
   listContactNotificationRecipients,
+  listSuggestedContactNotificationUsers,
   replaceContactNotificationRecipients
 } from "./contact.notification-recipients.service.js";
 import {
@@ -55,6 +56,18 @@ contactRouter.post("/", submitRateLimit, zValidator("json", createContactSchema)
 contactRouter.use("/admin", requireAuth, requireRole(["MASTER", "ADMIN"]));
 contactRouter.use("/admin/*", requireAuth, requireRole(["MASTER", "ADMIN"]));
 
+function serializeNotificationRecipientsPayload(
+  recipients: Awaited<ReturnType<typeof listContactNotificationRecipients>>,
+  suggestedUsers: Awaited<ReturnType<typeof listSuggestedContactNotificationUsers>>
+) {
+  return serializeContactNotificationRecipientsResponse({
+    recipients,
+    suggestedUsers,
+    fallbackEmail: env.CONTACT_NOTIFICATION_EMAIL,
+    isEmailDeliveryConfigured: isEmailConfigured()
+  });
+}
+
 contactRouter.get(
   "/admin",
   zValidator("query", contactListQuerySchema),
@@ -74,15 +87,12 @@ contactRouter.get("/admin/stats", async (c) => {
 
 // Registrado antes de "/admin/:id" para não ser capturado pela rota dinâmica.
 contactRouter.get("/admin/notification-recipients", async (c) => {
-  const recipients = await listContactNotificationRecipients();
+  const [recipients, suggestedUsers] = await Promise.all([
+    listContactNotificationRecipients(),
+    listSuggestedContactNotificationUsers()
+  ]);
 
-  return c.json(
-    serializeContactNotificationRecipientsResponse({
-      recipients,
-      fallbackEmail: env.CONTACT_NOTIFICATION_EMAIL,
-      isEmailDeliveryConfigured: isEmailConfigured()
-    })
-  );
+  return c.json(serializeNotificationRecipientsPayload(recipients, suggestedUsers));
 });
 
 contactRouter.put(
@@ -90,15 +100,12 @@ contactRouter.put(
   zValidator("json", replaceContactNotificationRecipientsSchema),
   async (c) => {
     const input = c.req.valid("json");
-    const recipients = await replaceContactNotificationRecipients(input);
+    const [recipients, suggestedUsers] = await Promise.all([
+      replaceContactNotificationRecipients(input),
+      listSuggestedContactNotificationUsers()
+    ]);
 
-    return c.json(
-      serializeContactNotificationRecipientsResponse({
-        recipients,
-        fallbackEmail: env.CONTACT_NOTIFICATION_EMAIL,
-        isEmailDeliveryConfigured: isEmailConfigured()
-      })
-    );
+    return c.json(serializeNotificationRecipientsPayload(recipients, suggestedUsers));
   }
 );
 

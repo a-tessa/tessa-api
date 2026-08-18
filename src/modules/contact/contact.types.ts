@@ -72,13 +72,23 @@ export type ContactNotificationRecipientDto = {
   name: string | null;
 };
 
+export type SuggestedContactNotificationUserRecord = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export type SuggestedContactNotificationUserDto = SuggestedContactNotificationUserRecord;
+
 /**
  * `fallbackEmail` é o destino usado enquanto a lista está vazia, definido por
  * `CONTACT_NOTIFICATION_EMAIL`. `isEmailDeliveryConfigured` indica se o
- * ambiente consegue de fato enviar e-mails.
+ * ambiente consegue de fato enviar e-mails. `suggestedUsers` são os usuários
+ * ativos do admin, oferecidos como atalho ao montar a lista.
  */
 export type ContactNotificationRecipientsResponseDto = {
   recipients: ContactNotificationRecipientDto[];
+  suggestedUsers: SuggestedContactNotificationUserDto[];
   fallbackEmail: string;
   isEmailDeliveryConfigured: boolean;
 };

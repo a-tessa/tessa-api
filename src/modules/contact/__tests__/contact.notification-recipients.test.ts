@@ -24,6 +24,11 @@ async function loadRouterWithAuthStub() {
     })
   });
 
+  Object.defineProperty(prisma.user, "findMany", {
+    configurable: true,
+    value: async () => []
+  });
+
   const token = await createAccessToken({
     id: "user-1",
     email: "admin@tessa.com.br",
@@ -31,6 +36,16 @@ async function loadRouterWithAuthStub() {
   });
 
   return { contactRouter, token, prisma };
+}
+
+function stubSuggestedUsers(
+  prisma: Awaited<ReturnType<typeof loadRouterWithAuthStub>>["prisma"],
+  users: { id: string; name: string; email: string }[]
+) {
+  Object.defineProperty(prisma.user, "findMany", {
+    configurable: true,
+    value: async () => users
+  });
 }
 
 function stubRecipients(
@@ -159,6 +174,7 @@ describe("contact notification recipients router", () => {
     });
     const body = (await response.json()) as {
       recipients: { email: string }[];
+      suggestedUsers: { email: string }[];
       fallbackEmail: string;
     };
 
@@ -167,7 +183,30 @@ describe("contact notification recipients router", () => {
       body.recipients.map((recipient) => recipient.email),
       ["comercial@tessa.com.br"]
     );
+    assert.deepEqual(body.suggestedUsers, []);
     assert.equal(typeof body.fallbackEmail, "string");
+  });
+
+  it("returns active users as recipient suggestions", async () => {
+    const { contactRouter, token, prisma } = await loadRouterWithAuthStub();
+    stubRecipients(prisma, []);
+    stubSuggestedUsers(prisma, [
+      { id: "user-2", name: "Ana Souza", email: "ana@tessa.com.br" },
+      { id: "user-1", name: "Carlos Lima", email: "carlos@tessa.com.br" }
+    ]);
+
+    const response = await contactRouter.request("/admin/notification-recipients", {
+      headers: { authorization: `Bearer ${token}` }
+    });
+    const body = (await response.json()) as {
+      suggestedUsers: { id: string; name: string; email: string }[];
+    };
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(body.suggestedUsers, [
+      { id: "user-2", name: "Ana Souza", email: "ana@tessa.com.br" },
+      { id: "user-1", name: "Carlos Lima", email: "carlos@tessa.com.br" }
+    ]);
   });
 
   it("rejects an invalid email on save", async () => {
