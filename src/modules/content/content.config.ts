@@ -10,7 +10,7 @@ import {
   npsItemSchema,
   operationSectionSchema,
   representantInputSchema,
-  resultsSectionSchema,
+  resultsSectionInputSchema,
   footerSectionSchema,
   servicesPageItemSchema
 } from "./content.schemas.js";
@@ -45,7 +45,7 @@ export const singularSectionConfigs = [
     key: "resultsSection",
     path: "results-section",
     label: "Resultados",
-    schema: resultsSectionSchema
+    schema: resultsSectionInputSchema
   },
   {
     key: "footerSection",

@@ -110,6 +110,15 @@ function walkLanding(content: Json, resolve: Resolver): Json {
     }
   }
 
+  if (isObject(clone.resultsSection)) {
+    for (const [index, stat] of asObjectArray(clone.resultsSection.stats).entries()) {
+      if (nonEmpty(stat.label)) {
+        stat.label = resolve(`results.stat.${index}.label`, stat.label, "plain");
+      }
+    }
+    // `results.stat.*.value` and `results.stat.*.suffix` stay untouched.
+  }
+
   if (isObject(clone.operationSection)) {
     for (const [index, image] of asObjectArray(clone.operationSection.images).entries()) {
       if (nonEmpty(image.alt)) {

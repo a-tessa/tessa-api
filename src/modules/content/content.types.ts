@@ -30,6 +30,7 @@ import {
   representantInputSchema,
   representantSchema,
   resultsSectionSchema,
+  resultsSectionInputSchema,
   footerSectionSchema,
   servicePageSlugParamsSchema,
   sceneryItemSchema,
@@ -57,7 +58,8 @@ export type OperationSection = z.infer<typeof operationSectionSchema>;
 export type OperationSectionWrite = z.infer<typeof operationSectionWriteSchema>;
 export type OperationSectionMutationInput = z.infer<typeof operationSectionMutationSchema>;
 export type OperationSectionMultipartInput = z.infer<typeof operationSectionMultipartInputSchema>;
-export type ResultsSection = z.infer<typeof resultsSectionSchema>;
+export type ResultsSection = z.infer<typeof resultsSectionInputSchema>;
+export type StoredResultsSection = z.infer<typeof resultsSectionSchema>;
 export type FooterSection = z.infer<typeof footerSectionSchema>;
 export type NpsItem = z.infer<typeof npsItemSchema>;
 export type ServicesPageItem = z.infer<typeof servicesPageItemSchema>;

@@ -602,13 +602,35 @@ export const headingImagePageParamsSchema = z.object({
   pageKey: headingImagePageKeySchema
 });
 
-export const RESULTS_SECTION_STAT_COUNT = 3;
+export const MIN_RESULTS_STATS = 1;
+export const MAX_RESULTS_STATS = 4;
+export const MAX_RESULTS_LABEL_LENGTH = 80;
+export const MAX_RESULTS_SUFFIX_LENGTH = 8;
+export const RESULTS_SECTION_LEGACY_STAT_COUNT = 3;
 
-export const resultsSectionSchema = z.object({
+export const resultsStatSchema = z.object({
+  value: z.number().int().nonnegative(),
+  suffix: z.string().trim().max(MAX_RESULTS_SUFFIX_LENGTH).optional(),
+  label: nonEmptyString.max(MAX_RESULTS_LABEL_LENGTH)
+});
+
+export const resultsSectionInputSchema = z.object({
+  stats: z
+    .array(resultsStatSchema)
+    .min(MIN_RESULTS_STATS)
+    .max(MAX_RESULTS_STATS)
+});
+
+export const resultsSectionLegacySchema = z.object({
   values: z
     .array(z.number().int().nonnegative())
-    .length(RESULTS_SECTION_STAT_COUNT)
+    .length(RESULTS_SECTION_LEGACY_STAT_COUNT)
 });
+
+export const resultsSectionSchema = z.union([
+  resultsSectionInputSchema,
+  resultsSectionLegacySchema
+]);
 
 export const MAX_FOOTER_NEWSLETTER_TITLE_LENGTH = 80;
 export const MAX_FOOTER_NEWSLETTER_SUB_LENGTH = 120;

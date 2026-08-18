@@ -42,6 +42,14 @@ function normalizeOptionalFormString(value: FormDataEntryValue | null): string |
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+function optionalImageFile(entry: FormDataEntryValue | null): File | null {
+  if (!(entry instanceof File) || entry.size === 0 || !entry.name) {
+    return null;
+  }
+
+  return entry;
+}
+
 testimonialRouter.get("/", async (c) => {
   const [testimonials, aggregate] = await Promise.all([
     listApprovedTestimonials(),
@@ -55,7 +63,9 @@ testimonialRouter.post("/", submitRateLimit, async (c) => {
   const contentType = c.req.header("content-type") ?? "";
 
   if (contentType.startsWith("multipart/form-data")) {
-    const formData = await c.req.formData();
+    const formData = await c.req.formData().catch(() => {
+      badRequest("Corpo da requisição inválido.");
+    });
 
     const parsed = createTestimonialSchema.safeParse({
       authorName: formData.get("authorName"),
@@ -70,15 +80,9 @@ testimonialRouter.post("/", submitRateLimit, async (c) => {
       badRequest(parsed.error.issues[0]?.message ?? "Dados inválidos.");
     }
 
-    const profileImageEntry = formData.get("profileImage");
-    const reviewImageEntry = formData.get("reviewImage");
-
-    const profileImage = profileImageEntry instanceof File ? profileImageEntry : null;
-    const reviewImage = reviewImageEntry instanceof File ? reviewImageEntry : null;
-
     const testimonial = await createTestimonial(parsed.data, {
-      profileImage,
-      reviewImage
+      profileImage: optionalImageFile(formData.get("profileImage")),
+      reviewImage: optionalImageFile(formData.get("reviewImage"))
     });
 
     return c.json(serializeAdminTestimonialResponse(testimonial), 201);
