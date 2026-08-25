@@ -12,6 +12,8 @@ import {
   representantInputSchema,
   resultsSectionInputSchema,
   footerSectionSchema,
+  pageSeoSchema,
+  seoDefaultsSchema,
   servicesPageItemSchema
 } from "./content.schemas.js";
 import type { CollectionConfig, SingularSectionConfig } from "./content.types.js";
@@ -58,6 +60,18 @@ export const singularSectionConfigs = [
     path: "company-information",
     label: "Informações da empresa",
     schema: companyInformationSchema
+  },
+  {
+    key: "seoDefaults",
+    path: "seo-defaults",
+    label: "Padrões globais de SEO",
+    schema: seoDefaultsSchema
+  },
+  {
+    key: "pageSeo",
+    path: "page-seo",
+    label: "SEO da página",
+    schema: pageSeoSchema
   }
 ] satisfies readonly SingularSectionConfig[];
 

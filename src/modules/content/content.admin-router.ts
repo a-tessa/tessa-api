@@ -35,6 +35,8 @@ import {
   deleteHeroSectionSlide,
   deleteOperationSection,
   deleteOperationSectionImage,
+  deletePageSeoOgImage,
+  deleteSeoDefaultOgImage,
   deleteCollectionItem,
   deleteServicePage,
   deleteSingularSection,
@@ -58,6 +60,8 @@ import {
   updateCollectionItem,
   updateServicePage,
   upsertHeadingImage,
+  upsertPageSeoOgImage,
+  upsertSeoDefaultOgImage,
   updateSingularSection
 } from "./content.service.js";
 import {
@@ -74,6 +78,7 @@ import {
   operationSectionImageParamsSchema,
   operationSectionMultipartInputSchema,
   operationSectionMutationSchema,
+  seoPageKeyParamsSchema,
   servicePageAssetIndexSchema,
   servicePageAssetKindSchema,
   servicePageSlugParamsSchema,
@@ -1059,6 +1064,100 @@ adminContentRouter.delete(
     const headingImages = await deleteHeadingImage(pageKey, user.id);
 
     return c.json(serializeHeadingImagesResponse(headingImages));
+  }
+);
+
+async function parseSingleImageUpload(
+  c: Context<AppBindings>,
+  tooLargeMessage: string
+): Promise<File> {
+  const contentType = c.req.header("content-type");
+
+  if (!isMultipartRequest(contentType)) {
+    badRequest("Envie o arquivo como multipart/form-data.");
+  }
+
+  const contentLength = parseContentLength(c.req.header("content-length"));
+  const maxSingleAssetBodyBytes = env.ASSET_MAX_UPLOAD_BYTES + 512 * 1024;
+
+  if (contentLength !== null && contentLength > maxSingleAssetBodyBytes) {
+    payloadTooLarge(
+      `Arquivo maior do que o suportado (${maxSingleAssetBodyBytes} bytes).`
+    );
+  }
+
+  let formData: FormData;
+  try {
+    formData = await c.req.formData();
+  } catch {
+    badRequest("Não foi possível processar o multipart/form-data enviado.");
+  }
+
+  const rawFile = formData.get("file");
+  if (!(rawFile instanceof File)) {
+    badRequest("Campo 'file' inválido.");
+  }
+
+  if (rawFile.size === 0 || !rawFile.name) {
+    badRequest("Arquivo inválido.");
+  }
+
+  if (rawFile.size > env.ASSET_MAX_UPLOAD_BYTES) {
+    payloadTooLarge(tooLargeMessage);
+  }
+
+  return rawFile;
+}
+
+adminContentRouter.post(
+  "/seo-defaults/og-image",
+  ...requireAdminWriteAccess,
+  async (c) => {
+    const rawFile = await parseSingleImageUpload(
+      c,
+      `A imagem Open Graph excede o limite de ${env.ASSET_MAX_UPLOAD_BYTES} bytes.`
+    );
+    const user = c.get("user");
+    const seoDefaults = await upsertSeoDefaultOgImage(rawFile, user.id);
+    return c.json(serializeSectionResponse("seoDefaults", seoDefaults));
+  }
+);
+
+adminContentRouter.delete(
+  "/seo-defaults/og-image",
+  ...requireAdminWriteAccess,
+  async (c) => {
+    const user = c.get("user");
+    const seoDefaults = await deleteSeoDefaultOgImage(user.id);
+    return c.json(serializeSectionResponse("seoDefaults", seoDefaults));
+  }
+);
+
+adminContentRouter.post(
+  "/page-seo/:pageKey/og-image",
+  ...requireAdminWriteAccess,
+  zValidator("param", seoPageKeyParamsSchema),
+  async (c) => {
+    const { pageKey } = c.req.valid("param");
+    const rawFile = await parseSingleImageUpload(
+      c,
+      `A imagem Open Graph excede o limite de ${env.ASSET_MAX_UPLOAD_BYTES} bytes.`
+    );
+    const user = c.get("user");
+    const pageSeo = await upsertPageSeoOgImage(pageKey, rawFile, user.id);
+    return c.json(serializeSectionResponse("pageSeo", pageSeo));
+  }
+);
+
+adminContentRouter.delete(
+  "/page-seo/:pageKey/og-image",
+  ...requireAdminWriteAccess,
+  zValidator("param", seoPageKeyParamsSchema),
+  async (c) => {
+    const { pageKey } = c.req.valid("param");
+    const user = c.get("user");
+    const pageSeo = await deletePageSeoOgImage(pageKey, user.id);
+    return c.json(serializeSectionResponse("pageSeo", pageSeo));
   }
 );
 

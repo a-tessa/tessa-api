@@ -92,6 +92,56 @@ function walkLanding(content: Json, resolve: Resolver): Json {
   // `companyInformation` (legal name, CNPJ, address, email, phones, WhatsApp) is
   // intentionally left untouched: it must never be sent to translation.
 
+  if (isObject(clone.seoDefaults)) {
+    const seoDefaults = clone.seoDefaults;
+    if (nonEmpty(seoDefaults.defaultMetaDescription)) {
+      seoDefaults.defaultMetaDescription = resolve(
+        "seo.defaults.defaultMetaDescription",
+        seoDefaults.defaultMetaDescription,
+        "plain"
+      );
+    }
+    if (Array.isArray(seoDefaults.keywords)) {
+      for (const [index, keyword] of seoDefaults.keywords.entries()) {
+        if (nonEmpty(keyword)) {
+          seoDefaults.keywords[index] = resolve(
+            `seo.defaults.keywords.${index}`,
+            keyword,
+            "plain"
+          );
+        }
+      }
+    }
+    // `siteName`, `titleTemplate`, verification codes, `allowIndexing` and
+    // `defaultOgImageUrl` stay untouched.
+  }
+
+  if (isObject(clone.pageSeo)) {
+    for (const [pageKey, entry] of Object.entries(clone.pageSeo)) {
+      if (!isObject(entry)) {
+        continue;
+      }
+      if (nonEmpty(entry.metaTitle)) {
+        entry.metaTitle = resolve(`seo.page.${pageKey}.metaTitle`, entry.metaTitle, "plain");
+      }
+      if (nonEmpty(entry.metaDescription)) {
+        entry.metaDescription = resolve(
+          `seo.page.${pageKey}.metaDescription`,
+          entry.metaDescription,
+          "plain"
+        );
+      }
+      if (nonEmpty(entry.focusKeyword)) {
+        entry.focusKeyword = resolve(
+          `seo.page.${pageKey}.focusKeyword`,
+          entry.focusKeyword,
+          "plain"
+        );
+      }
+      // `ogImageUrl`, `noIndex`, `changeFrequency` and `priority` stay untouched.
+    }
+  }
+
   if (isObject(clone.footerSection)) {
     const footer = clone.footerSection;
     if (nonEmpty(footer.newsletterTitle)) {

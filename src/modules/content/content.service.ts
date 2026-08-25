@@ -14,6 +14,7 @@ import {
   buildHeadingImagePath,
   buildHeroSectionImagePath,
   buildOperationSectionImagePath,
+  buildSeoOgImagePath,
   buildServicePageBackgroundImagePath,
   buildServicePageExampleImagePath
 } from "../assets/assets.utils.js";
@@ -50,6 +51,9 @@ import {
   heroSectionStoredSchema,
   operationSectionSchema,
   operationSectionWriteSchema,
+  pageSeoSchema,
+  seoDefaultsSchema,
+  SEO_PAGE_KEYS,
   servicesPageMutationSchema
 } from "./content.schemas.js";
 import type {
@@ -67,6 +71,9 @@ import type {
   OperationSection,
   OperationSectionMultipartInput,
   OperationSectionMutationInput,
+  PageSeo,
+  SeoDefaults,
+  SeoPageKey,
   ServicePageMultipartInput,
   ServicesPageMutationInput,
   PublicContentRecord,
@@ -91,6 +98,12 @@ const HEADING_IMAGES_ASSET_FILTER = {
   entityType: "landingPage",
   entityId: MAIN_CONTENT_SLUG,
   sectionKey: "headingImages",
+  fieldKey: "url"
+} as const;
+const SEO_OG_ASSET_FILTER = {
+  entityType: "landingPage",
+  entityId: MAIN_CONTENT_SLUG,
+  sectionKey: "seoOgImages",
   fieldKey: "url"
 } as const;
 const CLIENTS_ASSET_FILTER = {
@@ -568,6 +581,183 @@ async function reconcilePublishedHeadingImageAssets(
     });
   } catch (error) {
     console.error("Falha ao reconciliar assets das imagens dos cabeçalhos após publicação.", {
+      urls: staleUrls,
+      error
+    });
+    return;
+  }
+
+  await cleanupBlobUrls(staleUrls);
+}
+
+function getSeoDefaultsFromContent(content: unknown): SeoDefaults | null {
+  if (typeof content !== "object" || content === null || Array.isArray(content)) {
+    return null;
+  }
+
+  const parsed = seoDefaultsSchema.safeParse(
+    (content as Record<string, unknown>).seoDefaults
+  );
+  return parsed.success ? parsed.data : null;
+}
+
+function getPageSeoFromContent(content: unknown): PageSeo {
+  if (typeof content !== "object" || content === null || Array.isArray(content)) {
+    return {};
+  }
+
+  const parsed = pageSeoSchema.safeParse((content as Record<string, unknown>).pageSeo);
+  return parsed.success ? parsed.data : {};
+}
+
+function getSeoOgUrls(content: unknown): Set<string> {
+  const urls = new Set<string>();
+  const defaults = getSeoDefaultsFromContent(content);
+  if (defaults?.defaultOgImageUrl) {
+    urls.add(defaults.defaultOgImageUrl);
+  }
+
+  for (const entry of Object.values(getPageSeoFromContent(content))) {
+    if (entry.ogImageUrl) {
+      urls.add(entry.ogImageUrl);
+    }
+  }
+
+  return urls;
+}
+
+function getSeoOgSlot(target: "default" | SeoPageKey): number {
+  if (target === "default") {
+    return 0;
+  }
+
+  return SEO_PAGE_KEYS.indexOf(target) + 1;
+}
+
+function listSeoOgSlots(
+  defaults: SeoDefaults | null,
+  pages: PageSeo
+): Array<{ slot: number; url: string }> {
+  const slots: Array<{ slot: number; url: string }> = [];
+  if (defaults?.defaultOgImageUrl) {
+    slots.push({ slot: getSeoOgSlot("default"), url: defaults.defaultOgImageUrl });
+  }
+
+  for (const pageKey of SEO_PAGE_KEYS) {
+    const url = pages[pageKey]?.ogImageUrl;
+    if (url) {
+      slots.push({ slot: getSeoOgSlot(pageKey), url });
+    }
+  }
+
+  return slots;
+}
+
+function collectSeoOgAssetsToPersist(
+  urlsBySlot: Array<{ slot: number; url: string }>,
+  previousAssets: Asset[],
+  uploaded?: {
+    url: string;
+    pathname: string;
+    mimeType: string;
+    sizeBytes: number;
+    originalFilename: string;
+    userId: string;
+  }
+): Prisma.AssetCreateManyInput[] {
+  const previousAssetByUrl = new Map<string, Asset>();
+  for (const asset of previousAssets) {
+    if (!previousAssetByUrl.has(asset.url)) {
+      previousAssetByUrl.set(asset.url, asset);
+    }
+  }
+
+  const assetsToPersist: Prisma.AssetCreateManyInput[] = [];
+
+  for (const { slot, url } of urlsBySlot) {
+    const existingAsset = previousAssetByUrl.get(url);
+    if (existingAsset) {
+      assetsToPersist.push({
+        ...toHeadingImageAssetInput(existingAsset),
+        sectionKey: SEO_OG_ASSET_FILTER.sectionKey,
+        fieldKey: SEO_OG_ASSET_FILTER.fieldKey,
+        slot
+      });
+      continue;
+    }
+
+    if (uploaded && url === uploaded.url) {
+      assetsToPersist.push({
+        kind: "image",
+        entityType: SEO_OG_ASSET_FILTER.entityType,
+        entityId: SEO_OG_ASSET_FILTER.entityId,
+        sectionKey: SEO_OG_ASSET_FILTER.sectionKey,
+        fieldKey: SEO_OG_ASSET_FILTER.fieldKey,
+        slot,
+        pathname: uploaded.pathname,
+        url: uploaded.url,
+        mimeType: uploaded.mimeType,
+        sizeBytes: uploaded.sizeBytes,
+        originalFilename: uploaded.originalFilename,
+        createdById: uploaded.userId
+      });
+    }
+  }
+
+  return assetsToPersist;
+}
+
+function retainPublishedSeoOgAssets(
+  draftAssets: Prisma.AssetCreateManyInput[],
+  previousAssets: Asset[],
+  publishedContent: unknown
+): Prisma.AssetCreateManyInput[] {
+  const draftUrls = new Set(draftAssets.map((asset) => asset.url));
+  const publishedUrls = getSeoOgUrls(publishedContent);
+  const retainedUrls = new Set<string>();
+  const publishedOnlyAssets: Prisma.AssetCreateManyInput[] = [];
+
+  for (const asset of previousAssets) {
+    if (
+      draftUrls.has(asset.url) ||
+      !publishedUrls.has(asset.url) ||
+      retainedUrls.has(asset.url)
+    ) {
+      continue;
+    }
+
+    retainedUrls.add(asset.url);
+    publishedOnlyAssets.push(toHeadingImageAssetInput(asset));
+  }
+
+  return [...draftAssets, ...publishedOnlyAssets];
+}
+
+async function reconcilePublishedSeoOgAssets(publishedContent: unknown): Promise<void> {
+  const referencedUrls = getSeoOgUrls(publishedContent);
+  const assets = await prisma.asset.findMany({
+    where: SEO_OG_ASSET_FILTER,
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+  const staleUrls = getUniqueUrls(
+    assets.map((asset) => asset.url).filter((url) => !referencedUrls.has(url))
+  );
+
+  if (staleUrls.length === 0) {
+    return;
+  }
+
+  try {
+    await prisma.asset.deleteMany({
+      where: {
+        ...SEO_OG_ASSET_FILTER,
+        url: { in: staleUrls }
+      }
+    });
+  } catch (error) {
+    console.error("Falha ao reconciliar assets das imagens Open Graph após publicação.", {
       urls: staleUrls,
       error
     });
@@ -1400,6 +1590,7 @@ export async function publishMainContent(userId: string): Promise<AdminContentRe
 
   await reconcilePublishedOperationAssets(publishedContent);
   await reconcilePublishedHeadingImageAssets(publishedContent);
+  await reconcilePublishedSeoOgAssets(publishedContent);
   await enqueueLandingTranslations(page.id, publishedContent);
   runTranslationsInBackground(processEntityTranslations(LANDING_ENTITY_TYPE, page.id));
 
@@ -1643,6 +1834,242 @@ export async function deleteHeadingImage(
   }
 
   return validatedHeadingImages;
+}
+
+async function persistSeoOgDraft(params: {
+  page: LandingPage;
+  content: DraftContent;
+  nextDefaults: SeoDefaults | null;
+  nextPageSeo: PageSeo;
+  userId: string;
+  uploaded?: {
+    url: string;
+    pathname: string;
+    mimeType: string;
+    sizeBytes: number;
+    originalFilename: string;
+    userId: string;
+  };
+  previousUrl?: string;
+}): Promise<void> {
+  const previousAssets = await prisma.asset.findMany({
+    where: SEO_OG_ASSET_FILTER,
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+  const draftAssets = collectSeoOgAssetsToPersist(
+    listSeoOgSlots(params.nextDefaults, params.nextPageSeo),
+    previousAssets,
+    params.uploaded
+  );
+  const assetsToRetain = retainPublishedSeoOgAssets(
+    draftAssets,
+    previousAssets,
+    params.page.publishedContent
+  );
+
+  const nextContent = {
+    ...params.content,
+    ...(params.nextDefaults ? { seoDefaults: params.nextDefaults } : {}),
+    pageSeo: params.nextPageSeo
+  } as DraftContent;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.landingPage.update({
+        where: { id: params.page.id },
+        data: {
+          draftContent: toDraftContentInput(nextContent),
+          status: "draft",
+          updatedById: params.userId
+        }
+      });
+
+      await tx.asset.deleteMany({
+        where: SEO_OG_ASSET_FILTER
+      });
+
+      if (assetsToRetain.length > 0) {
+        await tx.asset.createMany({
+          data: assetsToRetain
+        });
+      }
+    });
+  } catch (error) {
+    if (params.uploaded) {
+      await cleanupBlobUrls([params.uploaded.url]);
+    }
+    throw error;
+  }
+
+  if (
+    params.previousUrl &&
+    params.previousUrl !== params.uploaded?.url &&
+    !getSeoOgUrls(params.page.publishedContent).has(params.previousUrl)
+  ) {
+    await cleanupBlobUrls([params.previousUrl]);
+  }
+}
+
+export async function upsertSeoDefaultOgImage(
+  file: File,
+  userId: string
+): Promise<SeoDefaults> {
+  const page = await ensureMainDraftPageExists(userId);
+  const content = await getMainDraftContent(page);
+  const currentDefaults = getSeoDefaultsFromContent(content);
+
+  if (!currentDefaults) {
+    badRequest("Salve os padrões globais de SEO antes de enviar a imagem.");
+  }
+
+  const previousUrl = currentDefaults.defaultOgImageUrl;
+  const preparedAsset = await prepareImageAsset(file);
+  const uploadedAsset = await uploadPublicAsset(
+    buildSeoOgImagePath("default", preparedAsset.originalFilename),
+    preparedAsset
+  );
+  const nextDefaults = seoDefaultsSchema.parse({
+    ...currentDefaults,
+    defaultOgImageUrl: uploadedAsset.url
+  });
+
+  await persistSeoOgDraft({
+    page,
+    content,
+    nextDefaults,
+    nextPageSeo: getPageSeoFromContent(content),
+    userId,
+    previousUrl,
+    uploaded: {
+      url: uploadedAsset.url,
+      pathname: uploadedAsset.pathname,
+      mimeType: preparedAsset.contentType,
+      sizeBytes: preparedAsset.sizeBytes,
+      originalFilename: preparedAsset.originalFilename,
+      userId
+    }
+  });
+
+  return nextDefaults;
+}
+
+export async function deleteSeoDefaultOgImage(userId: string): Promise<SeoDefaults> {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const currentDefaults = getSeoDefaultsFromContent(content);
+
+  if (!currentDefaults) {
+    notFound("Padrões globais de SEO não encontrados.");
+  }
+
+  const previousUrl = currentDefaults.defaultOgImageUrl;
+  if (!previousUrl) {
+    return currentDefaults;
+  }
+
+  const nextDefaults = seoDefaultsSchema.parse({
+    ...currentDefaults,
+    defaultOgImageUrl: undefined
+  });
+
+  await persistSeoOgDraft({
+    page,
+    content,
+    nextDefaults,
+    nextPageSeo: getPageSeoFromContent(content),
+    userId,
+    previousUrl
+  });
+
+  return nextDefaults;
+}
+
+export async function upsertPageSeoOgImage(
+  pageKey: SeoPageKey,
+  file: File,
+  userId: string
+): Promise<PageSeo> {
+  const page = await ensureMainDraftPageExists(userId);
+  const content = await getMainDraftContent(page);
+  const currentPageSeo = getPageSeoFromContent(content);
+  const currentEntry = currentPageSeo[pageKey];
+
+  if (!currentEntry) {
+    badRequest("Salve o SEO desta página antes de enviar a imagem.");
+  }
+
+  const previousUrl = currentEntry.ogImageUrl;
+  const preparedAsset = await prepareImageAsset(file);
+  const uploadedAsset = await uploadPublicAsset(
+    buildSeoOgImagePath(pageKey, preparedAsset.originalFilename),
+    preparedAsset
+  );
+  const nextPageSeo = pageSeoSchema.parse({
+    ...currentPageSeo,
+    [pageKey]: {
+      ...currentEntry,
+      ogImageUrl: uploadedAsset.url
+    }
+  });
+
+  await persistSeoOgDraft({
+    page,
+    content,
+    nextDefaults: getSeoDefaultsFromContent(content),
+    nextPageSeo,
+    userId,
+    previousUrl,
+    uploaded: {
+      url: uploadedAsset.url,
+      pathname: uploadedAsset.pathname,
+      mimeType: preparedAsset.contentType,
+      sizeBytes: preparedAsset.sizeBytes,
+      originalFilename: preparedAsset.originalFilename,
+      userId
+    }
+  });
+
+  return nextPageSeo;
+}
+
+export async function deletePageSeoOgImage(
+  pageKey: SeoPageKey,
+  userId: string
+): Promise<PageSeo> {
+  const page = await getMainPageOrThrow();
+  const content = await getMainDraftContent(page);
+  const currentPageSeo = getPageSeoFromContent(content);
+  const currentEntry = currentPageSeo[pageKey];
+
+  if (!currentEntry) {
+    return currentPageSeo;
+  }
+
+  const previousUrl = currentEntry.ogImageUrl;
+  if (!previousUrl) {
+    return currentPageSeo;
+  }
+
+  const nextPageSeo = pageSeoSchema.parse({
+    ...currentPageSeo,
+    [pageKey]: {
+      ...currentEntry,
+      ogImageUrl: undefined
+    }
+  });
+
+  await persistSeoOgDraft({
+    page,
+    content,
+    nextDefaults: getSeoDefaultsFromContent(content),
+    nextPageSeo,
+    userId,
+    previousUrl
+  });
+
+  return nextPageSeo;
 }
 
 export async function getSingularSection(config: SingularSectionConfig) {

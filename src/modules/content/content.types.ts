@@ -17,6 +17,10 @@ import {
   headingImagesSchema,
   headingImageEntrySchema,
   headingImagePageKeySchema,
+  pageSeoSchema,
+  pageSeoEntrySchema,
+  seoDefaultsSchema,
+  seoPageKeySchema,
   heroSectionInputSchema,
   heroSectionSchema,
   industrySectionSchema,
@@ -52,6 +56,10 @@ export type AboutSection = z.infer<typeof aboutSectionSchema>;
 export type HeadingImagePageKey = z.infer<typeof headingImagePageKeySchema>;
 export type HeadingImageEntry = z.infer<typeof headingImageEntrySchema>;
 export type HeadingImages = z.infer<typeof headingImagesSchema>;
+export type SeoPageKey = z.infer<typeof seoPageKeySchema>;
+export type PageSeoEntry = z.infer<typeof pageSeoEntrySchema>;
+export type PageSeo = z.infer<typeof pageSeoSchema>;
+export type SeoDefaults = z.infer<typeof seoDefaultsSchema>;
 export type SceneryItem = z.infer<typeof sceneryItemSchema>;
 export type ScenerySection = z.infer<typeof scenerySectionSchema>;
 export type OperationSection = z.infer<typeof operationSectionSchema>;
@@ -90,7 +98,9 @@ export type SingularSectionKey =
   | "operationSection"
   | "resultsSection"
   | "footerSection"
-  | "companyInformation";
+  | "companyInformation"
+  | "seoDefaults"
+  | "pageSeo";
 
 export type CollectionKey = "nps" | "representantsBase" | "categories";
 

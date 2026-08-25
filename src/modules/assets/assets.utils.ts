@@ -81,6 +81,16 @@ export function buildHeadingImagePath(
   );
 }
 
+export function buildSeoOgImagePath(
+  slot: string,
+  originalFilename: string
+): string {
+  return buildTimestampedImagePath(
+    ["landing-page", "home", "seo-og-images", slot],
+    originalFilename
+  );
+}
+
 export function buildServicePageCoverImagePath(
   servicePageSlug: string,
   originalFilename: string

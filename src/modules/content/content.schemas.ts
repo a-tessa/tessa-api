@@ -602,6 +602,78 @@ export const headingImagePageParamsSchema = z.object({
   pageKey: headingImagePageKeySchema
 });
 
+export const SEO_PAGE_KEYS = [
+  "home",
+  "quem-somos",
+  "servicos",
+  "representantes",
+  "blog",
+  "downloads",
+  "galeria",
+  "contato",
+  "nao-encontrada"
+] as const;
+
+export const seoPageKeySchema = z.enum(SEO_PAGE_KEYS);
+
+export const SEO_PAGE_LABELS = {
+  home: "Página inicial",
+  "quem-somos": "Quem Somos",
+  servicos: "Serviços",
+  representantes: "Representantes",
+  blog: "Blog",
+  downloads: "Downloads",
+  galeria: "Galeria",
+  contato: "Contato",
+  "nao-encontrada": "Página não encontrada"
+} as const satisfies Record<(typeof SEO_PAGE_KEYS)[number], string>;
+
+export const MAX_SEO_META_TITLE_LENGTH = 70;
+export const MAX_SEO_META_DESCRIPTION_LENGTH = 180;
+export const MAX_SEO_FOCUS_KEYWORD_LENGTH = 60;
+export const MAX_SEO_SITE_NAME_LENGTH = 80;
+export const MAX_SEO_TITLE_TEMPLATE_LENGTH = 40;
+export const MAX_SEO_KEYWORDS = 15;
+export const MAX_SEO_VERIFICATION_LENGTH = 120;
+
+const optionalHttpUrl = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.string().url().optional()
+);
+
+export const pageSeoEntrySchema = z.object({
+  metaTitle: nonEmptyString.max(MAX_SEO_META_TITLE_LENGTH),
+  metaDescription: nonEmptyString.max(MAX_SEO_META_DESCRIPTION_LENGTH),
+  focusKeyword: optionalBoundedString(MAX_SEO_FOCUS_KEYWORD_LENGTH),
+  ogImageUrl: optionalHttpUrl,
+  noIndex: z.boolean().default(false),
+  changeFrequency: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
+  priority: z.number().min(0).max(1).optional()
+});
+
+export const pageSeoSchema = z
+  .record(seoPageKeySchema, pageSeoEntrySchema)
+  .default({});
+
+export const seoPageKeyParamsSchema = z.object({
+  pageKey: seoPageKeySchema
+});
+
+export const seoDefaultsSchema = z.object({
+  siteName: nonEmptyString.max(MAX_SEO_SITE_NAME_LENGTH),
+  titleTemplate: nonEmptyString
+    .max(MAX_SEO_TITLE_TEMPLATE_LENGTH)
+    .refine((value) => value.includes("%s"), {
+      message: "O modelo de título precisa conter %s."
+    }),
+  defaultMetaDescription: nonEmptyString.max(MAX_SEO_META_DESCRIPTION_LENGTH),
+  keywords: z.array(nonEmptyString).max(MAX_SEO_KEYWORDS).default([]),
+  defaultOgImageUrl: optionalHttpUrl,
+  googleSiteVerification: optionalBoundedString(MAX_SEO_VERIFICATION_LENGTH),
+  bingSiteVerification: optionalBoundedString(MAX_SEO_VERIFICATION_LENGTH),
+  allowIndexing: z.boolean().default(true)
+});
+
 export const MIN_RESULTS_STATS = 1;
 export const MAX_RESULTS_STATS = 4;
 export const MAX_RESULTS_LABEL_LENGTH = 80;
@@ -648,6 +720,8 @@ export const draftContentSchema = z.object({
   resultsSection: resultsSectionSchema.optional(),
   footerSection: footerSectionSchema.optional(),
   headingImages: headingImagesSchema.optional(),
+  seoDefaults: seoDefaultsSchema.optional(),
+  pageSeo: pageSeoSchema.optional(),
   nps: z.array(draftNpsItemSchema).optional(),
   servicesPages: z.array(draftServicesPageItemSchema).optional(),
   representantsBase: z.array(draftRepresentantSchema).optional(),
