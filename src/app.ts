@@ -17,6 +17,7 @@ import { testimonialRouter } from "./routes/testimonial.js";
 import { instagramInternalRouter, instagramRouter } from "./routes/instagram.js";
 import { translationRouter } from "./routes/translations.js";
 import { usersRouter } from "./routes/users.js";
+import { redirectsRouter } from "./routes/redirects.js";
 
 const app = new Hono();
 
@@ -51,6 +52,7 @@ app.route("/api/testimonials", testimonialRouter);
 app.route("/api/content", contentRouter);
 app.route("/api/documents", documentsRouter);
 app.route("/api/gallery", galleryRouter);
+app.route("/api/redirects", redirectsRouter);
 app.route("/api/instagram", instagramRouter);
 app.route("/api/internal/translations", translationRouter);
 app.route("/api/internal/instagram", instagramInternalRouter);

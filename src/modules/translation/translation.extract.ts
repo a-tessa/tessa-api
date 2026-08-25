@@ -112,8 +112,8 @@ function walkLanding(content: Json, resolve: Resolver): Json {
         }
       }
     }
-    // `siteName`, `titleTemplate`, verification codes, `allowIndexing` and
-    // `defaultOgImageUrl` stay untouched.
+    // `siteName`, `titleTemplate`, verification codes, `allowIndexing`,
+    // `twitterSite` and `defaultOgImageUrl` stay untouched.
   }
 
   if (isObject(clone.pageSeo)) {
@@ -138,7 +138,22 @@ function walkLanding(content: Json, resolve: Resolver): Json {
           "plain"
         );
       }
-      // `ogImageUrl`, `noIndex`, `changeFrequency` and `priority` stay untouched.
+      if (nonEmpty(entry.socialTitle)) {
+        entry.socialTitle = resolve(
+          `seo.page.${pageKey}.socialTitle`,
+          entry.socialTitle,
+          "plain"
+        );
+      }
+      if (nonEmpty(entry.socialDescription)) {
+        entry.socialDescription = resolve(
+          `seo.page.${pageKey}.socialDescription`,
+          entry.socialDescription,
+          "plain"
+        );
+      }
+      // `ogImageUrl`, `canonicalUrl`, `noIndex`, `noFollow`, `changeFrequency`
+      // and `priority` stay untouched: the canonical is literal in every locale.
     }
   }
 

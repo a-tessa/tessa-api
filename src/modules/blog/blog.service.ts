@@ -6,6 +6,10 @@ import {
   uploadPublicAsset
 } from "../assets/assets.service.js";
 import { validateCategorySlug } from "../content/content.utils.js";
+import {
+  recordSlugChangeRedirect,
+  releaseRedirectOccupyingPath
+} from "../redirects/redirects.service.js";
 import { BLOG_ENTITY_TYPE } from "../translation/translation.config.js";
 import {
   enqueueBlogTranslations,
@@ -150,19 +154,24 @@ export async function createBlogArticle(
 
   const { headerImageUrl } = await handleHeaderImage(headerImageFile, slug, authorId);
 
-  const article = await prisma.blogArticle.create({
-    data: {
-      title: input.title,
-      slug,
-      content: input.content,
-      categorySlug: input.categorySlug,
-      headerImageUrl,
-      headerImageAlt: input.headerImageAlt ?? null,
-      status: input.status,
-      publishedAt: input.status === "published" ? new Date() : null,
-      authorId
-    },
-    select: articleSelect
+  const article = await prisma.$transaction(async (tx) => {
+    const created = await tx.blogArticle.create({
+      data: {
+        title: input.title,
+        slug,
+        content: input.content,
+        categorySlug: input.categorySlug,
+        headerImageUrl,
+        headerImageAlt: input.headerImageAlt ?? null,
+        status: input.status,
+        publishedAt: input.status === "published" ? new Date() : null,
+        authorId
+      },
+      select: articleSelect
+    });
+
+    await releaseRedirectOccupyingPath(`/blog/${slug}`, tx);
+    return created;
   });
 
   await triggerBlogTranslations(article);
@@ -324,19 +333,37 @@ export async function updateBlogArticle(
     publishedAt = new Date();
   }
 
-  const article = await prisma.blogArticle.update({
-    where: { slug },
-    data: {
-      ...(input.title && { title: input.title }),
-      ...(input.title && { slug: newSlug }),
-      ...(input.content !== undefined && { content: input.content }),
-      ...(input.categorySlug && { categorySlug: input.categorySlug }),
-      ...(input.headerImageAlt !== undefined && { headerImageAlt: input.headerImageAlt ?? null }),
-      ...(input.status !== undefined && { status: input.status }),
-      ...(publishedAt !== undefined && { publishedAt }),
-      headerImageUrl
-    },
-    select: articleSelect
+  const article = await prisma.$transaction(async (tx) => {
+    const updated = await tx.blogArticle.update({
+      where: { slug },
+      data: {
+        ...(input.title && { title: input.title }),
+        ...(input.title && { slug: newSlug }),
+        ...(input.content !== undefined && { content: input.content }),
+        ...(input.categorySlug && { categorySlug: input.categorySlug }),
+        ...(input.headerImageAlt !== undefined && { headerImageAlt: input.headerImageAlt ?? null }),
+        ...(input.status !== undefined && { status: input.status }),
+        ...(publishedAt !== undefined && { publishedAt }),
+        headerImageUrl
+      },
+      select: articleSelect
+    });
+
+    await releaseRedirectOccupyingPath(`/blog/${newSlug}`, tx);
+
+    if (newSlug !== existing.slug) {
+      await recordSlugChangeRedirect(
+        {
+          fromPath: `/blog/${existing.slug}`,
+          toPath: `/blog/${newSlug}`,
+          entityType: "blogArticle",
+          entityId: existing.id
+        },
+        tx
+      );
+    }
+
+    return updated;
   });
 
   await triggerBlogTranslations(article);

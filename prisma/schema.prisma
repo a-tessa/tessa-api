@@ -69,6 +69,11 @@ enum GalleryMediaKind {
   video
 }
 
+enum RedirectSource {
+  manual
+  slugChange
+}
+
 model User {
   id                       String                @id @default(cuid())
   name                     String
@@ -362,4 +367,18 @@ model GalleryMediaItem {
   @@index([kind, order])
   @@index([categorySlug])
   @@index([imageUrl])
+}
+
+model Redirect {
+  id         String         @id @default(cuid())
+  fromPath   String         @unique
+  toPath     String
+  statusCode Int            @default(301)
+  source     RedirectSource @default(manual)
+  entityType String?
+  entityId   String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([entityType, entityId])
 }

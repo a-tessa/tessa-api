@@ -31,6 +31,10 @@ import {
   withDerivedScenery
 } from "./content.utils.js";
 import { listApprovedNpsResponses } from "../nps/nps.service.js";
+import {
+  recordSlugChangeRedirect,
+  releaseRedirectOccupyingPath
+} from "../redirects/redirects.service.js";
 import { validateInstagramSelectionForPublish } from "../instagram/instagram.service.js";
 import { LANDING_ENTITY_TYPE } from "../translation/translation.config.js";
 import {
@@ -1101,6 +1105,20 @@ async function saveServicePageContent(
         await tx.asset.createMany({
           data: assetsToPersist
         });
+      }
+
+      await releaseRedirectOccupyingPath(`/servicos/${item.slug}`, tx);
+
+      if (currentSlug && currentSlug !== item.slug) {
+        await recordSlugChangeRedirect(
+          {
+            fromPath: `/servicos/${currentSlug}`,
+            toPath: `/servicos/${item.slug}`,
+            entityType: "servicePage",
+            entityId: item.slug
+          },
+          tx
+        );
       }
     });
   } catch (error) {

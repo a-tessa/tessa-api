@@ -4,6 +4,9 @@ import {
   draftContentSchema,
   MAX_SEO_META_DESCRIPTION_LENGTH,
   MAX_SEO_META_TITLE_LENGTH,
+  MAX_SEO_SOCIAL_DESCRIPTION_LENGTH,
+  MAX_SEO_SOCIAL_TITLE_LENGTH,
+  pageSeoEntrySchema,
   pageSeoSchema,
   SEO_PAGE_KEYS,
   seoDefaultsSchema,
@@ -163,6 +166,181 @@ describe("seoDefaults and pageSeo schemas", () => {
     assert.equal(localizedPages.home.focusKeyword, "steel structures");
     assert.equal(localizedPages.home.ogImageUrl, pageSeo.home.ogImageUrl);
     assert.equal(localizedPages.blog.metaTitle, pageSeo.blog.metaTitle);
+  });
+
+  it("parses a legacy pageSeo entry with new fields undefined and noFollow false", () => {
+    const parsed = pageSeoEntrySchema.parse({
+      metaTitle: "Estruturas metálicas para empresas",
+      metaDescription: "Estruturas metálicas, perfis sob medida e energia solar."
+    });
+
+    assert.equal(parsed.socialTitle, undefined);
+    assert.equal(parsed.socialDescription, undefined);
+    assert.equal(parsed.canonicalUrl, undefined);
+    assert.equal(parsed.noFollow, false);
+    assert.equal(parsed.noIndex, false);
+  });
+
+  it("accepts a relative canonical path and an absolute http(s) URL", () => {
+    const relative = pageSeoEntrySchema.parse({
+      metaTitle: "Serviços",
+      metaDescription: "Soluções Tessa para estruturas metálicas industriais.",
+      canonicalUrl: "/Servicos/Estrutura-Carport/"
+    });
+    assert.equal(relative.canonicalUrl, "/servicos/estrutura-carport");
+
+    const absolute = pageSeoEntrySchema.parse({
+      metaTitle: "Serviços",
+      metaDescription: "Soluções Tessa para estruturas metálicas industriais.",
+      canonicalUrl: "https://origem.example/artigo"
+    });
+    assert.equal(absolute.canonicalUrl, "https://origem.example/artigo");
+  });
+
+  it("rejects a canonical path without a leading slash or with a query string", () => {
+    const base = {
+      metaTitle: "Serviços",
+      metaDescription: "Soluções Tessa para estruturas metálicas industriais."
+    };
+
+    assert.equal(
+      pageSeoEntrySchema.safeParse({ ...base, canonicalUrl: "servicos/carport" }).success,
+      false
+    );
+    assert.equal(
+      pageSeoEntrySchema.safeParse({
+        ...base,
+        canonicalUrl: "/servicos/carport?utm=1"
+      }).success,
+      false
+    );
+  });
+
+  it("rejects a twitter handle without @ and accepts @handle", () => {
+    assert.equal(
+      seoDefaultsSchema.safeParse({
+        ...seoDefaults,
+        twitterSite: "tessaeng"
+      }).success,
+      false
+    );
+
+    const parsed = seoDefaultsSchema.parse({
+      ...seoDefaults,
+      twitterSite: "@tessaeng"
+    });
+    assert.equal(parsed.twitterSite, "@tessaeng");
+  });
+
+  it("rejects social title and description over the Yoast-style limits", () => {
+    const base = {
+      metaTitle: "Serviços",
+      metaDescription: "Soluções Tessa para estruturas metálicas industriais."
+    };
+
+    assert.equal(
+      pageSeoEntrySchema.safeParse({
+        ...base,
+        socialTitle: "a".repeat(MAX_SEO_SOCIAL_TITLE_LENGTH + 1)
+      }).success,
+      false
+    );
+    assert.equal(
+      pageSeoEntrySchema.safeParse({
+        ...base,
+        socialDescription: "a".repeat(MAX_SEO_SOCIAL_DESCRIPTION_LENGTH + 1)
+      }).success,
+      false
+    );
+
+    const parsed = pageSeoEntrySchema.parse({
+      ...base,
+      socialTitle: "Título social",
+      socialDescription: "Descrição social da página."
+    });
+    assert.equal(parsed.socialTitle, "Título social");
+    assert.equal(parsed.socialDescription, "Descrição social da página.");
+  });
+
+  it("omits empty social fields and preserves them when publishing", () => {
+    const withSocial = {
+      home: {
+        metaTitle: "Estruturas metálicas para empresas",
+        metaDescription:
+          "Estruturas metálicas, perfis sob medida e energia solar para empresas.",
+        socialTitle: "Estruturas Tessa",
+        socialDescription: "Engenharia aplicada em aço galvanizado.",
+        canonicalUrl: "/quem-somos",
+        noIndex: false,
+        noFollow: true
+      }
+    };
+
+    const parsed = pageSeoSchema.parse(withSocial);
+    assert.equal(parsed.home?.socialTitle, "Estruturas Tessa");
+    assert.equal(parsed.home?.noFollow, true);
+
+    const omitted = pageSeoEntrySchema.parse({
+      metaTitle: "Blog",
+      metaDescription: "Artigos técnicos sobre estruturas metálicas e energia solar.",
+      socialTitle: "   "
+    });
+    assert.equal(omitted.socialTitle, undefined);
+
+    const published = sanitizeContentForPublish({ pageSeo: withSocial });
+    const publishedPages = (published as Record<string, unknown>).pageSeo as typeof withSocial;
+    assert.equal(publishedPages.home.socialTitle, "Estruturas Tessa");
+    assert.equal(publishedPages.home.canonicalUrl, "/quem-somos");
+    assert.equal(publishedPages.home.noFollow, true);
+  });
+
+  it("extracts social copy and keeps canonical identical after the translation round-trip", () => {
+    const content = {
+      pageSeo: {
+        home: {
+          metaTitle: "Estruturas metálicas para empresas",
+          metaDescription:
+            "Estruturas metálicas, perfis sob medida e energia solar para empresas.",
+          socialTitle: "Estruturas Tessa para o feed",
+          socialDescription: "Aço galvanizado e engenharia aplicada.",
+          canonicalUrl: "/servicos/estrutura-carport",
+          noIndex: false,
+          noFollow: true
+        }
+      },
+      seoDefaults: {
+        ...seoDefaults,
+        twitterSite: "@tessaeng"
+      }
+    };
+
+    const extracted = extractLandingItems(content);
+    const ids = extracted.map((item) => item.id);
+    assert.equal(ids.includes("seo.page.home.socialTitle"), true);
+    assert.equal(ids.includes("seo.page.home.socialDescription"), true);
+    assert.equal(ids.includes("seo.page.home.canonicalUrl"), false);
+    assert.equal(
+      extracted.some((item) => item.text.includes("/servicos/estrutura-carport")),
+      false
+    );
+    assert.equal(
+      extracted.some((item) => item.text.includes("@tessaeng")),
+      false
+    );
+
+    const localized = applyLandingItems(content, {
+      "seo.page.home.socialTitle": "Tessa structures for the feed",
+      "seo.page.home.socialDescription": "Galvanized steel and applied engineering."
+    });
+    const localizedPages = localized.pageSeo as typeof content.pageSeo;
+    const localizedDefaults = localized.seoDefaults as typeof content.seoDefaults;
+    assert.equal(localizedPages.home.socialTitle, "Tessa structures for the feed");
+    assert.equal(
+      localizedPages.home.canonicalUrl,
+      "/servicos/estrutura-carport"
+    );
+    assert.equal(localizedPages.home.noFollow, true);
+    assert.equal(localizedDefaults.twitterSite, "@tessaeng");
   });
 
   it("requires authentication for the generated SEO admin routes", async () => {

@@ -635,10 +635,58 @@ export const MAX_SEO_SITE_NAME_LENGTH = 80;
 export const MAX_SEO_TITLE_TEMPLATE_LENGTH = 40;
 export const MAX_SEO_KEYWORDS = 15;
 export const MAX_SEO_VERIFICATION_LENGTH = 120;
+export const MAX_SEO_SOCIAL_TITLE_LENGTH = 90;
+export const MAX_SEO_SOCIAL_DESCRIPTION_LENGTH = 200;
 
 const optionalHttpUrl = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
   z.string().url().optional()
+);
+
+const CANONICAL_LOCALE_PREFIXES = new Set(["en", "es", "pt-br"]);
+
+function normalizeRelativeCanonicalPath(path: string): string {
+  let normalized = path.toLowerCase();
+  if (normalized.length > 1) {
+    normalized = normalized.replace(/\/+$/, "");
+  }
+  return normalized;
+}
+
+const relativeCanonicalSchema = z
+  .string()
+  .regex(
+    /^\/(?!\/)[^?#]*$/,
+    "Informe um caminho interno começando por / ou uma URL http(s)."
+  )
+  .refine((value) => {
+    const firstSegment = normalizeRelativeCanonicalPath(value)
+      .split("/")
+      .filter(Boolean)[0];
+    return !firstSegment || !CANONICAL_LOCALE_PREFIXES.has(firstSegment);
+  }, "O caminho da canonical não deve incluir prefixo de idioma.")
+  .transform(normalizeRelativeCanonicalPath);
+
+const absoluteCanonicalSchema = z
+  .string()
+  .url()
+  .refine(
+    (value) => /^https?:\/\//i.test(value),
+    "Informe um caminho interno começando por / ou uma URL http(s)."
+  );
+
+const canonicalUrlSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}, z.union([relativeCanonicalSchema, absoluteCanonicalSchema]).optional());
+
+const twitterSiteSchema = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z
+    .string()
+    .regex(/^@[A-Za-z0-9_]{1,15}$/, "Informe o handle no formato @perfil.")
+    .optional()
 );
 
 export const pageSeoEntrySchema = z.object({
@@ -646,7 +694,11 @@ export const pageSeoEntrySchema = z.object({
   metaDescription: nonEmptyString.max(MAX_SEO_META_DESCRIPTION_LENGTH),
   focusKeyword: optionalBoundedString(MAX_SEO_FOCUS_KEYWORD_LENGTH),
   ogImageUrl: optionalHttpUrl,
+  socialTitle: optionalBoundedString(MAX_SEO_SOCIAL_TITLE_LENGTH),
+  socialDescription: optionalBoundedString(MAX_SEO_SOCIAL_DESCRIPTION_LENGTH),
+  canonicalUrl: canonicalUrlSchema,
   noIndex: z.boolean().default(false),
+  noFollow: z.boolean().default(false),
   changeFrequency: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
   priority: z.number().min(0).max(1).optional()
 });
@@ -671,6 +723,7 @@ export const seoDefaultsSchema = z.object({
   defaultOgImageUrl: optionalHttpUrl,
   googleSiteVerification: optionalBoundedString(MAX_SEO_VERIFICATION_LENGTH),
   bingSiteVerification: optionalBoundedString(MAX_SEO_VERIFICATION_LENGTH),
+  twitterSite: twitterSiteSchema,
   allowIndexing: z.boolean().default(true)
 });
 
