@@ -43,6 +43,7 @@ import {
   servicesPageMultipartInputSchema,
   servicesPageMutationSchema
 } from "./content.schemas.js";
+import type { ContentLocale } from "../translation/translation.types.js";
 
 export type CollectionItemParams = z.infer<typeof collectionItemParamsSchema>;
 export type ServicePageSlugParams = z.infer<typeof servicePageSlugParamsSchema>;
@@ -129,6 +130,7 @@ export type PublicContentRecord = {
   content: ContentWithScenery<PublishedContent>;
   publishedAt: Date | null;
   updatedAt: Date | null;
+  availableLocales: ContentLocale[];
 };
 
 export type AdminContentRecord = {
@@ -146,6 +148,7 @@ export type PublicContentResponseDto = {
   content: PublicContentDto["content"];
   publishedAt: Date | null;
   updatedAt: Date | null;
+  availableLocales: ContentLocale[];
 };
 
 export type AdminContentResponseDto = {

@@ -5,6 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import {
   createRedirect,
   listPublicRedirects,
+  listRedirects,
   normalizePath,
   recordSlugChangeRedirect,
   releaseRedirectOccupyingPath
@@ -157,6 +158,27 @@ async function installRedirectStore(seed: StoredRedirect[] = []) {
     value: async () => rows.size
   });
 
+  Object.defineProperty(prisma.blogArticle, "findFirst", {
+    configurable: true,
+    value: async () => null
+  });
+  Object.defineProperty(prisma.blogArticle, "findMany", {
+    configurable: true,
+    value: async () => []
+  });
+  Object.defineProperty(prisma.landingPage, "findUnique", {
+    configurable: true,
+    value: async () => null
+  });
+  Object.defineProperty(prisma.landingPage, "findFirst", {
+    configurable: true,
+    value: async () => null
+  });
+  Object.defineProperty(prisma, "$transaction", {
+    configurable: true,
+    value: async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma)
+  });
+
   return { prisma, rows };
 }
 
@@ -188,6 +210,37 @@ describe("createRedirect", () => {
     assert.equal(rows.get("/a")?.toPath, "/c");
   });
 
+  it("stores the terminal destination when /b → /c already exists and /a → /b is created", async () => {
+    const { rows } = await installRedirectStore([
+      createRow({ id: "existing", fromPath: "/b", toPath: "/c" })
+    ]);
+
+    await createRedirect({ fromPath: "/a", toPath: "/b" });
+
+    assert.equal(rows.get("/a")?.toPath, "/c");
+    assert.equal(rows.get("/b")?.toPath, "/c");
+  });
+
+  it("rejects a cycle longer than a self-loop", async () => {
+    await installRedirectStore([
+      createRow({ id: "ab", fromPath: "/a", toPath: "/b" }),
+      createRow({ id: "bc", fromPath: "/b", toPath: "/c" })
+    ]);
+
+    await assert.rejects(
+      () => createRedirect({ fromPath: "/c", toPath: "/a" }),
+      (error: unknown) => error instanceof HTTPException && error.status === 400
+    );
+  });
+
+  it("rejects a fromPath that is still a live public page", async () => {
+    await installRedirectStore();
+    await assert.rejects(
+      () => createRedirect({ fromPath: "/contato", toPath: "/quem-somos" }),
+      (error: unknown) => error instanceof HTTPException && error.status === 400
+    );
+  });
+
   it("updates the destination when fromPath already exists", async () => {
     const { rows } = await installRedirectStore([
       createRow({ id: "existing", fromPath: "/blog/antigo", toPath: "/blog/meio" })
@@ -201,6 +254,39 @@ describe("createRedirect", () => {
     assert.equal(updated.id, "existing");
     assert.equal(rows.get("/blog/antigo")?.toPath, "/blog/novo");
     assert.equal(rows.size, 1);
+  });
+});
+
+describe("listRedirects", () => {
+  it("marks occupied origins and missing blog destinations", async () => {
+    await installRedirectStore([
+      createRow({
+        id: "dead",
+        fromPath: "/blog/antigo",
+        toPath: "/blog/apagado",
+        source: "slugChange",
+        entityType: "blogArticle"
+      }),
+      createRow({
+        id: "occupied",
+        fromPath: "/blog/publicado",
+        toPath: "/blog/outro"
+      })
+    ]);
+    const prisma = await loadPrisma();
+    Object.defineProperty(prisma.blogArticle, "findMany", {
+      configurable: true,
+      value: async () => [{ slug: "publicado" }]
+    });
+
+    const result = await listRedirects({ page: 1, perPage: 20 });
+    const dead = result.redirects.find((row) => row.fromPath === "/blog/antigo");
+    const occupied = result.redirects.find((row) => row.fromPath === "/blog/publicado");
+
+    assert.equal(dead?.destinationMissing, true);
+    assert.equal(dead?.sourceOccupied, false);
+    assert.equal(occupied?.destinationMissing, true);
+    assert.equal(occupied?.sourceOccupied, true);
   });
 });
 

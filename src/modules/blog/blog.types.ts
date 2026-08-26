@@ -36,13 +36,14 @@ export type BlogArticleRecord = {
 
 export type BlogArticleDto = Omit<BlogArticleRecord, "author"> & {
   author: { id: string; name: string; avatarUrl: string | null };
-};
-
-export type BlogArticleListItem = BlogArticleRecord;
-
-export type BlogArticleAdminListItem = BlogArticleListItem & {
   availableLocales: ContentLocale[];
 };
+
+export type BlogArticleListItem = BlogArticleRecord & {
+  availableLocales: ContentLocale[];
+};
+
+export type BlogArticleAdminListItem = BlogArticleListItem;
 
 export type BlogArticlesListResult = {
   articles: BlogArticleListItem[];

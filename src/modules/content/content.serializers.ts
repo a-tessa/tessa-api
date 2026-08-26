@@ -25,7 +25,8 @@ export function serializePublicContentResponse(
   return {
     content: content.content,
     publishedAt: content.publishedAt,
-    updatedAt: content.updatedAt
+    updatedAt: content.updatedAt,
+    availableLocales: content.availableLocales
   };
 }
 

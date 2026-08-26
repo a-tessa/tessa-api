@@ -4,6 +4,7 @@ import type { Translation } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { isTranslationConfigured } from "../../lib/ai.js";
 import { env } from "../../env.js";
+import { notifySeoIndexChanged } from "../seo/seo-index-revalidation.js";
 import type { BlogArticleRecord } from "../blog/blog.types.js";
 import type { DocumentRecord } from "../documents/documents.types.js";
 import type { GalleryMediaItemRecord } from "../gallery/gallery.types.js";
@@ -478,10 +479,17 @@ export async function processEntityTranslations(
     }
   });
 
+  let processed = 0;
+
   for (const row of rows) {
     if (await tryClaim(row.id)) {
       await processClaimedRow(row);
+      processed += 1;
     }
+  }
+
+  if (processed > 0) {
+    notifySeoIndexChanged();
   }
 }
 
@@ -517,6 +525,10 @@ export async function runPendingTranslations(
       await processClaimedRow(row);
       processed += 1;
     }
+  }
+
+  if (processed > 0) {
+    notifySeoIndexChanged();
   }
 
   return { processed };
@@ -572,6 +584,31 @@ export async function findCompletedLocalesByEntityIds(
   }
 
   return result;
+}
+
+export function allContentLocales(): ContentLocale[] {
+  return [SOURCE_LOCALE, ...TARGET_LOCALES];
+}
+
+export function resolveAdvertisedLocales(
+  completed: ContentLocale[] | undefined,
+  translationConfigured: boolean
+): ContentLocale[] {
+  if (!translationConfigured) {
+    return allContentLocales();
+  }
+  return completed && completed.length > 0 ? completed : [SOURCE_LOCALE];
+}
+
+export async function listAdvertisedLocales(
+  entityType: TranslationEntityType,
+  entityId: string
+): Promise<ContentLocale[]> {
+  if (!isTranslationConfigured()) {
+    return allContentLocales();
+  }
+  const map = await findCompletedLocalesByEntityIds(entityType, [entityId]);
+  return map.get(entityId) ?? [SOURCE_LOCALE];
 }
 
 async function findCompletedTranslation(

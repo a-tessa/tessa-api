@@ -52,7 +52,151 @@ export function normalizeDestination(value: string): string {
   return normalizePath(trimmed);
 }
 
-async function collapseChains(
+const FIXED_PUBLIC_PATHS = new Set([
+  "/",
+  "/quem-somos",
+  "/servicos",
+  "/representantes",
+  "/blog",
+  "/downloads",
+  "/galeria",
+  "/contato"
+]);
+
+const STATIC_SERVICE_SLUGS = new Set([
+  "estruturas-metalicas-para-telhado",
+  "carport",
+  "estrutura-de-solo",
+  "estrutura-de-aviario",
+  "estruturas-para-creches",
+  "perfis-especiais"
+]);
+
+const LIVE_ORIGIN_MESSAGE =
+  "Não é possível redirecionar uma página que ainda está no ar. Altere a URL do conteúdo ou cadastre outro caminho de origem.";
+const CYCLE_MESSAGE = "Este redirecionamento forma um ciclo.";
+
+function slugFromPrefixedPath(path: string, prefix: "/blog/" | "/servicos/"): string | null {
+  if (!path.startsWith(prefix)) return null;
+  const slug = path.slice(prefix.length);
+  if (!slug || slug.includes("/")) return null;
+  return slug;
+}
+
+function publishedServiceSlugs(publishedContent: unknown): Set<string> {
+  const slugs = new Set<string>(STATIC_SERVICE_SLUGS);
+  if (!publishedContent || typeof publishedContent !== "object") return slugs;
+  const pages = (publishedContent as { servicesPages?: unknown }).servicesPages;
+  if (!Array.isArray(pages)) return slugs;
+  for (const page of pages) {
+    if (
+      page &&
+      typeof page === "object" &&
+      "slug" in page &&
+      typeof page.slug === "string" &&
+      page.slug.length > 0
+    ) {
+      slugs.add(page.slug);
+    }
+  }
+  return slugs;
+}
+
+async function isLivePublicPath(path: string, db: RedirectDb): Promise<boolean> {
+  if (FIXED_PUBLIC_PATHS.has(path)) return true;
+
+  const blogSlug = slugFromPrefixedPath(path, "/blog/");
+  if (blogSlug) {
+    const article = await db.blogArticle.findFirst({
+      where: { slug: blogSlug, status: "published" },
+      select: { id: true }
+    });
+    return article !== null;
+  }
+
+  const serviceSlug = slugFromPrefixedPath(path, "/servicos/");
+  if (!serviceSlug) return false;
+  if (STATIC_SERVICE_SLUGS.has(serviceSlug)) return true;
+
+  const landing = await db.landingPage.findUnique({
+    where: { slug: "home" },
+    select: { publishedContent: true }
+  });
+  return publishedServiceSlugs(landing?.publishedContent).has(serviceSlug);
+}
+
+async function loadLivePublicPaths(): Promise<{
+  blogSlugs: Set<string>;
+  serviceSlugs: Set<string>;
+}> {
+  const [articles, landing] = await Promise.all([
+    prisma.blogArticle.findMany({
+      where: { status: "published" },
+      select: { slug: true }
+    }),
+    prisma.landingPage.findUnique({
+      where: { slug: "home" },
+      select: { publishedContent: true }
+    })
+  ]);
+
+  return {
+    blogSlugs: new Set(articles.map((article) => article.slug)),
+    serviceSlugs: publishedServiceSlugs(landing?.publishedContent)
+  };
+}
+
+function isPathOccupied(
+  path: string,
+  live: { blogSlugs: Set<string>; serviceSlugs: Set<string> }
+): boolean {
+  if (FIXED_PUBLIC_PATHS.has(path)) return true;
+  const blogSlug = slugFromPrefixedPath(path, "/blog/");
+  if (blogSlug) return live.blogSlugs.has(blogSlug);
+  const serviceSlug = slugFromPrefixedPath(path, "/servicos/");
+  if (serviceSlug) return live.serviceSlugs.has(serviceSlug);
+  return false;
+}
+
+function isDestinationMissing(
+  toPath: string,
+  live: { blogSlugs: Set<string>; serviceSlugs: Set<string> }
+): boolean {
+  if (isAbsoluteHttpUrl(toPath)) return false;
+  const blogSlug = slugFromPrefixedPath(toPath, "/blog/");
+  if (blogSlug) return !live.blogSlugs.has(blogSlug);
+  const serviceSlug = slugFromPrefixedPath(toPath, "/servicos/");
+  if (serviceSlug) return !live.serviceSlugs.has(serviceSlug);
+  return false;
+}
+
+async function resolveTerminalDestination(
+  db: RedirectDb,
+  start: string,
+  originFromPath: string
+): Promise<string> {
+  if (isAbsoluteHttpUrl(start)) return start;
+
+  const seen = new Set<string>([originFromPath]);
+  let current = start;
+
+  while (!isAbsoluteHttpUrl(current)) {
+    if (seen.has(current)) {
+      badRequest(CYCLE_MESSAGE);
+    }
+    seen.add(current);
+    if (seen.size > 20) {
+      badRequest(CYCLE_MESSAGE);
+    }
+    const next = await db.redirect.findUnique({ where: { fromPath: current } });
+    if (!next) return current;
+    current = next.toPath;
+  }
+
+  return current;
+}
+
+async function collapseInbound(
   db: RedirectDb,
   fromPath: string,
   toPath: string
@@ -66,15 +210,28 @@ async function collapseChains(
   });
 }
 
-export async function createRedirect(
-  input: CreateRedirectInput,
-  db: RedirectDb = prisma
+function hasTransaction(db: RedirectDb): db is PrismaClient {
+  return "$transaction" in db;
+}
+
+async function persistRedirect(
+  db: RedirectDb,
+  input: CreateRedirectInput
 ): Promise<RedirectRecord> {
   const fromPath = normalizePath(input.fromPath);
-  const toPath = normalizeDestination(input.toPath);
+  const requestedTo = normalizeDestination(input.toPath);
 
-  if (fromPath === toPath) {
+  if (fromPath === requestedTo) {
     badRequest("A origem e o destino do redirecionamento não podem ser iguais.");
+  }
+
+  const toPath = await resolveTerminalDestination(db, requestedTo, fromPath);
+  if (fromPath === toPath) {
+    badRequest(CYCLE_MESSAGE);
+  }
+
+  if (await isLivePublicPath(fromPath, db)) {
+    badRequest(LIVE_ORIGIN_MESSAGE);
   }
 
   const existing = await db.redirect.findUnique({ where: { fromPath } });
@@ -94,29 +251,47 @@ export async function createRedirect(
       })
     : await db.redirect.create({ data });
 
-  await collapseChains(db, fromPath, toPath);
+  await collapseInbound(db, fromPath, toPath);
   return record;
 }
 
-export async function updateRedirect(
-  id: string,
-  input: UpdateRedirectInput,
+export async function createRedirect(
+  input: CreateRedirectInput,
   db: RedirectDb = prisma
+): Promise<RedirectRecord> {
+  if (hasTransaction(db)) {
+    return db.$transaction((tx) => persistRedirect(tx, input));
+  }
+  return persistRedirect(db, input);
+}
+
+async function persistUpdateRedirect(
+  db: RedirectDb,
+  id: string,
+  input: UpdateRedirectInput
 ): Promise<RedirectRecord> {
   const existing = await db.redirect.findUnique({ where: { id } });
   if (!existing) notFound("Redirecionamento não encontrado.");
 
   const fromPath = input.fromPath ? normalizePath(input.fromPath) : existing.fromPath;
-  const toPath = input.toPath ? normalizeDestination(input.toPath) : existing.toPath;
+  const requestedTo = input.toPath ? normalizeDestination(input.toPath) : existing.toPath;
 
-  if (fromPath === toPath) {
+  if (fromPath === requestedTo) {
     badRequest("A origem e o destino do redirecionamento não podem ser iguais.");
+  }
+
+  const toPath = await resolveTerminalDestination(db, requestedTo, fromPath);
+  if (fromPath === toPath) {
+    badRequest(CYCLE_MESSAGE);
   }
 
   if (fromPath !== existing.fromPath) {
     const conflict = await db.redirect.findUnique({ where: { fromPath } });
     if (conflict && conflict.id !== existing.id) {
       badRequest("Já existe um redirecionamento com este caminho de origem.");
+    }
+    if (await isLivePublicPath(fromPath, db)) {
+      badRequest(LIVE_ORIGIN_MESSAGE);
     }
   }
 
@@ -130,8 +305,19 @@ export async function updateRedirect(
     }
   });
 
-  await collapseChains(db, fromPath, toPath);
+  await collapseInbound(db, fromPath, toPath);
   return record;
+}
+
+export async function updateRedirect(
+  id: string,
+  input: UpdateRedirectInput,
+  db: RedirectDb = prisma
+): Promise<RedirectRecord> {
+  if (hasTransaction(db)) {
+    return db.$transaction((tx) => persistUpdateRedirect(tx, id, input));
+  }
+  return persistUpdateRedirect(db, id, input);
 }
 
 export async function deleteRedirect(id: string, db: RedirectDb = prisma): Promise<void> {
@@ -161,8 +347,14 @@ export async function listRedirects(query: RedirectListQuery): Promise<RedirectL
     prisma.redirect.count({ where })
   ]);
 
+  const live = await loadLivePublicPaths();
+
   return {
-    redirects,
+    redirects: redirects.map((record) => ({
+      ...record,
+      destinationMissing: isDestinationMissing(record.toPath, live),
+      sourceOccupied: isPathOccupied(record.fromPath, live)
+    })),
     pagination: { page: query.page, perPage: query.perPage, total }
   };
 }

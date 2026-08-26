@@ -41,6 +41,13 @@ export const createBlogArticleSchema = z
 
 export const updateBlogArticleSchema = z.object({
   title: z.string().trim().min(2).max(200).optional(),
+  slug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use apenas letras minúsculas, números e hífens.")
+    .optional(),
   content: z.string().optional(),
   categorySlug: nonEmptyString.optional(),
   headerImageAlt: z.string().trim().max(255).optional(),

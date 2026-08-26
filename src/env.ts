@@ -40,6 +40,8 @@ const envSchema = z.object({
     .default("false")
     .transform((value) => value === "true"),
   ADMIN_APP_URL: z.string().url().optional(),
+  LANDING_APP_URL: z.string().url().optional(),
+  SEO_REVALIDATE_SECRET: z.string().min(16).optional(),
   // Google Business Profile reviews sync.
   // "auto" (default): use live when credentials exist, otherwise stub outside
   // production. Force with "live" | "stub" | "off".

@@ -10,13 +10,17 @@ import {
   recordSlugChangeRedirect,
   releaseRedirectOccupyingPath
 } from "../redirects/redirects.service.js";
+import { isTranslationConfigured } from "../../lib/ai.js";
+import { notifySeoIndexChanged } from "../seo/seo-index-revalidation.js";
 import { BLOG_ENTITY_TYPE } from "../translation/translation.config.js";
 import {
   enqueueBlogTranslations,
   findCompletedLocalesByEntityIds,
   processEntityTranslations,
+  resolveAdvertisedLocales,
   runTranslationsInBackground
 } from "../translation/translation.service.js";
+import type { ContentLocale } from "../translation/translation.types.js";
 import type {
   BlogArticleRecord,
   BlogArticlesAdminListResult,
@@ -175,6 +179,7 @@ export async function createBlogArticle(
   });
 
   await triggerBlogTranslations(article);
+  notifySeoIndexChanged();
 
   return article;
 }
@@ -211,9 +216,26 @@ export async function listBlogArticles(query: BlogListQuery): Promise<BlogArticl
   ]);
 
   return {
-    articles,
+    articles: await withAdvertisedLocales(articles),
     pagination: { page: query.page, perPage: query.perPage, total }
   };
+}
+
+async function withAdvertisedLocales<T extends { id: string }>(
+  articles: T[]
+): Promise<Array<T & { availableLocales: ContentLocale[] }>> {
+  const configured = isTranslationConfigured();
+  const localesByEntityId = configured
+    ? await findCompletedLocalesByEntityIds(
+        BLOG_ENTITY_TYPE,
+        articles.map((article) => article.id)
+      )
+    : new Map();
+
+  return articles.map((article) => ({
+    ...article,
+    availableLocales: resolveAdvertisedLocales(localesByEntityId.get(article.id), configured)
+  }));
 }
 
 export async function listAdminBlogArticles(
@@ -279,6 +301,13 @@ export async function getPublishedBlogArticleBySlug(slug: string): Promise<BlogA
   return article;
 }
 
+export async function attachAdvertisedLocales<T extends { id: string }>(
+  article: T
+): Promise<T & { availableLocales: ContentLocale[] }> {
+  const [withLocales] = await withAdvertisedLocales([article]);
+  return withLocales!;
+}
+
 export async function updateBlogArticle(
   slug: string,
   input: UpdateBlogArticleInput,
@@ -303,9 +332,8 @@ export async function updateBlogArticle(
   }
 
   let newSlug = existing.slug;
-  if (input.title) {
-    const baseSlug = generateSlug(input.title);
-    newSlug = await ensureUniqueSlug(baseSlug, existing.id);
+  if (input.slug && input.slug !== existing.slug) {
+    newSlug = await ensureUniqueSlug(input.slug, existing.id);
   }
 
   let headerImageUrl = existing.headerImageUrl;
@@ -338,7 +366,7 @@ export async function updateBlogArticle(
       where: { slug },
       data: {
         ...(input.title && { title: input.title }),
-        ...(input.title && { slug: newSlug }),
+        ...(newSlug !== existing.slug && { slug: newSlug }),
         ...(input.content !== undefined && { content: input.content }),
         ...(input.categorySlug && { categorySlug: input.categorySlug }),
         ...(input.headerImageAlt !== undefined && { headerImageAlt: input.headerImageAlt ?? null }),
@@ -367,6 +395,7 @@ export async function updateBlogArticle(
   });
 
   await triggerBlogTranslations(article);
+  notifySeoIndexChanged();
 
   return article;
 }
@@ -392,4 +421,5 @@ export async function deleteBlogArticle(slug: string): Promise<void> {
   });
 
   await prisma.blogArticle.delete({ where: { slug } });
+  notifySeoIndexChanged();
 }

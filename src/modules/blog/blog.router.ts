@@ -21,6 +21,7 @@ import {
   normalizeLocale
 } from "../translation/translation.service.js";
 import {
+  attachAdvertisedLocales,
   createBlogArticle,
   deleteBlogArticle,
   getBlogArticleBySlug,
@@ -92,7 +93,8 @@ blogRouter.get(
     const locale = normalizeLocale(c.req.query("locale"));
     const article = await getPublishedBlogArticleBySlug(slug);
     const localized = await localizeBlogArticle(article, locale);
-    return c.json(serializeBlogArticleResponse(localized));
+    const withLocales = await attachAdvertisedLocales(localized);
+    return c.json(serializeBlogArticleResponse(withLocales));
   }
 );
 
@@ -133,6 +135,7 @@ blogRouter.put(
     const contentRaw = formData.get("content");
     const body = updateBlogArticleSchema.parse({
       title: formData.get("title") || undefined,
+      slug: formData.get("slug") || undefined,
       content: typeof contentRaw === "string" ? contentRaw : undefined,
       categorySlug: formData.get("categorySlug") || undefined,
       headerImageAlt: formData.get("headerImageAlt") || undefined,

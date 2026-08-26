@@ -35,6 +35,13 @@ export type RedirectDto = {
   entityId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  destinationMissing: boolean;
+  sourceOccupied: boolean;
+};
+
+export type RedirectListItem = RedirectRecord & {
+  destinationMissing: boolean;
+  sourceOccupied: boolean;
 };
 
 export type PublicRedirectDto = {
@@ -44,7 +51,7 @@ export type PublicRedirectDto = {
 };
 
 export type RedirectListResult = {
-  redirects: RedirectRecord[];
+  redirects: RedirectListItem[];
   pagination: PaginationState;
 };
 

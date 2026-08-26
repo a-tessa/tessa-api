@@ -392,7 +392,8 @@ const servicesPageMutationBaseSchema = servicesPageBaseSchema.extend({
 export const servicesPageItemSchema = z.preprocess(
   normalizeLegacyServicesPage,
   servicesPageBaseSchema.extend({
-    images: servicesPageImagesSchema
+    images: servicesPageImagesSchema,
+    updatedAt: z.string().datetime().optional()
   })
 );
 

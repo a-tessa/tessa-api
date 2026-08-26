@@ -37,9 +37,11 @@ import {
 } from "../redirects/redirects.service.js";
 import { validateInstagramSelectionForPublish } from "../instagram/instagram.service.js";
 import { LANDING_ENTITY_TYPE } from "../translation/translation.config.js";
+import { notifySeoIndexChanged } from "../seo/seo-index-revalidation.js";
 import {
   enqueueLandingTranslations,
   getLandingTranslationPublicationStatus,
+  listAdvertisedLocales,
   localizeLandingContent,
   processEntityTranslations,
   retryLandingTranslations,
@@ -1061,7 +1063,8 @@ async function saveServicePageContent(
     subtitle: item.subtitle,
     exampleVideoUrl: item.exampleVideoUrl,
     backgroundImageUrl: item.backgroundImageUrl,
-    images: item.images.map((image) => ({ imgUrl: image.imgUrl }))
+    images: item.images.map((image) => ({ imgUrl: image.imgUrl })),
+    updatedAt: new Date().toISOString()
   };
 
   const nextContent = {
@@ -1553,6 +1556,7 @@ export async function getPublicContent(
 
   const publishedContent = sanitizeContentForPublish(page.publishedContent) as PublicContentRecord["content"];
   const localizedContent = await localizeLandingContent(publishedContent, page.id, locale ?? null);
+  const availableLocales = await listAdvertisedLocales(LANDING_ENTITY_TYPE, page.id);
 
   return {
     content: {
@@ -1560,7 +1564,8 @@ export async function getPublicContent(
       npsResponses: approvedNpsResponses
     } as PublicContentRecord["content"],
     publishedAt: page.publishedAt,
-    updatedAt: page.updatedAt
+    updatedAt: page.updatedAt,
+    availableLocales
   };
 }
 
@@ -1611,6 +1616,7 @@ export async function publishMainContent(userId: string): Promise<AdminContentRe
   await reconcilePublishedSeoOgAssets(publishedContent);
   await enqueueLandingTranslations(page.id, publishedContent);
   runTranslationsInBackground(processEntityTranslations(LANDING_ENTITY_TYPE, page.id));
+  notifySeoIndexChanged();
 
   return {
     status: page.status,

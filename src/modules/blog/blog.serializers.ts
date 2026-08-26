@@ -1,4 +1,5 @@
 import { serializePagination } from "../shared/pagination.serializers.js";
+import type { ContentLocale } from "../translation/translation.types.js";
 import type {
   BlogArticleAdminListItem,
   BlogArticleDto,
@@ -12,7 +13,9 @@ import type {
   BlogBodyImageUploadResponseDto
 } from "./blog.types.js";
 
-export function serializeBlogArticle(record: BlogArticleRecord): BlogArticleDto {
+export function serializeBlogArticle(
+  record: BlogArticleRecord & { availableLocales?: ContentLocale[] }
+): BlogArticleDto {
   return {
     id: record.id,
     title: record.title,
@@ -25,7 +28,8 @@ export function serializeBlogArticle(record: BlogArticleRecord): BlogArticleDto 
     publishedAt: record.publishedAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
-    author: record.author
+    author: record.author,
+    availableLocales: record.availableLocales ?? ["pt-BR"]
   };
 }
 
@@ -42,7 +46,8 @@ export function serializeBlogArticleListItem(record: BlogArticleListItem): BlogA
     publishedAt: record.publishedAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
-    author: record.author
+    author: record.author,
+    availableLocales: record.availableLocales
   };
 }
 

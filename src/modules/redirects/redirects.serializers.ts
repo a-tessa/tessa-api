@@ -3,13 +3,16 @@ import type {
   PublicRedirectDto,
   PublicRedirectsResponseDto,
   RedirectDto,
+  RedirectListItem,
   RedirectListResponseDto,
   RedirectListResult,
   RedirectRecord,
   RedirectResponseDto
 } from "./redirects.types.js";
 
-export function serializeRedirect(record: RedirectRecord): RedirectDto {
+export function serializeRedirect(
+  record: RedirectRecord | RedirectListItem
+): RedirectDto {
   return {
     id: record.id,
     fromPath: record.fromPath,
@@ -19,7 +22,9 @@ export function serializeRedirect(record: RedirectRecord): RedirectDto {
     entityType: record.entityType,
     entityId: record.entityId,
     createdAt: record.createdAt,
-    updatedAt: record.updatedAt
+    updatedAt: record.updatedAt,
+    destinationMissing: "destinationMissing" in record ? record.destinationMissing : false,
+    sourceOccupied: "sourceOccupied" in record ? record.sourceOccupied : false
   };
 }
 
