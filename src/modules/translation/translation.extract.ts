@@ -220,6 +220,18 @@ function walkLanding(content: Json, resolve: Resolver): Json {
     if (nonEmpty(page.subtitle)) {
       page.subtitle = resolve(`service.${page.slug}.subtitle`, page.subtitle, "plain");
     }
+    if (nonEmpty(page.backgroundImageAlt)) {
+      page.backgroundImageAlt = resolve(
+        `service.${page.slug}.backgroundImageAlt`,
+        page.backgroundImageAlt,
+        "plain"
+      );
+    }
+    for (const [index, image] of asObjectArray(page.images).entries()) {
+      if (nonEmpty(image.alt)) {
+        image.alt = resolve(`service.${page.slug}.image.${index}.alt`, image.alt, "plain");
+      }
+    }
   }
 
   for (const category of asObjectArray(clone.categories)) {

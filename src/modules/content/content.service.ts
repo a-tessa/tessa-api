@@ -828,6 +828,7 @@ async function saveServicePageContent(
 
   const requestedImages: Array<{
     imgUrl?: string;
+    alt?: string;
     meta?: { pathname: string; mimeType: string; sizeBytes: number; originalFilename: string };
   }> = Array.isArray(input.images)
     ? input.images
@@ -892,6 +893,7 @@ async function saveServicePageContent(
         image.imgUrl ??
         existingImages[index]?.imgUrl ??
         "",
+      alt: image.alt ?? existingImages[index]?.alt ?? "",
       meta: image.meta
     }))
   });
@@ -948,7 +950,7 @@ async function saveServicePageContent(
       mimeType: preparedBackground.contentType,
       sizeBytes: preparedBackground.sizeBytes,
       originalFilename: preparedBackground.originalFilename,
-      alt: null,
+      alt: item.backgroundImageAlt,
       createdById: userId
     });
   } else if (item.backgroundImageMeta) {
@@ -964,7 +966,7 @@ async function saveServicePageContent(
       mimeType: item.backgroundImageMeta.mimeType,
       sizeBytes: item.backgroundImageMeta.sizeBytes,
       originalFilename: item.backgroundImageMeta.originalFilename,
-      alt: null,
+      alt: item.backgroundImageAlt,
       createdById: userId
     });
   } else {
@@ -984,7 +986,7 @@ async function saveServicePageContent(
         mimeType: retainedBackgroundAsset.mimeType,
         sizeBytes: retainedBackgroundAsset.sizeBytes,
         originalFilename: retainedBackgroundAsset.originalFilename,
-        alt: retainedBackgroundAsset.alt,
+        alt: item.backgroundImageAlt,
         createdById: retainedBackgroundAsset.createdById
       });
     }
@@ -1007,7 +1009,7 @@ async function saveServicePageContent(
         mimeType: preparedImage.contentType,
         sizeBytes: preparedImage.sizeBytes,
         originalFilename: preparedImage.originalFilename,
-        alt: null,
+        alt: image.alt,
         createdById: userId
       });
       continue;
@@ -1026,7 +1028,7 @@ async function saveServicePageContent(
         mimeType: image.meta.mimeType,
         sizeBytes: image.meta.sizeBytes,
         originalFilename: image.meta.originalFilename,
-        alt: null,
+        alt: image.alt,
         createdById: userId
       });
       continue;
@@ -1051,7 +1053,7 @@ async function saveServicePageContent(
       mimeType: retainedImageAsset.mimeType,
       sizeBytes: retainedImageAsset.sizeBytes,
       originalFilename: retainedImageAsset.originalFilename,
-      alt: retainedImageAsset.alt,
+      alt: image.alt,
       createdById: retainedImageAsset.createdById
     });
   }
@@ -1063,7 +1065,8 @@ async function saveServicePageContent(
     subtitle: item.subtitle,
     exampleVideoUrl: item.exampleVideoUrl,
     backgroundImageUrl: item.backgroundImageUrl,
-    images: item.images.map((image) => ({ imgUrl: image.imgUrl })),
+    backgroundImageAlt: item.backgroundImageAlt,
+    images: item.images.map((image) => ({ imgUrl: image.imgUrl, alt: image.alt })),
     updatedAt: new Date().toISOString()
   };
 

@@ -11,6 +11,7 @@ export const MAX_OPERATION_SECTION_IMAGES = 40;
 export const MIN_OPERATION_SECTION_IMAGES_FOR_PUBLISH = 6;
 export const MAX_OPERATION_ALT_LENGTH = 100;
 export const MAX_OPERATION_CAPTION_LENGTH = 300;
+export const MAX_SERVICE_IMAGE_ALT_LENGTH = 100;
 
 export const collectionItemParamsSchema = z.object({
   itemId: nonEmptyString
@@ -291,16 +292,19 @@ export const npsItemSchema = z.object({
 });
 
 export const servicesPageImageSchema = z.object({
-  imgUrl: nonEmptyString
+  imgUrl: nonEmptyString,
+  alt: optionalBoundedString(MAX_SERVICE_IMAGE_ALT_LENGTH)
 });
 
 export const servicesPageImageMutationSchema = z.object({
   imgUrl: nonEmptyString,
+  alt: nonEmptyString.max(MAX_SERVICE_IMAGE_ALT_LENGTH),
   meta: servicePageAssetMetaSchema.optional()
 });
 
 export const servicesPageImageInputSchema = z.object({
   imgUrl: nonEmptyString.optional(),
+  alt: nonEmptyString.max(MAX_SERVICE_IMAGE_ALT_LENGTH).optional(),
   meta: servicePageAssetMetaSchema.optional()
 });
 
@@ -382,11 +386,13 @@ const servicesPageBaseSchema = z.object({
   category: nonEmptyString,
   subtitle: nonEmptyString,
   exampleVideoUrl: nonEmptyString,
-  backgroundImageUrl: nonEmptyString
+  backgroundImageUrl: nonEmptyString,
+  backgroundImageAlt: optionalBoundedString(MAX_SERVICE_IMAGE_ALT_LENGTH)
 });
 
 const servicesPageMutationBaseSchema = servicesPageBaseSchema.extend({
-  backgroundImageMeta: servicePageAssetMetaSchema.optional()
+  backgroundImageMeta: servicePageAssetMetaSchema.optional(),
+  backgroundImageAlt: nonEmptyString.max(MAX_SERVICE_IMAGE_ALT_LENGTH)
 });
 
 export const servicesPageItemSchema = z.preprocess(
