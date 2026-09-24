@@ -13,7 +13,15 @@ export const galleryMediaKindSchema = z.enum(["photo", "video"]);
 
 function optionalBoundedString(maximumLength: number) {
   return z.preprocess(
-    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    (value) => {
+      if (value === null || value === undefined) {
+        return undefined;
+      }
+      if (typeof value === "string" && value.trim() === "") {
+        return undefined;
+      }
+      return value;
+    },
     nonEmptyString.max(maximumLength).optional()
   );
 }

@@ -44,6 +44,18 @@ describe("gallery media item schemas", () => {
     assert.equal(parsed.categorySlug, null);
   });
 
+  it("treats a null caption as absent", () => {
+    const parsed = createGalleryVideoSchema.parse({
+      youtubeUrl: "https://www.youtube.com/watch?v=EeLYcZsdYrw",
+      alt: "Vídeo institucional",
+      caption: null,
+      categorySlug: null
+    });
+
+    assert.equal(parsed.caption, undefined);
+    assert.equal(parsed.categorySlug, null);
+  });
+
   it("rejects alt/caption over limits and caption equal to alt", () => {
     assert.equal(
       createGalleryPhotoFieldsSchema.safeParse({
