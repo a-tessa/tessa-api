@@ -185,6 +185,46 @@ describe("gallery router", () => {
     assert.equal(response.status, 409);
   });
 
+  it("accepts a published category while the landing page has unpublished edits", async () => {
+    const { galleryRouter, token, prisma } = await loadRouterWithAuthStub();
+    const created = makeVideoRecord({ categorySlug: "carport" });
+
+    Object.defineProperty(prisma.galleryMediaItem, "count", {
+      configurable: true,
+      value: async () => 0
+    });
+    Object.defineProperty(prisma.landingPage, "findUnique", {
+      configurable: true,
+      value: async () => ({
+        status: "draft",
+        publishedContent: { categories: [{ slug: "carport" }] }
+      })
+    });
+    Object.defineProperty(prisma.galleryMediaItem, "findFirst", {
+      configurable: true,
+      value: async () => null
+    });
+    Object.defineProperty(prisma.galleryMediaItem, "create", {
+      configurable: true,
+      value: async () => created
+    });
+
+    const response = await galleryRouter.request("/videos", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        youtubeUrl: created.youtubeUrl,
+        alt: created.alt,
+        categorySlug: "carport"
+      })
+    });
+
+    assert.equal(response.status, 201);
+  });
+
   it("rejects optional category slugs that are not published", async () => {
     const { galleryRouter, token, prisma } = await loadRouterWithAuthStub();
 

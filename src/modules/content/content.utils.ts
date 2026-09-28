@@ -58,14 +58,16 @@ export function resolveCategorySlugFromCategories(
 /**
  * Ensures `categorySlug` exists among published landing-page categories.
  * Shared by blog articles, documents, and any other entity that references categories by slug.
+ * Draft edits leave `status` as draft while `publishedContent` stays live, so availability
+ * follows the published snapshot.
  */
 export async function validateCategorySlug(categorySlug: string): Promise<void> {
   const page = await prisma.landingPage.findUnique({
     where: { slug: "home" },
-    select: { status: true, publishedContent: true }
+    select: { publishedContent: true }
   });
 
-  if (!page || page.status !== "published" || !page.publishedContent) {
+  if (!page?.publishedContent) {
     badRequest("Nenhuma categoria disponível. Publique o conteúdo da landing page primeiro.");
   }
 
