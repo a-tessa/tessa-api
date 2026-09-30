@@ -38,7 +38,7 @@ export const operationSectionAssetFinalizeSchema = z.object({
     .default(0)
 });
 
-export const MAX_HERO_SLIDES = 3;
+export const MAX_HERO_SLIDES = 6;
 export const MAX_HERO_TITLE_LENGTH = 40;
 export const MAX_HERO_DESCRIPTION_LENGTH = 200;
 
