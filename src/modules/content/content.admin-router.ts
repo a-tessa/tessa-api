@@ -73,6 +73,7 @@ import {
   heroSectionInputSchema,
   heroSectionSlideParamsSchema,
   heroSectionUpdateInputSchema,
+  MAX_HERO_SLIDES,
   MAX_OPERATION_SECTION_IMAGES,
   operationSectionAssetFinalizeSchema,
   operationSectionImageParamsSchema,
@@ -239,7 +240,7 @@ async function parseHeroSectionBody(
   const altsByIndex = new Map<number, string>();
   const topicCount = parsedPayload.data.length;
 
-  for (let index = 0; index < 3; index += 1) {
+  for (let index = 0; index < MAX_HERO_SLIDES; index += 1) {
     const rawFile = formData.get(`image_${index}`);
     const rawAlt = formData.get(`alt_${index}`);
     const hasSlot = index < topicCount;
