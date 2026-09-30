@@ -6,6 +6,12 @@ import { env } from "../../env.js";
 import { badRequest, internalServerError, payloadTooLarge } from "../../lib/http.js";
 import { allowedImageMimeTypeSchema, allowedImageMimeTypes } from "./assets.schemas.js";
 
+const PREPARED_IMAGE_MAX_EDGE_PX = 1920;
+const PREPARED_IMAGE_MAX_PIXELS = 100_000_000;
+
+sharp.cache(false);
+sharp.concurrency(1);
+
 type PreparedImageAsset = {
   contentType: "image/webp";
   body: Blob;
@@ -104,8 +110,17 @@ export async function prepareImageBuffer(
   }
 
   try {
-    const outputBuffer = await sharp(inputBuffer)
+    const outputBuffer = await sharp(inputBuffer, {
+      limitInputPixels: PREPARED_IMAGE_MAX_PIXELS,
+      sequentialRead: true
+    })
       .rotate()
+      .resize({
+        width: PREPARED_IMAGE_MAX_EDGE_PX,
+        height: PREPARED_IMAGE_MAX_EDGE_PX,
+        fit: "inside",
+        withoutEnlargement: true
+      })
       .webp({ quality: 82 })
       .toBuffer();
 
