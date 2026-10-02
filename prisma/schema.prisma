@@ -156,6 +156,22 @@ model Contact {
   @@index([createdAt])
 }
 
+/// Cadastro enviado pelo formulário público Trabalhe conosco.
+model TalentApplication {
+  id                    String   @id @default(cuid())
+  fullName              String
+  email                 String
+  phone                 String
+  educationLevel        String
+  education             String
+  practiceArea          String
+  professionalSummary   String
+  createdAt             DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([practiceArea])
+}
+
 /// Caixas que recebem a notificação de cada novo contato enviado pelo site.
 model ContactNotificationRecipient {
   id        String   @id @default(cuid())
